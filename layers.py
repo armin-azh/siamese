@@ -40,6 +40,9 @@ class InceptionConvSubBlock(K.layers.Layer):
             self._main_layers.append(Activation('relu'))
         super(InceptionConvSubBlock, self).__init__()
 
+    def set_weights(self, weights):
+        params = self.weights
+
     def call(self, inputs, **kwargs):
 
         for layer in self._main_layers:
@@ -105,6 +108,9 @@ class Inception1ABlock(K.layers.Layer):
                                   padding=None)
         ]
         super(Inception1ABlock, self).__init__(**kwargs)
+
+    def set_weights(self, weights):
+        pass
 
     def call(self, inputs, **kwargs):
         """
