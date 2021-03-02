@@ -1,6 +1,11 @@
 import os
 import numpy as np
 from numpy import genfromtxt
+from PIL import Image
+import PIL
+import time
+
+DEFAULT_IMAGE_SIZE = (96, 96)
 
 WEIGHTS = [
     'conv1', 'bn1', 'conv2', 'bn2', 'conv3', 'bn3',
@@ -114,3 +119,49 @@ class Loader(object):
 
     def get_weight_name(self):
         return self._weight_name
+
+
+class ImageDatabase(object):
+    def __init__(self, database_path):
+        if os.listdir(database_path):
+            self._db_path = database_path
+        else:
+            raise ValueError
+
+        self._image_names = self._get_image_names()
+        self._update_images()
+        self._image_db = self._get_image_name_dictionary()
+
+    def _get_image_names(self):
+        return os.listdir(self._db_path)
+
+    def _get_image_name_dictionary(self):
+        tp = dict()
+        for name in self._image_names:
+            ims_paths = os.path.join(self._db_path, name)
+            for image_name in os.listdir(ims_paths):
+                im_path = os.path.join(ims_paths, image_name)
+                image = Image.open(im_path)
+                tp[name] = np.array(image)
+        return tp
+
+    def get_images(self):
+        return self._image_db
+
+    def _update_images(self):
+        for name in self._image_names:
+            ims_paths = os.path.join(self._db_path, name)
+            for image_name in os.listdir(ims_paths):
+                im_path = os.path.join(ims_paths, image_name)
+                image = Image.open(im_path)
+                if image.size != DEFAULT_IMAGE_SIZE:
+                    image = image.resize(DEFAULT_IMAGE_SIZE)
+                    image.save(im_path)
+
+    @staticmethod
+    def default_size(image_pil):
+        if isinstance(image_pil, PIL.JpegImagePlugin.JpegImageFile):
+            return image_pil.resize(DEFAULT_IMAGE_SIZE)
+        else:
+            raise ValueError
+
