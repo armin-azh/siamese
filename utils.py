@@ -73,6 +73,7 @@ conv_shape = {
 class Loader(object):
     def __init__(self, weight_path=None):
         self._weight_path = weight_path if weight_path is not None else "./weights"
+        self._weight_name = WEIGHTS
 
     def _load_weight(self):
         filenames = filter(lambda f: not f.startswith('.'), os.listdir(self._weight_path))
@@ -104,5 +105,12 @@ class Loader(object):
 
         return weights
 
-    def load_weight_to_model(self, model):
-        return self._load_weight()
+    def load_weights(self, model_obj):
+        weight_dict = self._load_weight()
+        weight_name = self.get_weight_name()
+
+        for name in weight_name:
+            model_obj.get_layer(name).set_weights(weight_dict[name])
+
+    def get_weight_name(self):
+        return self._weight_name
