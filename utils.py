@@ -3,7 +3,6 @@ import numpy as np
 from numpy import genfromtxt
 from PIL import Image
 import PIL
-import time
 
 DEFAULT_IMAGE_SIZE = (96, 96)
 

@@ -1,4 +1,5 @@
 import tensorflow.keras as K
+import tensorflow as tf
 import tensorflow.keras.backend as K_1
 from tensorflow.keras.layers import (Input,
                                      ZeroPadding2D,
@@ -306,6 +307,22 @@ class FaceNet(object):
 
         return K.Model(inputs=X_input, outputs=X, name='FaceRecoModel')
 
+    def _triplet_loss(self, y_true, y_pred, alpha=.2):
+        anchor, positive, negative = y_pred[0], y_pred[1], y_pred[2]
+        positive_distance = tf.reduce_sum(tf.square(anchor, positive), axis=-1)
+        negative_distance = tf.reduce_sum(tf.square(anchor, negative), axis=-1)
+        basic_distance = tf.add(tf.subtract(positive_distance, negative_distance), alpha)
+        loss = tf.reduce_sum(tf.maximum(basic_distance, 0.0))
+        return loss
+
     def build(self):
         return self._build_model()
+
+    def build_and_save(self, optimizer, metric, save_path):
+        loader = Loader()
+        model = self.build()
+        model.compile(optimizer=optimizer, loss=self._triplet_loss, metrics=metric)
+        loader.load_weights(model_obj=model)
+        model.save(save_path)
+
 
