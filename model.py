@@ -14,7 +14,7 @@ from tensorflow.keras.layers import (Input,
                                      Lambda
                                      )
 
-from utils import Loader
+from .utils import Loader
 
 
 class FaceNet(object):
@@ -307,7 +307,8 @@ class FaceNet(object):
 
         return K.Model(inputs=X_input, outputs=X, name='FaceRecoModel')
 
-    def _triplet_loss(self, y_true, y_pred, alpha=.2):
+    @staticmethod
+    def triplet_loss(y_true, y_pred, alpha=.2):
         anchor, positive, negative = y_pred[0], y_pred[1], y_pred[2]
         positive_distance = tf.reduce_sum(tf.square(anchor, positive), axis=-1)
         negative_distance = tf.reduce_sum(tf.square(anchor, negative), axis=-1)
@@ -319,9 +320,9 @@ class FaceNet(object):
         return self._build_model()
 
     def build_and_save(self, optimizer, metric, save_path):
-        loader = Loader()
+        loader = Loader(weight_path=self._weights_path)
         model = self.build()
-        model.compile(optimizer=optimizer, loss=self._triplet_loss, metrics=metric)
+        model.compile(optimizer=optimizer, loss=FaceNet.triplet_loss, metrics=metric)
         loader.load_weights(model_obj=model)
         model.save(save_path)
 

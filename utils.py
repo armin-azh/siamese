@@ -76,7 +76,7 @@ conv_shape = {
 
 class Loader(object):
     def __init__(self, weight_path=None):
-        self._weight_path = weight_path if weight_path is not None else "./weights"
+        self._weight_path = weight_path
         self._weight_name = WEIGHTS
 
     def _load_weight(self):
