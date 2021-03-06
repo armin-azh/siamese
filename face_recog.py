@@ -51,7 +51,7 @@ class FaceRecognition(object):
         res = dict()
         encoded_identities = self._im_db.get_encoded_identities_images(model=self._model, n_images=n_images)
         for t_name, t_tensor in test_images.items():
-            en_t_tensor = Image.encode(model=self._model, image=t_tensor)
+            en_t_tensor = Image.encode(model=self._model, image=t_tensor.read(numpy_format=True))
 
             distances = list()
             for identity, en_id_tensor in encoded_identities.items():

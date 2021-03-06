@@ -141,6 +141,14 @@ class Identity(object):
     def delete_identity_name(cls, name):
         cls.identities_name.remove(name)
 
+    @classmethod
+    def reset(cls):
+        """
+        this method reset class state
+        :return: None
+        """
+        cls.identities_name = []
+
     def add_image(self, im_path):
         """
         add new image to the identity
