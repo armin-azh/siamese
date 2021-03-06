@@ -105,14 +105,15 @@ class Image(object):
                 pil_image.save(self._im_path)
             return pil_image
 
-    def encode(self, model):
+    @classmethod
+    def encode(cls, model, image):
         """
         get image in face net encoded
+        :param image: numpy tensor
         :param model: keras model
         :return: tensor in shape (1,128)
         """
-        im = self.read(numpy_format=True)
-        im = im[..., ::-1]
+        im = image[..., ::-1]
         im = np.around(np.transpose(im, (2, 0, 1)) / 255., decimals=12)
         input_im = np.array([im])
         return model.predict(input_im)
@@ -171,7 +172,7 @@ class Identity(object):
         en_images = list()
         last = self.number_images if (n_images is None or n_images >= self.number_images) else n_images
         for im in self._images[0:last]:
-            en_images.append(im.encode(model))
+            en_images.append(Image.encode(model, im.read(numpy_format=True)))
         return en_images
 
     @property
@@ -280,11 +281,3 @@ class ImageDatabase(object):
         for identity in self._identities:
             res[identity.name] = identity.get_encoded_images(model, n_images=n_images)
         return res
-
-
-if __name__ == '__main__':
-    path = './database'
-    db = ImageDatabase(db_path=path)
-    print(db.get_identity_images())
-
-

@@ -1,8 +1,7 @@
 import os
 import numpy as np
 from numpy import genfromtxt
-from PIL import Image
-import PIL
+
 
 DEFAULT_IMAGE_SIZE = (96, 96)
 
@@ -75,11 +74,18 @@ conv_shape = {
 
 
 class Loader(object):
+    """
+        This loader will load weight to the face net network
+    """
     def __init__(self, weight_path=None):
         self._weight_path = weight_path
         self._weight_name = WEIGHTS
 
     def _load_weight(self):
+        """
+        read weight folders
+        :return: dictionary of weights with layer name
+        """
         filenames = filter(lambda f: not f.startswith('.'), os.listdir(self._weight_path))
         paths = dict()
         weights = dict()
@@ -110,6 +116,11 @@ class Loader(object):
         return weights
 
     def load_weights(self, model_obj):
+        """
+        load weight to the model layers
+        :param model_obj:
+        :return:
+        """
         weight_dict = self._load_weight()
         weight_name = self.get_weight_name()
 
@@ -119,48 +130,4 @@ class Loader(object):
     def get_weight_name(self):
         return self._weight_name
 
-
-class ImageDatabase(object):
-    def __init__(self, database_path):
-        if os.listdir(database_path):
-            self._db_path = database_path
-        else:
-            raise ValueError
-
-        self._image_names = self._get_image_names()
-        self._update_images()
-        self._image_db = self._get_image_name_dictionary()
-
-    def _get_image_names(self):
-        return os.listdir(self._db_path)
-
-    def _get_image_name_dictionary(self):
-        tp = dict()
-        for name in self._image_names:
-            ims_paths = os.path.join(self._db_path, name)
-            for image_name in os.listdir(ims_paths):
-                im_path = os.path.join(ims_paths, image_name)
-                image = Image.open(im_path)
-                tp[name] = np.array(image)
-        return tp
-
-    def get_images(self):
-        return self._image_db
-
-    def _update_images(self):
-        for name in self._image_names:
-            ims_paths = os.path.join(self._db_path, name)
-            for image_name in os.listdir(ims_paths):
-                im_path = os.path.join(ims_paths, image_name)
-                image = Image.open(im_path)
-                if image.size != DEFAULT_IMAGE_SIZE:
-                    image = image.resize(DEFAULT_IMAGE_SIZE)
-                    image.save(im_path)
-
-    @staticmethod
-    def default_size(image_pil):
-        if isinstance(image_pil, PIL.JpegImagePlugin.JpegImageFile):
-            return image_pil.resize(DEFAULT_IMAGE_SIZE)
-        else:
-            raise ValueError
 
