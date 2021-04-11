@@ -3,18 +3,22 @@ from __future__ import absolute_import
 from __future__ import division
 
 import os
+import json
+import pathlib
 import utils
 import configparser
 from typing import Tuple
-from settings import BASE_DIR
+from settings import BASE_DIR, GALLERY_LOG_DIR
 from PIL import Image as PilImage
 import numpy as np
+from itertools import chain
 from sklearn import preprocessing
 
 DT_SIZE = Tuple[int, int]
 conf = configparser.ConfigParser()
 conf.read(os.path.join(BASE_DIR, "conf.ini"))
 image_conf = conf['Image']
+logger = utils.get_logger(logger_name="gallery", log_dir=GALLERY_LOG_DIR, log_name='gallery.log')
 
 
 class Image:
@@ -36,13 +40,13 @@ class Image:
     def get_size(cls) -> DT_SIZE:
         return cls.__size
 
-    def read_image_file(self):
+    def read_image_file(self, resize: bool = False):
         """
         read image file from file
         :return:
         """
         im = PilImage.open(self._im_path)
-        return self._preprocessing(im)
+        return self._preprocessing(im, resize)
 
     def _preprocessing(self, im, resize: bool = False):
         """
@@ -152,15 +156,104 @@ class Identity:
 
 
 class ImageDatabase:
-    __slots__ = ['_identities', '_db_path']
+    __slots__ = ['_identities', '_db_path', '_db_json_path']
+    COMMITTED = 'committed'
+    MODIFIED = "modified"
 
     def __init__(self, db_path):
         self._db_path = db_path
         self._identities = list()
+        self._db_json_path = self._gen_json_filename()
+        if not self._db_json_path.exists():
+            self.initiate_conf_file()
+        self.update()
 
     def get_identity_image_paths(self):
         return {iden.name: iden.get_images_path() for iden in self._identities}
 
-    def add_identity(self,iden:Identity):
+    def add_identity(self, iden: Identity):
         self._identities.append(iden)
 
+    def parse(self):
+        """
+        parse Gallery set
+        :return:
+        """
+        base = pathlib.Path(self._db_path)
+        ids_dict = dict()
+        for ch in base.glob('**'):
+            if ch.stem != base.stem:
+                images = list()
+                for p in ch.glob('**/*.*'):
+                    images.append(str(p))
+                ids_dict[ch.stem] = images
+        return ids_dict
+
+    def _gen_json_filename(self):
+        base = pathlib.Path(self._db_path)
+        return base.joinpath('conf.json')
+
+    def initiate_conf_file(self):
+        temp = dict()
+        temp['data'] = dict()
+        temp['commit'] = False
+        self._write_json_file(temp)
+
+    def load_json_file(self):
+        with open(self._db_json_path, 'r') as infile:
+            conf_file = json.load(infile)
+        return conf_file
+
+    def _write_json_file(self, conf_dic: dict):
+        with open(self._db_json_path, 'w') as outfile:
+            json.dump(conf_dic, outfile)
+
+    def check(self):
+        conf_file = self.load_json_file()
+        if conf_file.get('commit'):
+            return self.COMMITTED
+        else:
+            return self.MODIFIED
+
+    def update(self):
+        if self.check() == self.MODIFIED:
+            conf_data = dict()
+            conf_data['data'] = self.parse()
+            conf_data['commit'] = True
+            self._write_json_file(conf_data)
+            self._in_memory_load()
+        else:
+            self._in_memory_load()
+
+    def _in_memory_load(self):
+        conf_data = self.load_json_file()
+        data = conf_data.get('data')
+
+        for key, value in data.items():
+            tm_id = Identity.create(key)
+            for im_path in chain(value):
+                tm_id.add_image(im_path)
+            self._identities.append(tm_id)
+
+    @staticmethod
+    def split_data_and_label(dataset_dictionary):
+        """
+        this method split the dataset to its data and label
+        :param dataset_dictionary:
+        :return: data list and labels
+        """
+
+        images_list = []
+        labels = []
+        label_encoder = preprocessing.LabelEncoder()
+        label_encoder.fit(list(dataset_dictionary.keys()))
+        for idx, (identity, images) in enumerate(dataset_dictionary.items()):
+            images_list += list(images)
+            labels += [idx] * len(list(images))
+
+        return images_list, labels, label_encoder
+
+
+if __name__ == "__main__":
+    obj = ImageDatabase('G:\\Documents\\Project\\siamese\\data\\train\\set_2\\train')
+    ImageDatabase.split_data_and_label(obj.get_identity_image_paths())
