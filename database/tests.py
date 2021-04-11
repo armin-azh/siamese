@@ -2,8 +2,10 @@ import os
 import configparser
 from settings import BASE_DIR
 import unittest
-from component import Image
+from component import Image, Identity
 import utils
+from itertools import chain
+import random
 
 
 class DatabaseModule(unittest.TestCase):
@@ -30,6 +32,42 @@ class DatabaseModule(unittest.TestCase):
         self.assertEqual(im.image_path, filename)
         self.assertEqual(im.image_json_path, json_path)
         self.assertEqual(im.image_csv_path, csv_path)
+
+    def test_identity_name(self):
+        random.seed(500)
+
+        names = [
+            'Armin Azhdehnia',
+            'Alireza Bagherinia',
+            'Reza Hadadi'
+        ]
+
+        images = [
+            '/home/sephirod/gallery/xs_1.jpg',
+            '/home/sephirod/gallery/xs_2.jpg',
+            '/home/sephirod/gallery/xs_3.jpg',
+            '/home/sephirod/gallery/xs_4.jpg',
+            '/home/sephirod/gallery/xs_5.jpg'
+        ]
+
+        identities = list()
+        for name in chain(names):
+            identities.append(Identity.create(name))
+
+        for iden in chain(identities):
+            iden.add_image(random.choice(images))
+
+        self.assertEqual(Identity.identities_name, names)
+
+        self.assertEqual(Identity.create(names[0]), None)
+
+        for iden in chain(identities):
+            for im in iden.get_images_path():
+                self.assertIn(im.image_path, images)
+
+        del identities[0]
+
+        self.assertNotEqual(Identity.identities_name, names)
 
 
 if __name__ == "__main__":

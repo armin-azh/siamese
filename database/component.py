@@ -9,6 +9,7 @@ from typing import Tuple
 from settings import BASE_DIR
 from PIL import Image as PilImage
 import numpy as np
+from sklearn import preprocessing
 
 DT_SIZE = Tuple[int, int]
 conf = configparser.ConfigParser()
@@ -84,3 +85,82 @@ class Image:
     @property
     def image_json_path(self):
         return self._im_json_path
+
+
+class Identity:
+    __slots__ = ['_name', '_images']
+    identities_name = []
+
+    def __init__(self, name: str):
+        self._name = name
+        self._images = []
+
+    def __del__(self):
+        Identity.identities_name.remove(self._name)
+
+    @classmethod
+    def create(cls, name):
+        name, status = cls.add_new_id(name)
+        if not status:
+            return Identity(name)
+        else:
+            return None
+
+    @classmethod
+    def add_new_id(cls, name: str) -> tuple:
+        status = True if name in cls.identities_name else False
+        cls.identities_name.append(name)
+        return name, status
+
+    @classmethod
+    def reset(cls):
+        """
+        this method reset class state
+        :return: None
+        """
+        cls.identities_name = []
+
+    def add_image(self, im_path):
+        """
+        add new image to the identity
+        :param im_path:
+        :return: None
+        """
+        self._images.append(Image(im_path=im_path))
+
+    def get_images_path(self):
+        """
+        generator for return path
+        :return:
+        """
+        for im_path in self._images:
+            yield im_path
+
+    @property
+    def images_len(self):
+        return len(self._images)
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        name, status = Identity.add_new_id(name)
+        if not status:
+            self._name = name
+
+
+class ImageDatabase:
+    __slots__ = ['_identities', '_db_path']
+
+    def __init__(self, db_path):
+        self._db_path = db_path
+        self._identities = list()
+
+    def get_identity_image_paths(self):
+        return {iden.name: iden.get_images_path() for iden in self._identities}
+
+    def add_identity(self,iden:Identity):
+        self._identities.append(iden)
+
