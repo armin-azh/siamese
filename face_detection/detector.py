@@ -54,6 +54,9 @@ class FaceDetector:
         return im
 
     def extract_faces(self, frame):
+        frame = Image.fromarray(frame)
+        frame = frame.convert('RGB')
+        frame = np.asarray(frame)
         results = self.detector.detect_faces(frame)
         for res in results:
             yield self.extract_face(frame, res.get('box'))

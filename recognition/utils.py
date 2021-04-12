@@ -56,4 +56,15 @@ def load_model(model, input_map=None):
         saver.restore(tf.compat.v1.get_default_session(), os.path.join(model_exp, ckpt_file))
 
 
-
+def parse_status(args):
+    """
+    parse status
+    :param args:
+    :return:
+    """
+    if args.video:
+        return "video"
+    elif args.realtime:
+        return "realtime"
+    else:
+        return "clustering"

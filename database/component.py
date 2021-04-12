@@ -12,7 +12,7 @@ from PIL import Image as PilImage
 import numpy as np
 from itertools import chain
 from sklearn import preprocessing
-from utils import extract_filename
+from .utils import extract_filename
 
 DT_SIZE = Tuple[int, int]
 conf = configparser.ConfigParser()
@@ -234,6 +234,25 @@ class ImageDatabase:
                 tm_id.add_image(im_path)
             self._identities.append(tm_id)
 
+    def save_clusters(self, clusters, faces, cluster_name):
+        """
+        save cluster images
+        :param clusters:
+        :param faces:
+        :param cluster_name:
+        :return:
+        """
+        base_path = os.path.join(BASE_DIR, self._db_path, cluster_name)
+        if not os.path.exists(base_path):
+            os.makedirs(base_path)
+
+        for key, value in clusters.items():
+            idx = np.random.choice(value)
+            save_path = os.path.join(base_path, f"image_{key}_{idx}.jpg")
+            faces[idx].save(save_path)
+        self.modify()
+        print(f"$ Images saved at {base_path}")
+
     @staticmethod
     def split_data_and_label(dataset_dictionary):
         """
@@ -252,7 +271,31 @@ class ImageDatabase:
 
         return images_list, labels, label_encoder
 
+    @staticmethod
+    def check_name_exists(name) -> bool:
+        """
+        check a new identity name
+        :param name:
+        :return:
+        """
+        return True if name in Identity.identities_name else False
 
-if __name__ == "__main__":
-    obj = ImageDatabase('G:\\Documents\\Project\\siamese\\data\\train\\set_2\\train')
-    ImageDatabase.split_data_and_label(obj.get_identity_image_paths())
+    def modify(self):
+        data = self.load_json_file()
+        data['commit'] = False
+        self._write_json_file(data)
+
+    def commit(self):
+        data = self.load_json_file()
+        data['commit'] = True
+        self._write_json_file(data)
+
+
+def inference_db(args):
+    conf = configparser.ConfigParser()
+    conf.read(os.path.join(BASE_DIR, "conf.ini"))
+    gallery_conf = conf['Gallery']
+
+    db = ImageDatabase(db_path=gallery_conf.get("database_path"))
+    if args.db_check:
+        print(f"$ Database had been {db.check()}")
