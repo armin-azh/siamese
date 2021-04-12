@@ -5,20 +5,19 @@ from __future__ import division
 import os
 import json
 import pathlib
-import utils
 import configparser
 from typing import Tuple
-from settings import BASE_DIR, GALLERY_LOG_DIR
+from settings import BASE_DIR
 from PIL import Image as PilImage
 import numpy as np
 from itertools import chain
 from sklearn import preprocessing
+from utils import extract_filename
 
 DT_SIZE = Tuple[int, int]
 conf = configparser.ConfigParser()
 conf.read(os.path.join(BASE_DIR, "conf.ini"))
 image_conf = conf['Image']
-logger = utils.get_logger(logger_name="gallery", log_dir=GALLERY_LOG_DIR, log_name='gallery.log')
 
 
 class Image:
@@ -67,7 +66,7 @@ class Image:
         generate jason file name base on image folder path
         :return: str
         """
-        base_dir, file_path = utils.extract_filename(self._im_path)
+        base_dir, file_path = extract_filename(self._im_path)
         return os.path.join(base_dir, file_path + '.json')
 
     def _gen_csv_filename(self) -> str:
@@ -75,7 +74,7 @@ class Image:
         generate csv filename base on image folder path
         :return: str
         """
-        base_dir, file_path = utils.extract_filename(self._im_path)
+        base_dir, file_path = extract_filename(self._im_path)
         return os.path.join(base_dir, file_path + '.csv')
 
     @property

@@ -12,16 +12,15 @@ import time
 from settings import BASE_DIR
 from datetime import datetime
 
-conf = configparser.ConfigParser()
-conf.read(os.path.join(BASE_DIR, "conf.ini"))
-image_conf = conf['Image']
-detector_conf = conf.get('Detector')
-
 
 class FaceDetector:
     def __init__(self, o_size: tuple = None):
+        conf = configparser.ConfigParser()
+        conf.read(os.path.join(BASE_DIR, "conf.ini"))
+        image_conf = conf['Image']
+        self._detector_conf = conf.get('Detector')
         self._o_shape = o_size if o_size is not None else (int(image_conf.get('width')), int(image_conf.get('height')))
-        self.detector = MTCNN(steps_threshold=detector_conf.get('step_threshold'))
+        self.detector = MTCNN(steps_threshold=self._detector_conf.get('step_threshold'))
 
     @staticmethod
     def generate_name(name, prefix, im_format='jpg'):
@@ -56,7 +55,7 @@ class FaceDetector:
         :param videos_file:
         :return:
         """
-        base_save_path = os.path.join(BASE_DIR, detector_conf.get("default_save_path"))
+        base_save_path = os.path.join(BASE_DIR, self._detector_conf.get("default_save_path"))
 
         prefix = ''.join(random.choice(string.ascii_lowercase) for i in range(12))
         name_fmt = partial(FaceDetector.generate_name, prefix=prefix)
@@ -83,7 +82,7 @@ class FaceDetector:
                 if not res:
                     break
 
-                if delta_time > 1. / detector_conf.get('fps'):
+                if delta_time > 1. / self._detector_conf.get('fps'):
                     prev = time.time()
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     image = Image.fromarray(frame)
@@ -92,10 +91,10 @@ class FaceDetector:
                     results = self.detector.detect_faces(im_pixels)
                     for ent in results:
                         tm_im = im_pixels
-                        if ent['confidence'] > detector_conf.get('conf_thresh'):
+                        if ent['confidence'] > self._detector_conf.get('conf_thresh'):
                             tm_im = self.extract_face(tm_im, ent['box'])
                             tm_im.save(os.path.join(base_save_path, name_fmt(str(f_cnt))))
-                            if cnt % detector_conf.get('dip_step') == 0 and cnt > 0:
+                            if cnt % self._detector_conf.get('dip_step') == 0 and cnt > 0:
                                 print(f'$ {str(cnt)} faces has saved.')
                             cnt += 1
                             f_cnt += 1
