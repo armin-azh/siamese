@@ -235,7 +235,7 @@ class ImageDatabase:
         for a in self._load_npy():
             embeds.append(a[1])
             labels += [a[0]] * a[1].shape[0]
-        return np.concatenate(embeds, axis=1), labels
+        return np.concatenate(embeds, axis=0), labels
 
     def _gen_json_filename(self):
         base = pathlib.Path(self._db_path)

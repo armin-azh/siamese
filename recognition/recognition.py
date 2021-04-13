@@ -54,6 +54,7 @@ def face_recognition(args):
         embeds, labels = database.bulk_embeddings()
         encoded_labels = preprocessing.LabelEncoder()
         encoded_labels.fit(list(set(labels)))
+        print(embeds.shape)
 
     with tf.Graph().as_default():
         with tf.compat.v1.Session() as sess:
@@ -106,12 +107,9 @@ def face_recognition(args):
                             # bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
                             print("$ [OK]")
 
-                        if args.realtime:
-                            pass
-                        elif args.video:
-                            pass
                         else:
                             break
+
 
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
