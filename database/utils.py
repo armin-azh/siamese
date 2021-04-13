@@ -6,6 +6,7 @@ import json
 import os
 import ntpath
 import logging
+from tabulate import tabulate
 
 
 def write_json(data: dict, filename: str) -> None:
@@ -47,3 +48,25 @@ def get_logger(logger_name: str, log_dir: str, log_name: str):
     logger.setLevel(logging.DEBUG)
 
     return logger
+
+
+def tabulate_print(database_dic):
+    """
+    this function print dataset dictionary in tabular format
+    :param database_dic:
+    :return:
+    """
+    classes = ["class"]
+    n_images = ["amount"]
+    nps = ["npy"]
+    for key, value in database_dic.items():
+        classes.append(key)
+        n_images.append(len(value[0]))
+        nps.append("#" if value[1] else "x")
+
+    print(tabulate({"class": classes, "amount": n_images, "npy": nps}))
+
+
+def load_images(images):
+    for im in images:
+        yield im.read_image_file()

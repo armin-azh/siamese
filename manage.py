@@ -6,7 +6,7 @@ from database.component import inference_db
 def main(args):
     if args.realtime or args.video or args.cluster:
         face_recognition(args)
-    elif args.db_check or args.db_inspect:
+    elif args.db_check or args.db_inspect or args.db_build_npy:
         inference_db(args)
 
 
@@ -21,7 +21,8 @@ if __name__ == "__main__":
     parser.add_argument('--cluster_name', help="cluster name for saving images", type=str, default='')
     parser.add_argument('--classifier', help='classifier filename', type=str, default='')
     parser.add_argument('--db_check', help='check gallery status', action='store_true')
-    parser.add_argument('--db_inspect', help="inspect database status",action='store_true')
+    parser.add_argument('--db_inspect', help="inspect database status", action='store_true')
+    parser.add_argument('--db_build_npy', help='build npy embedding', action='store_true')
 
     args = parser.parse_args()
 

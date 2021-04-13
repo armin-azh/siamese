@@ -12,7 +12,8 @@ from PIL import Image as PilImage
 import numpy as np
 from itertools import chain
 from sklearn import preprocessing
-from .utils import extract_filename
+from .utils import extract_filename, tabulate_print
+from .npy_builder import builder
 
 DT_SIZE = Tuple[int, int]
 conf = configparser.ConfigParser()
@@ -167,6 +168,24 @@ class ImageDatabase:
             self.initiate_conf_file()
         self.update()
 
+    def build_npy(self):
+        base = pathlib.Path(self._db_path)
+        ids = []
+        for ch in base.glob('**'):
+            ids_dict = dict()
+            if ch.stem != base.stem:
+                ids_dict['npy'] = os.path.join(str(ch), ch.stem + '.npy')
+                ids_dict['name']=ch.stem
+                images = []
+                for p in ch.glob('**/*.jpg'):
+                    images.append(Image(im_path=str(p)))
+                ids_dict['images'] = images
+                ids.append(ids_dict)
+
+        builder(ids)
+        self.commit()
+        print("$ embedding matrices had been created.")
+
     def get_identity_image_paths(self):
         return {iden.name: iden.get_images_path() for iden in self._identities}
 
@@ -183,9 +202,13 @@ class ImageDatabase:
         for ch in base.glob('**'):
             if ch.stem != base.stem:
                 images = list()
-                for p in ch.glob('**/*.*'):
+                nps = list()
+                for p in ch.glob('**/*.jpg'):
                     images.append(str(p))
-                ids_dict[ch.stem] = images
+                for p in ch.glob('**/*.npy'):
+                    nps.append(str(p))
+                ids_dict[ch.stem] = (images, nps)
+
         return ids_dict
 
     def _gen_json_filename(self):
@@ -299,3 +322,9 @@ def inference_db(args):
     db = ImageDatabase(db_path=gallery_conf.get("database_path"))
     if args.db_check:
         print(f"$ Database had been {db.check()}")
+
+    elif args.db_inspect:
+        tabulate_print(db.parse())
+
+    elif args.db_build_npy:
+        db.build_npy()
