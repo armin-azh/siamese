@@ -130,7 +130,8 @@ class Identity:
         :param im_path:
         :return: None
         """
-        self._images.append(Image(im_path=im_path))
+        for im in chain(im_path):
+            self._images.append(Image(im_path=im))
 
     def get_images_path(self):
         """
@@ -175,7 +176,7 @@ class ImageDatabase:
             ids_dict = dict()
             if ch.stem != base.stem:
                 ids_dict['npy'] = os.path.join(str(ch), ch.stem + '.npy')
-                ids_dict['name']=ch.stem
+                ids_dict['name'] = ch.stem
                 images = []
                 for p in ch.glob('**/*.jpg'):
                     images.append(Image(im_path=str(p)))
@@ -210,6 +211,31 @@ class ImageDatabase:
                 ids_dict[ch.stem] = (images, nps)
 
         return ids_dict
+
+    def _parse_npy(self):
+        """
+        extract npy file from folders
+        :return:
+        """
+        base = pathlib.Path(self._db_path)
+        ids_dict = dict()
+        for ch in base.glob('**'):
+            if ch.stem != base.stem:
+                ids_dict[ch.stem] = str(list(ch.glob('**/*.npy'))[0])
+        return ids_dict
+
+    def _load_npy(self):
+        ids = self._parse_npy()
+        for name, npy_path in ids.items():
+            yield name, np.load(npy_path)
+
+    def bulk_embeddings(self):
+        embeds = []
+        labels = []
+        for a in self._load_npy():
+            embeds.append(a[1])
+            labels += [a[0]] * a[1].shape[0]
+        return np.concatenate(embeds, axis=1), labels
 
     def _gen_json_filename(self):
         base = pathlib.Path(self._db_path)

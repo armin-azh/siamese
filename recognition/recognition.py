@@ -20,6 +20,7 @@ import tensorflow as tf
 from database.component import ImageDatabase
 from settings import BASE_DIR
 from PIL import Image
+from sklearn import preprocessing
 
 
 def face_recognition(args):
@@ -47,6 +48,12 @@ def face_recognition(args):
     if args.cluster:
         if args.cluster_name and database.check_name_exists(args.cluster_name):
             raise ValueError(f" {args.cluster_name} is exists.")
+
+    if (args.realtime or args.video) and args.eval_method == "cosine":
+        print("$ loading embeddings ...")
+        embeds, labels = database.bulk_embeddings()
+        encoded_labels = preprocessing.LabelEncoder()
+        encoded_labels.fit(list(set(labels)))
 
     with tf.Graph().as_default():
         with tf.compat.v1.Session() as sess:
@@ -94,9 +101,10 @@ def face_recognition(args):
                         embedded_array = sess.run(embeddings, feed_dic)
 
                         if args.eval_method == 'cosine':
-                            dists = bulk_cosine_similarity(embedded_array, db_embeddings)
-                            bs_similarity_idx = np.argmin(dists, axis=1)
-                            bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
+                            # dists = bulk_cosine_similarity(embedded_array, db_embeddings)
+                            # bs_similarity_idx = np.argmin(dists, axis=1)
+                            # bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
+                            print("$ [OK]")
 
                         if args.realtime:
                             pass
