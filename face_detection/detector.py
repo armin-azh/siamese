@@ -14,10 +14,11 @@ from datetime import datetime
 
 
 class FaceDetector:
-    def __init__(self,sess, o_size: tuple = None):
+    def __init__(self, sess, o_size: tuple = None):
         conf = configparser.ConfigParser()
         conf.read(os.path.join(BASE_DIR, "conf.ini"))
         image_conf = conf['Image']
+        self._default = conf["Default"]
         self._detector_conf = conf['Detector']
         self._o_shape = o_size if o_size is not None else (int(image_conf.get('width')), int(image_conf.get('height')))
         thresholds = [float(self._detector_conf.get('step1_threshold')),
@@ -53,13 +54,17 @@ class FaceDetector:
         im = im.resize(self._o_shape)
         return im
 
-    def extract_faces(self, frame):
+    def extract_faces(self, frame, area):
         frame = Image.fromarray(frame)
         frame = frame.convert('RGB')
         frame = np.asarray(frame)
         results = self.detector.detect_faces(frame)
         for res in results:
-            yield self.extract_face(frame, res.get('box'))
+            _, _, w_, h_ = res.get('box')
+            area_ = w_ * h_
+            ratio = (float(area_) / area)
+            if float(self._default.get('min_ratio')) < ratio < float(self._default.get('max_ratio')):
+                yield self.extract_face(frame, res.get('box')), res.get('box')
 
     # def extract_faces(self, videos_file, postfix):
     #     """

@@ -39,6 +39,7 @@ def face_recognition(args):
     model_conf = conf['Model']
     detector_conf = conf['Detector']
     gallery_conf = conf['Gallery']
+    default_conf = conf['Default']
 
     prev = time.time()
 
@@ -54,7 +55,7 @@ def face_recognition(args):
         embeds, labels = database.bulk_embeddings()
         encoded_labels = preprocessing.LabelEncoder()
         encoded_labels.fit(list(set(labels)))
-        print(embeds.shape)
+        labels = encoded_labels.transform(labels)
 
     with tf.Graph().as_default():
         with tf.compat.v1.Session() as sess:
@@ -75,6 +76,9 @@ def face_recognition(args):
                 faces_ = list()
                 print("$ ", end='')
 
+            frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+            frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
             while cap.isOpened():
                 delta_time = time.time() - prev
                 ret, frame = cap.read()
@@ -88,8 +92,10 @@ def face_recognition(args):
                     if not args.cluster:
                         faces = list()
 
-                    for face in detector.extract_faces(frame):
+                    boxes = []
+                    for face, bbox in detector.extract_faces(frame,frame_width*frame_height):
                         faces.append(normalize_input(face))
+                        boxes.append(bbox)
                         if args.cluster:
                             faces_.append(face)
                             print("#", end="")
@@ -102,15 +108,29 @@ def face_recognition(args):
                         embedded_array = sess.run(embeddings, feed_dic)
 
                         if args.eval_method == 'cosine':
-                            # dists = bulk_cosine_similarity(embedded_array, db_embeddings)
-                            # bs_similarity_idx = np.argmin(dists, axis=1)
-                            # bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
-                            print("$ [OK]")
+                            dists = bulk_cosine_similarity(embedded_array, embeds)
+                            bs_similarity_idx = np.argmin(dists, axis=1)
+                            bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
+                            pred_labels = np.array(labels)[bs_similarity_idx]
+                            for i in range(len(pred_labels)):
+                                x, y, w, h = boxes[i]
+                                status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
+                                                                                                   i] < float(default_conf.get("similarity_threshold")) else 'unrecognised'
+                                color = (243, 32, 19) if status == 'unrecognised' else (0, 255, 0)
+                                frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
 
+                                cv2.putText(frame,
+                                            "{} {:.2f}".format(status[0],
+                                                               bs_similarity[i]),
+                                            (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
                         else:
                             break
 
-
+                        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                        cv2.imshow(parse_status(args), frame)
+                    else:
+                        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                        cv2.imshow(parse_status(args), frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
 
