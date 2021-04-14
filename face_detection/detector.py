@@ -25,7 +25,8 @@ class FaceDetector:
                       float(self._detector_conf.get('step2_threshold')),
                       float(self._detector_conf.get('step3_threshold'))]
         tf.compat.v1.keras.backend.set_session(sess)
-        self.detector = MTCNN(steps_threshold=thresholds)
+        self.detector = MTCNN(steps_threshold=thresholds, scale_factor=float(self._detector_conf.get("scale_factor")),
+                              min_face_size=int(self._detector_conf.get("min_face_size")))
 
     @staticmethod
     def generate_name(name, prefix, im_format='jpg'):

@@ -18,8 +18,9 @@ def main(args):
         conf = configparser.ConfigParser()
         conf.read(os.path.join(BASE_DIR, "conf.ini"))
         model_conf = conf["Model"]
-        m_path = pathlib.Path(os.path.join(BASE_DIR,model_conf.get('facenet')))
-        convert_computation_graph_to_keras_model(model_dir=m_path.parent,save_dir=m_path.parent.parent)
+        m_path = pathlib.Path(os.path.join(BASE_DIR, model_conf.get('facenet')))
+        convert_computation_graph_to_keras_model(model_dir=m_path.parent, save_dir=m_path.parent.parent,
+                                                 lite=args.cnv_to_lite)
 
 
 if __name__ == "__main__":
@@ -31,11 +32,13 @@ if __name__ == "__main__":
                         default='cosine')
     parser.add_argument('--cluster', help="cluster video frame", action='store_true')
     parser.add_argument('--cluster_name', help="cluster name for saving images", type=str, default='')
+    parser.add_argument('--save',help="save frame in a file",action='store_true')
     parser.add_argument('--classifier', help='classifier filename', type=str, default='')
     parser.add_argument('--db_check', help='check gallery status', action='store_true')
     parser.add_argument('--db_inspect', help="inspect database status", action='store_true')
     parser.add_argument('--db_build_npy', help='build npy embedding', action='store_true')
     parser.add_argument('--cnv_to_keras', help='convert computation graph to keras', action='store_true')
+    parser.add_argument('--cnv_to_lite', help='convert keras to lite', action='store_true')
 
     args = parser.parse_args()
 

@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import datetime
 import tensorflow as tf
 from tensorflow.python.platform import gfile
 import os
@@ -95,9 +96,10 @@ def get_filename(key, reg_1, reg_2):
     return filename + '.npy'
 
 
-def convert_computation_graph_to_keras_model(model_dir, save_dir):
+def convert_computation_graph_to_keras_model(model_dir, save_dir, lite: bool = True):
     """
     these function convert computation graph to keras model
+    :param lite:
     :param model_dir:
     :param save_dir:
     :return:
@@ -108,6 +110,7 @@ def convert_computation_graph_to_keras_model(model_dir, save_dir):
 
     weights_filename = 'pre_trained_face_net_weights.h5'
     model_filename = 'pre_trained_face_net.h5'
+    lite_model_filename = 'pre_trained_face_net.tflite'
 
     if not os.path.exists(npy_weights_dir):
         os.makedirs(npy_weights_dir)
@@ -149,4 +152,36 @@ def convert_computation_graph_to_keras_model(model_dir, save_dir):
     print(f'$ Saving weights {os.path.join(weights_dir, weights_filename)}')
     model.save_weights(os.path.join(weights_dir, weights_filename))
     print(f'$ Saving model {os.path.join(o_model_dir, model_filename)}')
-    model.save(os.path.join(o_model_dir, model_filename))
+    o_model_path = os.path.join(o_model_dir, model_filename)
+    model.save(o_model_path)
+
+    if lite:
+        convertor = tf.compat.v1.lite.TocoConverter.from_keras_model_file(o_model_path)
+        convertor.post_training_quantize = True
+        tf_lite_model = convertor.convert()
+        with open(os.path.join(o_model_dir,lite_model_filename),'wb') as o_file:
+            o_file.write(tf_lite_model)
+
+        print(f"$ lite tensorflow model created {os.path.join(o_model_dir,lite_model_filename)}")
+
+
+class FPS:
+    def __init__(self):
+        self._start = None
+        self._end = None
+        self._n_frame = 0
+
+    def start(self):
+        self._start=datetime.datetime.now()
+
+    def stop(self):
+        self._end = datetime.datetime.now()
+
+    def update(self):
+        self._n_frame +=1
+
+    def elapsed(self):
+        return (self._end - self._start).total_seconds()
+
+    def fps(self):
+        return self._n_frame / self.elapsed()

@@ -10,7 +10,7 @@ import time
 import configparser
 import cv2
 import numpy as np
-from .utils import load_model, parse_status
+from .utils import load_model, parse_status,FPS
 from .preprocessing import normalize_input
 from .cluster import k_mean_clustering
 from .distance import bulk_cosine_similarity
@@ -21,6 +21,7 @@ from database.component import ImageDatabase
 from settings import BASE_DIR
 from PIL import Image
 from sklearn import preprocessing
+from datetime import datetime
 
 
 def face_recognition(args):
@@ -41,7 +42,7 @@ def face_recognition(args):
     gallery_conf = conf['Gallery']
     default_conf = conf['Default']
 
-    prev = time.time()
+
 
     database = ImageDatabase(db_path=gallery_conf.get("database_path"))
 
@@ -79,6 +80,18 @@ def face_recognition(args):
             frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
             frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
+            if args.save:
+                filename = os.path.join(BASE_DIR, default_conf.get("save_video"),
+                                        datetime.strftime(datetime.now(), '%Y%m%d'))
+
+                if not os.path.exists(filename):
+                    os.makedirs(filename)
+                filename = os.path.join(filename, parse_status() + datetime.strftime(datetime.now(), '%H%M%S') + ".avi")
+                out = cv2.VideoWriter(filename,cv2.VideoWriter_fourcc(*'XVID'),)
+
+            fps = FPS()
+            fps.start()
+            prev = 0
             while cap.isOpened():
                 delta_time = time.time() - prev
                 ret, frame = cap.read()
@@ -87,13 +100,14 @@ def face_recognition(args):
                     break
 
                 if delta_time > 1. / float(detector_conf['fps']):
+                    fps.update()
                     prev = time.time() - prev
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     if not args.cluster:
                         faces = list()
 
                     boxes = []
-                    for face, bbox in detector.extract_faces(frame,frame_width*frame_height):
+                    for face, bbox in detector.extract_faces(frame, frame_width * frame_height):
                         faces.append(normalize_input(face))
                         boxes.append(bbox)
                         if args.cluster:
@@ -115,7 +129,8 @@ def face_recognition(args):
                             for i in range(len(pred_labels)):
                                 x, y, w, h = boxes[i]
                                 status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
-                                                                                                   i] < float(default_conf.get("similarity_threshold")) else 'unrecognised'
+                                                                                                   i] < float(
+                                    default_conf.get("similarity_threshold")) else 'unrecognised'
                                 color = (243, 32, 19) if status == 'unrecognised' else (0, 255, 0)
                                 frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
 
@@ -133,7 +148,7 @@ def face_recognition(args):
                         cv2.imshow(parse_status(args), frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
-
+            fps.stop()
             if args.cluster:
                 print('\n$ Cluster embeddings')
                 faces = np.array(faces)
@@ -143,3 +158,6 @@ def face_recognition(args):
                     clusters = k_mean_clustering(embeddings=embedded_array,
                                                  n_cluster=int(gallery_conf['n_clusters']))
                     database.save_clusters(clusters, faces_, args.cluster_name)
+
+            print("$ fps: {:.2f}".format(fps.fps()))
+            print("$ elapsed time: {:.2f}".format(fps.elapsed()))
