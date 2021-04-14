@@ -6,6 +6,8 @@ import tensorflow as tf
 from tensorflow.python.platform import gfile
 import os
 import re
+import numpy as np
+from .model import *
 
 
 def get_model_filenames(model_dir):
@@ -68,3 +70,83 @@ def parse_status(args):
         return "realtime"
     else:
         return "clustering"
+
+
+def get_filename(key, reg_1, reg_2):
+    """
+    generate new filename
+    :param key:
+    :param reg_1:
+    :param reg_2:
+    :return:
+    """
+    filename = str(key)
+    filename = filename.replace('/', '_')
+    filename = filename.replace('InceptionResnetV1_', '')
+
+    filename = reg_1.sub('B', filename)
+
+    if reg_2.match(filename):
+        filename = filename.replace('Block8', 'Block8_6')
+
+    filename = filename.replace('_weights', '_kernel')
+    filename = filename.replace('_biases', '_bias')
+
+    return filename + '.npy'
+
+
+def convert_computation_graph_to_keras_model(model_dir, save_dir):
+    """
+    these function convert computation graph to keras model
+    :param model_dir:
+    :param save_dir:
+    :return:
+    """
+    npy_weights_dir = os.path.join(save_dir, 'keras/npy_weights')
+    weights_dir = os.path.join(save_dir, 'keras/weights')
+    o_model_dir = os.path.join(save_dir, 'keras')
+
+    weights_filename = 'pre_trained_face_net_weights.h5'
+    model_filename = 'pre_trained_face_net.h5'
+
+    if not os.path.exists(npy_weights_dir):
+        os.makedirs(npy_weights_dir)
+
+    if not os.path.exists(weights_dir):
+        os.makedirs(weights_dir)
+
+    if not os.path.exists(o_model_dir):
+        os.makedirs(o_model_dir)
+
+    re_repeat = re.compile(r'Repeat_[0-9_]*b')
+    re_block8 = re.compile(r'Block8_[A-Za-z]')
+
+    ck_filename = os.path.join(model_dir, 'model-20180402-114759.ckpt-275')
+    reader = tf.compat.v1.train.NewCheckpointReader(ck_filename)
+
+    for key in reader.get_variable_to_shape_map():
+        if key == 'global_step':
+            continue
+        if 'AuxLogit' in key:
+            continue
+
+        path = os.path.join(npy_weights_dir, get_filename(key, re_repeat, re_block8))
+        arr = reader.get_tensor(key)
+        np.save(path, arr)
+
+    model = InceptionResNetV1()
+
+    for layer in model.layers:
+        if layer.weights:
+            weights = []
+            for w in layer.weights:
+                weight_name = os.path.basename(w.name).replace(':0', '')
+                weight_file = layer.name + '_' + weight_name + '.npy'
+                weight_arr = np.load(os.path.join(npy_weights_dir, weight_file))
+                weights.append(weight_arr)
+            layer.set_weights(weights)
+
+    print(f'$ Saving weights {os.path.join(weights_dir, weights_filename)}')
+    model.save_weights(os.path.join(weights_dir, weights_filename))
+    print(f'$ Saving model {os.path.join(o_model_dir, model_filename)}')
+    model.save(os.path.join(o_model_dir, model_filename))

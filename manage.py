@@ -1,6 +1,11 @@
 import argparse
+import configparser
+import os
+import pathlib
 from recognition.recognition import face_recognition
+from recognition.utils import convert_computation_graph_to_keras_model
 from database.component import inference_db
+from settings import BASE_DIR
 
 
 def main(args):
@@ -8,6 +13,13 @@ def main(args):
         face_recognition(args)
     elif args.db_check or args.db_inspect or args.db_build_npy:
         inference_db(args)
+
+    elif args.cnv_to_keras:
+        conf = configparser.ConfigParser()
+        conf.read(os.path.join(BASE_DIR, "conf.ini"))
+        model_conf = conf["Model"]
+        m_path = pathlib.Path(os.path.join(BASE_DIR,model_conf.get('facenet')))
+        convert_computation_graph_to_keras_model(model_dir=m_path.parent,save_dir=m_path.parent.parent)
 
 
 if __name__ == "__main__":
@@ -23,6 +35,7 @@ if __name__ == "__main__":
     parser.add_argument('--db_check', help='check gallery status', action='store_true')
     parser.add_argument('--db_inspect', help="inspect database status", action='store_true')
     parser.add_argument('--db_build_npy', help='build npy embedding', action='store_true')
+    parser.add_argument('--cnv_to_keras', help='convert computation graph to keras', action='store_true')
 
     args = parser.parse_args()
 

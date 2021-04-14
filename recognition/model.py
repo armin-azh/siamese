@@ -99,7 +99,7 @@ def _inception_resnet_block(x, scale, block_type, block_idx, activation='relu'):
 
 
 def InceptionResNetV1(input_shape=(160, 160, 3),
-                      classes=128,
+                      classes=512,
                       dropout_keep_prob=0.8,
                       weights_path=None):
     inputs = Input(shape=input_shape)
