@@ -24,7 +24,8 @@ class FaceDetector:
         thresholds = [float(self._detector_conf.get('step1_threshold')),
                       float(self._detector_conf.get('step2_threshold')),
                       float(self._detector_conf.get('step3_threshold'))]
-        tf.compat.v1.keras.backend.set_session(sess)
+        if sess is not None:
+            tf.compat.v1.keras.backend.set_session(sess)
         self.detector = MTCNN(steps_threshold=thresholds, scale_factor=float(self._detector_conf.get("scale_factor")),
                               min_face_size=int(self._detector_conf.get("min_face_size")))
 

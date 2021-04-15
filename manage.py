@@ -2,15 +2,19 @@ import argparse
 import configparser
 import os
 import pathlib
-from recognition.recognition import face_recognition
+from recognition.recognition import face_recognition, face_recognition_on_keras
 from recognition.utils import convert_computation_graph_to_keras_model
 from database.component import inference_db
 from settings import BASE_DIR
 
 
 def main(args):
-    if args.realtime or args.video or args.cluster:
+    if (args.realtime or args.video or args.cluster) and not args.keras:
         face_recognition(args)
+
+    elif (args.realtime or args.video or args.cluster) and args.keras:
+        face_recognition_on_keras(args)
+
     elif args.db_check or args.db_inspect or args.db_build_npy:
         inference_db(args)
 
@@ -33,6 +37,7 @@ if __name__ == "__main__":
     parser.add_argument('--cluster', help="cluster video frame", action='store_true')
     parser.add_argument('--cluster_name', help="cluster name for saving images", type=str, default='')
     parser.add_argument('--save',help="save frame in a file",action='store_true')
+    parser.add_argument('--keras',help="use keras model",action="store_true")
     parser.add_argument('--classifier', help='classifier filename', type=str, default='')
     parser.add_argument('--db_check', help='check gallery status', action='store_true')
     parser.add_argument('--db_inspect', help="inspect database status", action='store_true')
