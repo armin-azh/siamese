@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 
 
 def normalize_input(image):
@@ -13,3 +14,9 @@ def normalize_input(image):
     std_adj = np.maximum(std, 1.0 / np.sqrt(image.size))
     image = np.multiply(np.subtract(image, mean), 1 / std_adj)
     return image
+
+
+def cvt_to_gray(im):
+    im = cv2.cvtColor(im, cv2.COLOR_RGB2GRAY)
+    im = np.dstack([im, im, im])
+    return im

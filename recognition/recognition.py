@@ -11,7 +11,7 @@ import configparser
 import cv2
 import numpy as np
 from .utils import load_model, parse_status, FPS
-from .preprocessing import normalize_input
+from .preprocessing import normalize_input,cvt_to_gray
 from .cluster import k_mean_clustering
 from .distance import bulk_cosine_similarity
 from settings import BASE_DIR
@@ -109,7 +109,8 @@ def face_recognition(args):
                             faces = list()
 
                         boxes = []
-                        for face, bbox in detector.extract_faces(frame, frame_width * frame_height):
+                        gray_frame = cvt_to_gray(frame)
+                        for face, bbox in detector.extract_faces(gray_frame, frame_width * frame_height):
                             faces.append(normalize_input(face))
                             boxes.append(bbox)
                             if args.cluster:
@@ -145,9 +146,11 @@ def face_recognition(args):
 
                             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                             cv2.imshow(parse_status(args), frame)
+                            cv2.imshow('gray',gray_frame)
                         else:
                             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                             cv2.imshow(parse_status(args), frame)
+                            cv2.imshow('gray', gray_frame)
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
                 fps.stop()

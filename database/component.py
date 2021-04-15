@@ -14,6 +14,7 @@ from itertools import chain
 from sklearn import preprocessing
 from .utils import extract_filename, tabulate_print
 from .npy_builder import builder
+from PIL import ImageOps
 
 DT_SIZE = Tuple[int, int]
 conf = configparser.ConfigParser()
@@ -48,13 +49,19 @@ class Image:
         im = PilImage.open(self._im_path)
         return self._preprocessing(im, resize)
 
-    def _preprocessing(self, im, resize: bool = False):
+    def _preprocessing(self, im, resize: bool = False, grayscale=True):
         """
         :param im: pillow image datatype
         :return:
         """
         if resize:
             im = im.resize(self.__size)
+
+        if grayscale:
+            im = ImageOps.grayscale(im)
+            im = np.array(im)
+            im = np.dstack([im, im, im])
+
         im = np.array(im)
         mean = np.mean(im)
         std = np.std(im)
