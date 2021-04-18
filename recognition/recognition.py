@@ -50,7 +50,7 @@ def face_recognition(args):
     # check cluster name existence
     if args.cluster:
         if args.cluster_name and database.check_name_exists(args.cluster_name):
-            raise ValueError(f" {args.cluster_name} is exists.")
+            print(f" {args.cluster_name} is exists.")
 
     if (args.realtime or args.video) and args.eval_method == "cosine":
         print("$ loading embeddings ...")
@@ -111,7 +111,7 @@ def face_recognition(args):
                             faces = list()
 
                         boxes = []
-                        gray_frame = cvt_to_gray(frame)
+                        gray_frame = cvt_to_gray(frame) if not args.cluster else frame
                         for face, bbox in detector.extract_faces(gray_frame, frame_width * frame_height):
                             faces.append(normalize_input(face))
                             boxes.append(bbox)
@@ -146,13 +146,15 @@ def face_recognition(args):
                             else:
                                 break
 
-                            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                            cv2.imshow(parse_status(args), frame)
-                            cv2.imshow('gray', gray_frame)
+                            if not args.cluster:
+                                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                                cv2.imshow(parse_status(args), frame)
+                                cv2.imshow('gray', gray_frame)
                         else:
-                            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                            cv2.imshow(parse_status(args), frame)
-                            cv2.imshow('gray', gray_frame)
+                            if not args.cluster:
+                                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                                cv2.imshow(parse_status(args), frame)
+                                cv2.imshow('gray', gray_frame)
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
                 fps.stop()
@@ -290,6 +292,7 @@ def face_recognition_on_keras(args):
     if args.cluster:
         print('\n$ Cluster embeddings')
         faces = np.array(faces)
+        print(faces)
         if faces.shape[0] > 0:
             embedded_array = model.predict(faces)
             clusters = k_mean_clustering(embeddings=embedded_array,
