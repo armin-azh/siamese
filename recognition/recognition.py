@@ -13,7 +13,7 @@ import numpy as np
 from .utils import load_model, parse_status, FPS
 from .preprocessing import normalize_input,cvt_to_gray
 from .cluster import k_mean_clustering
-from .distance import bulk_cosine_similarity
+from .distance import bulk_cosine_similarity,bulk_cosine_similarity_v2
 from settings import BASE_DIR
 from face_detection.detector import FaceDetector
 import tensorflow as tf
@@ -258,7 +258,7 @@ def face_recognition_on_keras(args):
                 embedded_array = model.predict(faces)
 
                 if args.eval_method == 'cosine':
-                    dists = bulk_cosine_similarity(embedded_array, embeds)
+                    dists = bulk_cosine_similarity_v2(embedded_array, embeds)
                     bs_similarity_idx = np.argmin(dists, axis=1)
                     bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
                     pred_labels = np.array(labels)[bs_similarity_idx]

@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 def cosine_similarity(embedding_1, embedding_2):
@@ -72,6 +73,10 @@ def bulk_euclidean_distance(embeddings_1, embeddings_2):
     return np.array(dists)
 
 
+def bulk_cosine_similarity_v2(embeddings_1, embeddings_2):
+    return cosine_similarity(embeddings_1, embeddings_2)
+
+
 def score(probabilities, distances, db_labels):
     """
 
@@ -83,5 +88,3 @@ def score(probabilities, distances, db_labels):
     scores = np.zeros((probabilities.shape[0],))
     for idx in range(distances.shape[0]):
         pass
-
-
