@@ -2,9 +2,10 @@ import argparse
 import configparser
 import os
 import pathlib
-from recognition.recognition import face_recognition, face_recognition_on_keras,test_recognition
+from recognition.recognition import face_recognition, face_recognition_on_keras, test_recognition
 from recognition.utils import convert_computation_graph_to_keras_model
 from database.component import inference_db
+from tools.computation_graph import computation_graph_inspect, pb_to_tensorboard
 from settings import BASE_DIR
 
 
@@ -29,6 +30,19 @@ def main(args):
     elif args.test:
         test_recognition(args)
 
+    elif args.cg:
+        if args.cg_inspect_ops or args.cg_inspect_nodes or args.cg_inspect_vars or args.cg_inspect_tensors or args.cg_inspect_placeholders:
+            flags = {
+                "node": args.cg_inspect_nodes,
+                "ops": args.cg_inspect_ops,
+                "vars": args.cg_inspect_vars,
+                "tensors": args.cg_inspect_tensors,
+                "placeholders": args.cg_inspect_placeholders
+            }
+            computation_graph_inspect( os.path.join(BASE_DIR, args.cg_cvt_graph_pb),flags)
+        else:
+            pb_to_tensorboard(os.path.join(BASE_DIR, args.cg_log_dir), os.path.join(BASE_DIR, args.cg_cvt_graph_pb))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -49,6 +63,14 @@ if __name__ == "__main__":
     parser.add_argument('--cnv_to_lite', help='convert keras to lite', action='store_true')
     parser.add_argument('--test', help="test a prob set on the gallery set", action='store_true')
     parser.add_argument('--test_dir', help="test directory", default='', type=str)
+    parser.add_argument('--cg', help='computation graph flag', action='store_true')
+    parser.add_argument('--cg_cvt_graph_pb', help='model pb to convert', default='', type=str)
+    parser.add_argument('--cg_log_dir', help='log dir to store converted graph', default='', type=str)
+    parser.add_argument('--cg_inspect_ops', help="operations in computation graph", action='store_true')
+    parser.add_argument('--cg_inspect_nodes', help="nodes in computation graph", action='store_true')
+    parser.add_argument('--cg_inspect_vars', help="variables in computation graph", action='store_true')
+    parser.add_argument('--cg_inspect_tensors', help="tensors in computation graph", action='store_true')
+    parser.add_argument('--cg_inspect_placeholders', help="placeholders in computation graph", action='store_true')
 
     args = parser.parse_args()
 
