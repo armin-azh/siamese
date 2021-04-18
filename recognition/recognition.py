@@ -112,7 +112,7 @@ def face_recognition(args):
 
                         boxes = []
                         gray_frame = cvt_to_gray(frame) if not args.cluster else frame
-                        for face, bbox in detector.extract_faces(gray_frame, frame_width * frame_height):
+                        for face, bbox in detector.extract_faces(gray_frame, frame_width , frame_height):
                             faces.append(normalize_input(face))
                             boxes.append(bbox)
                             if args.cluster:
@@ -137,7 +137,7 @@ def face_recognition(args):
                                                                                                        i] < float(
                                         default_conf.get("similarity_threshold")) else 'unrecognised'
                                     color = (243, 32, 19) if status == 'unrecognised' else (0, 255, 0)
-                                    frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
+                                    frame = cv2.rectangle(frame, (x, y), ( w, h), color, 1)
 
                                     cv2.putText(frame,
                                                 "{} {:.2f}".format(status[0],

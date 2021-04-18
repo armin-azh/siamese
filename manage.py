@@ -39,7 +39,7 @@ def main(args):
                 "tensors": args.cg_inspect_tensors,
                 "placeholders": args.cg_inspect_placeholders
             }
-            computation_graph_inspect( os.path.join(BASE_DIR, args.cg_cvt_graph_pb),flags)
+            computation_graph_inspect(os.path.join(BASE_DIR, args.cg_cvt_graph_pb), flags)
         else:
             pb_to_tensorboard(os.path.join(BASE_DIR, args.cg_log_dir), os.path.join(BASE_DIR, args.cg_cvt_graph_pb))
 
