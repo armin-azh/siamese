@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 
 import datetime
+import time
+import pathlib
 import tensorflow as tf
 from tensorflow.python.platform import gfile
 import os
@@ -159,10 +161,10 @@ def convert_computation_graph_to_keras_model(model_dir, save_dir, lite: bool = T
         convertor = tf.compat.v1.lite.TocoConverter.from_keras_model_file(o_model_path)
         convertor.post_training_quantize = True
         tf_lite_model = convertor.convert()
-        with open(os.path.join(o_model_dir,lite_model_filename),'wb') as o_file:
+        with open(os.path.join(o_model_dir, lite_model_filename), 'wb') as o_file:
             o_file.write(tf_lite_model)
 
-        print(f"$ lite tensorflow model created {os.path.join(o_model_dir,lite_model_filename)}")
+        print(f"$ lite tensorflow model created {os.path.join(o_model_dir, lite_model_filename)}")
 
 
 class FPS:
@@ -172,16 +174,29 @@ class FPS:
         self._n_frame = 0
 
     def start(self):
-        self._start=datetime.datetime.now()
+        self._start = datetime.datetime.now()
 
     def stop(self):
         self._end = datetime.datetime.now()
 
     def update(self):
-        self._n_frame +=1
+        self._n_frame += 1
 
     def elapsed(self):
         return (self._end - self._start).total_seconds()
 
     def fps(self):
         return self._n_frame / self.elapsed()
+
+
+class Timer:
+    def __init__(self):
+        self._start = None
+
+    def start(self):
+        self._start = time.time()
+
+    def end(self):
+        end = time.time() - self._start
+        self._start = time.time()
+        return end

@@ -10,19 +10,20 @@ import time
 import configparser
 import cv2
 import numpy as np
-from .utils import load_model, parse_status, FPS
-from .preprocessing import normalize_input,cvt_to_gray
+from .utils import load_model, parse_status, FPS, Timer
+from .preprocessing import normalize_input, cvt_to_gray
 from .cluster import k_mean_clustering
-from .distance import bulk_cosine_similarity,bulk_cosine_similarity_v2
+from .distance import bulk_cosine_similarity, bulk_cosine_similarity_v2
 from settings import BASE_DIR
 from face_detection.detector import FaceDetector
 import tensorflow as tf
 from tensorflow.keras.models import load_model as h5_load
-from database.component import ImageDatabase
+from database.component import ImageDatabase, parse_test_dir
 from settings import BASE_DIR
 from PIL import Image
 from sklearn import preprocessing
 from datetime import datetime
+from tqdm import tqdm
 
 
 def face_recognition(args):
@@ -87,7 +88,8 @@ def face_recognition(args):
 
                     if not os.path.exists(filename):
                         os.makedirs(filename)
-                    filename = os.path.join(filename, parse_status() + datetime.strftime(datetime.now(), '%H%M%S') + ".avi")
+                    filename = os.path.join(filename,
+                                            parse_status() + datetime.strftime(datetime.now(), '%H%M%S') + ".avi")
                     out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'XVID'), )
 
                 fps = FPS()
@@ -146,7 +148,7 @@ def face_recognition(args):
 
                             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                             cv2.imshow(parse_status(args), frame)
-                            cv2.imshow('gray',gray_frame)
+                            cv2.imshow('gray', gray_frame)
                         else:
                             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                             cv2.imshow(parse_status(args), frame)
@@ -296,3 +298,77 @@ def face_recognition_on_keras(args):
 
     print("$ fps: {:.2f}".format(fps.fps()))
     print("$ elapsed time: {:.2f}".format(fps.elapsed()))
+
+
+def test_recognition(args):
+    """
+    test prob set on gallery set
+    :param args:
+    :return: None
+    """
+    # memory growth
+    tf.compat.v1.disable_eager_execution()
+    physical_devices = tf.config.list_physical_devices('GPU')
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    if physical_devices:
+        print(f"$ {len(physical_devices)} Devices has been detected.")
+
+    conf = configparser.ConfigParser()
+    conf.read(os.path.join(BASE_DIR, "conf.ini"))
+    model_conf = conf['Model']
+    gallery_conf = conf['Gallery']
+    test_dir = args.test_dir
+
+    print("$ Test mode ...")
+    print(f"$ Test directory {test_dir}")
+
+    test_images, *data = parse_test_dir(test_dir)
+    test_labels, ids = data
+    test_label_encoder = preprocessing.LabelEncoder()
+    test_label_encoder.fit(ids)
+
+    print(f"$ total classes: {len(ids)}")
+    print(f"$ total images: {len(test_labels)}")
+
+    print("$ loading embeddings ...")
+
+    database = ImageDatabase(db_path=gallery_conf.get("database_path"))
+    gallery_embeds, gallery_labels = database.bulk_embeddings()
+    encoded_labels = preprocessing.LabelEncoder()
+    encoded_labels.fit(list(set(gallery_labels)))
+    gallery_labels = encoded_labels.transform(gallery_labels)
+
+    print("$ loading images in memory")
+    test_images_memory = list()
+    for im in tqdm(test_images):
+        test_images_memory.append(im.read_image_file(grayscale=False, resize=True))
+
+    test_images_memory = np.array(test_images_memory)
+
+    timer = Timer()
+    with tf.device('/device:gpu:0'):
+        with tf.Graph().as_default():
+            with tf.compat.v1.Session() as sess:
+                print(f"$ Initializing computation graph with {model_conf.get('facenet')} pretrained model.")
+                load_model(os.path.join(BASE_DIR, model_conf.get('facenet')))
+                print("$ Model has been loaded.")
+
+                input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
+                embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
+                phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
+
+                feed_dic = {phase_train: False, input_plc: test_images_memory}
+                timer.start()
+                test_embeddings = sess.run(embeddings, feed_dic)
+                print(f"$ embeddings created at {timer.end()}")
+
+                test_embeddings = np.array(test_embeddings)
+                timer.start()
+                dists = bulk_cosine_similarity(test_embeddings, gallery_embeds)
+                print(f"$ distances created at {timer.end()}")
+
+                dists = np.array(dists)
+                bs_similarity_idx = np.argmin(dists, axis=1)
+
+                accuracy = np.mean(np.equal(test_label_encoder.transform(test_labels), np.array(gallery_labels)[bs_similarity_idx]))
+                print(f"$ accuracy {accuracy*100}")

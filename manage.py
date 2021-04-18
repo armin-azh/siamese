@@ -2,7 +2,7 @@ import argparse
 import configparser
 import os
 import pathlib
-from recognition.recognition import face_recognition, face_recognition_on_keras
+from recognition.recognition import face_recognition, face_recognition_on_keras,test_recognition
 from recognition.utils import convert_computation_graph_to_keras_model
 from database.component import inference_db
 from settings import BASE_DIR
@@ -26,6 +26,9 @@ def main(args):
         convert_computation_graph_to_keras_model(model_dir=m_path.parent, save_dir=m_path.parent.parent,
                                                  lite=args.cnv_to_lite)
 
+    elif args.test:
+        test_recognition(args)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -36,14 +39,16 @@ if __name__ == "__main__":
                         default='cosine')
     parser.add_argument('--cluster', help="cluster video frame", action='store_true')
     parser.add_argument('--cluster_name', help="cluster name for saving images", type=str, default='')
-    parser.add_argument('--save',help="save frame in a file",action='store_true')
-    parser.add_argument('--keras',help="use keras model",action="store_true")
+    parser.add_argument('--save', help="save frame in a file", action='store_true')
+    parser.add_argument('--keras', help="use keras model", action="store_true")
     parser.add_argument('--classifier', help='classifier filename', type=str, default='')
     parser.add_argument('--db_check', help='check gallery status', action='store_true')
     parser.add_argument('--db_inspect', help="inspect database status", action='store_true')
     parser.add_argument('--db_build_npy', help='build npy embedding', action='store_true')
     parser.add_argument('--cnv_to_keras', help='convert computation graph to keras', action='store_true')
     parser.add_argument('--cnv_to_lite', help='convert keras to lite', action='store_true')
+    parser.add_argument('--test', help="test a prob set on the gallery set", action='store_true')
+    parser.add_argument('--test_dir', help="test directory", default='', type=str)
 
     args = parser.parse_args()
 

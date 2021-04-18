@@ -41,13 +41,13 @@ class Image:
     def get_size(cls) -> DT_SIZE:
         return cls.__size
 
-    def read_image_file(self, resize: bool = False):
+    def read_image_file(self, resize: bool = False, grayscale=True):
         """
         read image file from file
         :return:
         """
         im = PilImage.open(self._im_path)
-        return self._preprocessing(im, resize)
+        return self._preprocessing(im, resize, grayscale)
 
     def _preprocessing(self, im, resize: bool = False, grayscale=True):
         """
@@ -361,3 +361,25 @@ def inference_db(args):
 
     elif args.db_build_npy:
         db.build_npy()
+
+
+def parse_test_dir(dir_path):
+    """
+    parse test directory
+    :param dir_path: str
+    :return:
+    """
+    base = pathlib.Path(dir_path)
+    labels = []
+    images = []
+    ids = []
+    for ch in base.glob("**"):
+        if base.stem != ch.stem:
+            ims = list()
+            for im in ch.glob("**/*.jpg"):
+                ims.append(Image(im_path=str(im)))
+                # ims.append(im)
+            images += ims
+            labels += [ch.stem] * len(ims)
+            ids.append(ch.stem)
+    return images, labels, ids
