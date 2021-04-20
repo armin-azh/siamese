@@ -6,6 +6,7 @@ from recognition.recognition import face_recognition, face_recognition_on_keras,
 from recognition.utils import convert_computation_graph_to_keras_model
 from database.component import inference_db
 from tools.computation_graph import computation_graph_inspect, pb_to_tensorboard
+from tools.shadow import add_shadow
 from settings import BASE_DIR
 
 
@@ -43,6 +44,9 @@ def main(args):
         else:
             pb_to_tensorboard(os.path.join(BASE_DIR, args.cg_log_dir), os.path.join(BASE_DIR, args.cg_cvt_graph_pb))
 
+    elif args.im_mani and (args.im_darker or args.im_brighter):
+        add_shadow(args)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -71,6 +75,10 @@ if __name__ == "__main__":
     parser.add_argument('--cg_inspect_vars', help="variables in computation graph", action='store_true')
     parser.add_argument('--cg_inspect_tensors', help="tensors in computation graph", action='store_true')
     parser.add_argument('--cg_inspect_placeholders', help="placeholders in computation graph", action='store_true')
+    parser.add_argument('--im_mani', help="image manipulation", action='store_true')
+    parser.add_argument('--im_darker', help="darker images", action='store_true')
+    parser.add_argument('--im_brighter', help="brighter images", action='store_true')
+    parser.add_argument('--im_save', help="save manipulated images", default="", type=str)
 
     args = parser.parse_args()
 
