@@ -70,7 +70,8 @@ def face_recognition(args):
                 phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
 
                 detector = FaceDetector(sess=sess)
-                print("$ MTCNN face detector has been loaded.")
+                detector_type = detector_conf.get("type")
+                print(f"$ {detector_type} face detector has been loaded.")
 
                 cap = cv2.VideoCapture(0 if args.realtime else args.video_file)
 
@@ -137,7 +138,11 @@ def face_recognition(args):
                                                                                                        i] < float(
                                         default_conf.get("similarity_threshold")) else 'unrecognised'
                                     color = (243, 32, 19) if status == 'unrecognised' else (0, 255, 0)
-                                    frame = cv2.rectangle(frame, (x, y), ( w, h), color, 1)
+
+                                    if detector_type == detector.DT_MTCNN:
+                                        frame = cv2.rectangle(frame, (x, y), (x+w, y+h), color, 1)
+                                    elif detector_type == detector.DT_RES10:
+                                        frame = cv2.rectangle(frame, (x, y), (w, h), color, 1)
 
                                     cv2.putText(frame,
                                                 "{} {:.2f}".format(status[0],
