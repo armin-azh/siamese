@@ -12,10 +12,13 @@ def im_darken(im):
     alpha = np.random.uniform(0.0, 0.4)
     px = np.random.uniform(0.4, 1.0)
     py = np.random.uniform(0.4, 1.0)
-    for y in range(int(h * px)):
-        for x in range(int(w * py)):
-            for c in range(d):
-                dark_im[y, x, c] = np.clip(alpha * im[y, x, c], 0, 255)
+    dark_im[:int(h * px), :int(w * py), 0] = np.clip(dark_im[:int(h * px), :int(w * py), 0] * alpha, 0, 255)
+    dark_im[:int(h * px), :int(w * py), 1] = np.clip(dark_im[:int(h * px), :int(w * py), 1] * alpha, 0, 255)
+    dark_im[:int(h * px), :int(w * py), 2] = np.clip(dark_im[:int(h * px), :int(w * py), 2] * alpha, 0, 255)
+    # for y in range(int(h * px)):
+    #     for x in range(int(w * py)):
+    #         for c in range(d):
+    #             dark_im[y, x, c] = np.clip(alpha * im[y, x, c], 0, 255)
     return dark_im
 
 
@@ -25,10 +28,13 @@ def im_lighten(im):
     alpha = np.random.uniform(2, 10)
     px = np.random.uniform(0.4, 1.0)
     py = np.random.uniform(0.4, 1.0)
-    for y in range(int(h * px)):
-        for x in range(int(w * py)):
-            for c in range(d):
-                dark_im[y, x, c] = np.clip(alpha * im[y, x, c], 0, 255)
+    dark_im[:int(h * px), :int(w * py), 0] = np.clip(dark_im[:int(h * px), :int(w * py), 0] * alpha, 0, 255)
+    dark_im[:int(h * px), :int(w * py), 1] = np.clip(dark_im[:int(h * px), :int(w * py), 1] * alpha, 0, 255)
+    dark_im[:int(h * px), :int(w * py), 2] = np.clip(dark_im[:int(h * px), :int(w * py), 2] * alpha, 0, 255)
+    # for y in range(int(h * px)):
+    #     for x in range(int(w * py)):
+    #         for c in range(d):
+    #             dark_im[y, x, c] = np.clip(alpha * im[y, x, c], 0, 255)
     return dark_im
 
 
