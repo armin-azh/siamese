@@ -200,3 +200,18 @@ class Timer:
         end = time.time() - self._start
         self._start = time.time()
         return end
+
+
+class Counter:
+    def __init__(self, limit):
+        self._cnt = 0
+        self._limit = limit
+
+    def next(self):
+        if self._cnt == self._limit:
+            self._cnt = 0
+        else:
+            self._cnt += 1
+
+    def __call__(self, *args, **kwargs):
+        return self._cnt
