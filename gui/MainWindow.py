@@ -51,6 +51,7 @@ class Ui_MainWindow(object):
         self.Btn_Toggle = QtWidgets.QPushButton(self.frame_toggle)
         self.Btn_Toggle.setStyleSheet("color: rgb(255, 255, 255);\n"
 "border: 0px solid;")
+        self.Btn_Toggle.setText("")
         self.Btn_Toggle.setObjectName("Btn_Toggle")
         self.verticalLayout_2.addWidget(self.Btn_Toggle)
         self.horizontalLayout.addWidget(self.frame_toggle)
@@ -88,7 +89,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_4.setSpacing(0)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.btn_identity = QtWidgets.QPushButton(self.frame_top_menus)
-        self.btn_identity.setMinimumSize(QtCore.QSize(0, 40))
+        self.btn_identity.setMinimumSize(QtCore.QSize(0, 50))
         self.btn_identity.setStyleSheet("QPushButton{\n"
 "    color: rgb(255, 255, 255);\n"
 "    background-color: rgb(35, 35, 35);\n"
@@ -100,7 +101,7 @@ class Ui_MainWindow(object):
         self.btn_identity.setObjectName("btn_identity")
         self.verticalLayout_4.addWidget(self.btn_identity)
         self.btn_setting = QtWidgets.QPushButton(self.frame_top_menus)
-        self.btn_setting.setMinimumSize(QtCore.QSize(0, 40))
+        self.btn_setting.setMinimumSize(QtCore.QSize(0, 50))
         self.btn_setting.setStyleSheet("QPushButton{\n"
 "    color: rgb(255, 255, 255);\n"
 "    background-color: rgb(35, 35, 35);\n"
@@ -112,7 +113,7 @@ class Ui_MainWindow(object):
         self.btn_setting.setObjectName("btn_setting")
         self.verticalLayout_4.addWidget(self.btn_setting)
         self.btn_camera = QtWidgets.QPushButton(self.frame_top_menus)
-        self.btn_camera.setMinimumSize(QtCore.QSize(0, 40))
+        self.btn_camera.setMinimumSize(QtCore.QSize(0, 50))
         self.btn_camera.setStyleSheet("QPushButton{\n"
 "    color: rgb(255, 255, 255);\n"
 "    background-color: rgb(35, 35, 35);\n"
@@ -135,6 +136,11 @@ class Ui_MainWindow(object):
         self.verticalLayout_6.setObjectName("verticalLayout_6")
         self.btn_start = QtWidgets.QPushButton(self.frame_buttom_menues)
         self.btn_start.setMinimumSize(QtCore.QSize(0, 40))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setBold(False)
+        font.setWeight(50)
+        self.btn_start.setFont(font)
         self.btn_start.setStyleSheet("QPushButton{\n"
 "    color: rgb(255, 255, 255);\n"
 "    background-color: rgb(35, 35, 35);\n"
@@ -197,6 +203,32 @@ class Ui_MainWindow(object):
         self.Pages.addWidget(self.camera_page)
         self.setting_page = QtWidgets.QWidget()
         self.setting_page.setObjectName("setting_page")
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.setting_page)
+        self.horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_4.setSpacing(0)
+        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        self.setting_left_frame = QtWidgets.QFrame(self.setting_page)
+        self.setting_left_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.setting_left_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.setting_left_frame.setObjectName("setting_left_frame")
+        self.gridLayout = QtWidgets.QGridLayout(self.setting_left_frame)
+        self.gridLayout.setObjectName("gridLayout")
+        self.setting_table = QtWidgets.QTableWidget(self.setting_left_frame)
+        self.setting_table.setMaximumSize(QtCore.QSize(500, 500))
+        self.setting_table.setStyleSheet("background-color: rgb(255, 255, 255);")
+        self.setting_table.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.setting_table.setGridStyle(QtCore.Qt.NoPen)
+        self.setting_table.setObjectName("setting_table")
+        self.setting_table.setColumnCount(3)
+        self.setting_table.setRowCount(0)
+        item = QtWidgets.QTableWidgetItem()
+        self.setting_table.setHorizontalHeaderItem(0, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.setting_table.setHorizontalHeaderItem(1, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.setting_table.setHorizontalHeaderItem(2, item)
+        self.gridLayout.addWidget(self.setting_table, 0, 0, 1, 1)
+        self.horizontalLayout_4.addWidget(self.setting_left_frame)
         self.Pages.addWidget(self.setting_page)
         self.identity_page = QtWidgets.QWidget()
         self.identity_page.setObjectName("identity_page")
@@ -266,17 +298,22 @@ class Ui_MainWindow(object):
         self.actionExit.setObjectName("actionExit")
 
         self.retranslateUi(MainWindow)
-        self.Pages.setCurrentIndex(2)
+        self.Pages.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Face Recognition"))
-        self.Btn_Toggle.setText(_translate("MainWindow", "="))
         self.btn_identity.setText(_translate("MainWindow", "Identity"))
         self.btn_setting.setText(_translate("MainWindow", "Setting"))
         self.btn_camera.setText(_translate("MainWindow", "Camera"))
         self.btn_start.setText(_translate("MainWindow", "Start"))
+        item = self.setting_table.horizontalHeaderItem(0)
+        item.setText(_translate("MainWindow", "Header"))
+        item = self.setting_table.horizontalHeaderItem(1)
+        item.setText(_translate("MainWindow", "Name"))
+        item = self.setting_table.horizontalHeaderItem(2)
+        item.setText(_translate("MainWindow", "Value"))
         self.actionIdentity.setText(_translate("MainWindow", "New Identity"))
         self.actionNew_Database.setText(_translate("MainWindow", "New Gallery"))
         self.actionProject_Settings.setText(_translate("MainWindow", "settings"))
