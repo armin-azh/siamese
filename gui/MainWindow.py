@@ -125,7 +125,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_4.addWidget(self.btn_camera)
         self.verticalLayout_3.addWidget(self.frame_top_menus, 0, QtCore.Qt.AlignTop)
         self.frame_buttom_menues = QtWidgets.QFrame(self.frame_left_menu)
-        self.frame_buttom_menues.setMinimumSize(QtCore.QSize(0, 40))
+        self.frame_buttom_menues.setMinimumSize(QtCore.QSize(0, 120))
         self.frame_buttom_menues.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frame_buttom_menues.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_buttom_menues.setObjectName("frame_buttom_menues")
@@ -146,6 +146,34 @@ class Ui_MainWindow(object):
 "}")
         self.btn_start.setObjectName("btn_start")
         self.verticalLayout_6.addWidget(self.btn_start)
+        self.btn_start_record = QtWidgets.QPushButton(self.frame_buttom_menues)
+        self.btn_start_record.setMinimumSize(QtCore.QSize(0, 40))
+        self.btn_start_record.setStyleSheet("QPushButton{\n"
+"    color: rgb(255, 255, 255);\n"
+"    background-color: rgb(35, 35, 35);\n"
+"    border: 0px solid;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"    background-color: rgb(45, 45, 45);\n"
+"}")
+        self.btn_start_record.setText("")
+        self.btn_start_record.setObjectName("btn_start_record")
+        self.verticalLayout_6.addWidget(self.btn_start_record)
+        self.btn_stop_record = QtWidgets.QPushButton(self.frame_buttom_menues)
+        self.btn_stop_record.setMinimumSize(QtCore.QSize(0, 40))
+        self.btn_stop_record.setStyleSheet("QPushButton{\n"
+"    color: rgb(255, 255, 255);\n"
+"    background-color: rgb(35, 35, 35);\n"
+"    border: 0px solid;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"    background-color: rgb(45, 45, 45);\n"
+"}")
+        self.btn_stop_record.setText("")
+        self.btn_stop_record.setObjectName("btn_stop_record")
+        self.verticalLayout_6.addWidget(self.btn_stop_record)
         self.verticalLayout_3.addWidget(self.frame_buttom_menues, 0, QtCore.Qt.AlignBottom)
         self.horizontalLayout_2.addWidget(self.frame_left_menu)
         self.frame_pages = QtWidgets.QFrame(self.Content)
@@ -172,6 +200,46 @@ class Ui_MainWindow(object):
         self.Pages.addWidget(self.setting_page)
         self.identity_page = QtWidgets.QWidget()
         self.identity_page.setObjectName("identity_page")
+        self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.identity_page)
+        self.horizontalLayout_3.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_3.setSpacing(0)
+        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.identity_form_frame = QtWidgets.QFrame(self.identity_page)
+        self.identity_form_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.identity_form_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.identity_form_frame.setObjectName("identity_form_frame")
+        self.horizontalLayout_3.addWidget(self.identity_form_frame)
+        self.idnetity_camera_frame = QtWidgets.QFrame(self.identity_page)
+        self.idnetity_camera_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.idnetity_camera_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.idnetity_camera_frame.setObjectName("idnetity_camera_frame")
+        self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.idnetity_camera_frame)
+        self.verticalLayout_7.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_7.setSpacing(0)
+        self.verticalLayout_7.setObjectName("verticalLayout_7")
+        self.iden_top_sub_frame = QtWidgets.QFrame(self.idnetity_camera_frame)
+        self.iden_top_sub_frame.setMinimumSize(QtCore.QSize(60, 0))
+        self.iden_top_sub_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.iden_top_sub_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.iden_top_sub_frame.setObjectName("iden_top_sub_frame")
+        self.verticalLayout_9 = QtWidgets.QVBoxLayout(self.iden_top_sub_frame)
+        self.verticalLayout_9.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_9.setSpacing(0)
+        self.verticalLayout_9.setObjectName("verticalLayout_9")
+        self.label_record_camera = QtWidgets.QLabel(self.iden_top_sub_frame)
+        self.label_record_camera.setMinimumSize(QtCore.QSize(100, 0))
+        self.label_record_camera.setMaximumSize(QtCore.QSize(460, 300))
+        self.label_record_camera.setStyleSheet("")
+        self.label_record_camera.setText("")
+        self.label_record_camera.setObjectName("label_record_camera")
+        self.verticalLayout_9.addWidget(self.label_record_camera)
+        self.verticalLayout_7.addWidget(self.iden_top_sub_frame)
+        self.iden_buttom_sub_frame = QtWidgets.QFrame(self.idnetity_camera_frame)
+        self.iden_buttom_sub_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.iden_buttom_sub_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.iden_buttom_sub_frame.setObjectName("iden_buttom_sub_frame")
+        self.verticalLayout_7.addWidget(self.iden_buttom_sub_frame)
+        self.horizontalLayout_3.addWidget(self.idnetity_camera_frame)
         self.Pages.addWidget(self.identity_page)
         self.start_page = QtWidgets.QWidget()
         self.start_page.setObjectName("start_page")
@@ -198,7 +266,7 @@ class Ui_MainWindow(object):
         self.actionExit.setObjectName("actionExit")
 
         self.retranslateUi(MainWindow)
-        self.Pages.setCurrentIndex(3)
+        self.Pages.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

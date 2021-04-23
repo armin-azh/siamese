@@ -1,6 +1,7 @@
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt
 from MainWindow import *
 
 import cv2
@@ -19,6 +20,8 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.setWindowIcon(QIcon("./icons/camera.png"))
+        self.ui.btn_start_record.setIcon(QIcon("./icons/start.png"))
+        self.ui.btn_stop_record.setIcon(QIcon("./icons/stop.png"))
         self.setFixedSize(self.size())
 
         self.ui.btn_camera.clicked.connect(self.on_press_camera_btn)
@@ -36,16 +39,26 @@ class MainWindow(QMainWindow):
     def frame_updater_slot(self, image):
         self.ui.image_label_start.setPixmap(QtGui.QPixmap.fromImage(image))
 
+    def frame_update_record_slot(self,image):
+        image = image.scaled(460,300,Qt.KeepAspectRatio)
+        self.ui.label_record_camera.setPixmap(QtGui.QPixmap.fromImage(image))
+
     def on_press_camera_btn(self):
         self.ui.Pages.setCurrentIndex(0)
 
     def on_press_identity_btn(self):
         self.ui.Pages.setCurrentIndex(2)
+        self.setWindowTitle("Identity")
+        self.frame_streamer.start()
+        self.frame_streamer.image_update.connect(self.frame_update_record_slot)
+
 
     def on_press_setting_btn(self):
         self.ui.Pages.setCurrentIndex(1)
 
     def on_clicked_start_btn(self):
+        self.setWindowTitle("Recognizing")
+        self.ui.Pages.setCurrentIndex(3)
         if self.CAMERA_STATUS.get(self.ui.btn_start.text().lower()):
             self.ui.btn_setting.setEnabled(False)
             self.ui.btn_camera.setEnabled(False)
@@ -56,6 +69,10 @@ class MainWindow(QMainWindow):
         else:
             self.ui.btn_start.setText(self.CAMERA_START)
             self.frame_streamer.stop()
+            self.ui.btn_setting.setEnabled(True)
+            self.ui.btn_camera.setEnabled(True)
+            self.ui.btn_identity.setEnabled(True)
+            self.ui.btn_start.setText(self.CAMERA_START)
 
 
 class VideoSteamer(QtCore.QThread):
