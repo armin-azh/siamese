@@ -7,6 +7,13 @@ import cv2
 
 
 class MainWindow(QMainWindow):
+    CAMERA_STATUS = {
+        "start":True,
+        "stop":False
+    }
+    CAMERA_START = 'start'
+    CAMERA_STOP = 'stop'
+
     def __init__(self):
         QMainWindow.__init__(self)
         self.ui = Ui_MainWindow()
@@ -17,7 +24,7 @@ class MainWindow(QMainWindow):
         self.ui.btn_camera.clicked.connect(self.on_press_camera_btn)
         self.ui.btn_identity.clicked.connect(self.on_press_identity_btn)
         self.ui.btn_setting.clicked.connect(self.on_press_setting_btn)
-        self.ui.btn_start.clicked.connect(self.on_press_start_btn)
+        self.ui.btn_start.clicked.connect(self.on_clicked_start_btn)
 
         self.camera = cv2.VideoCapture(0)
         self.camera_timer = QtCore.QTimer()
@@ -38,9 +45,17 @@ class MainWindow(QMainWindow):
     def on_press_setting_btn(self):
         self.ui.Pages.setCurrentIndex(1)
 
-    def on_press_start_btn(self):
-        self.frame_streamer.start()
-        self.frame_streamer.image_update.connect(self.frame_updater_slot)
+    def on_clicked_start_btn(self):
+        if self.CAMERA_STATUS.get(self.ui.btn_start.text().lower()):
+            self.ui.btn_setting.setEnabled(False)
+            self.ui.btn_camera.setEnabled(False)
+            self.ui.btn_identity.setEnabled(False)
+            self.ui.btn_start.setText(self.CAMERA_STOP)
+            self.frame_streamer.start()
+            self.frame_streamer.image_update.connect(self.frame_updater_slot)
+        else:
+            self.ui.btn_start.setText(self.CAMERA_START)
+            self.frame_streamer.stop()
 
 
 class VideoSteamer(QtCore.QThread):
@@ -57,6 +72,7 @@ class VideoSteamer(QtCore.QThread):
                 frame = cv2.resize(frame, (640, 480))
                 qt_frame = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
                 self.image_update.emit(qt_frame)
+        cap.release()
 
     def stop(self):
         self.thread_active = False
