@@ -11,6 +11,9 @@ import cv2
 import numpy as np
 from settings import BASE_DIR, SETTINGS_HEADER
 
+
+from thread import ClusterThread
+
 base_path = pathlib.Path(BASE_DIR)
 
 
@@ -54,11 +57,14 @@ class MainWindow(QMainWindow):
         self.ui.setting_table.setColumnWidth(2, 220)
         self.load_conf_to_table()
 
+        # video
         self.camera = cv2.VideoCapture(0)
         self.camera_timer = QtCore.QTimer()
-
         self.frame_streamer = VideoSteamer()
         self.frame_recorder = None
+
+        # thread
+        self.clustering = ClusterThread()
 
         self.show()
 
@@ -77,6 +83,9 @@ class MainWindow(QMainWindow):
         :return:
         """
         self.write_frame(frame)
+
+    def cluster_slot(self):
+        pass
 
     # events
     def on_click_start_record_camera(self):
@@ -102,6 +111,8 @@ class MainWindow(QMainWindow):
             self.frame_recorder.release()
             self.RECORD = False
             self.CAMERA = False
+            self.clustering.start()
+            self.clustering.cluster_signal.connect(self.cluster_slot)
 
     def on_press_camera_btn(self):
         self.ui.Pages.setCurrentIndex(0)
@@ -187,15 +198,6 @@ class VideoSteamer(QtCore.QThread):
     def stop(self):
         self.thread_active = False
         self.quit()
-
-
-class ClusterThread(QtCore.QThread):
-    """
-    create a thread for clustering faces
-    """
-    frame_update = QtCore.pyqtSignal(np.ndarray)
-
-    pass
 
 
 if __name__ == "__main__":

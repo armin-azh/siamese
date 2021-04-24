@@ -442,7 +442,7 @@ QPushButton:hover{
           <item>
            <widget class="QStackedWidget" name="Pages">
             <property name="currentIndex">
-             <number>1</number>
+             <number>0</number>
             </property>
             <widget class="QWidget" name="camera_page">
              <widget class="QLabel" name="image_label">
