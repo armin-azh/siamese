@@ -91,12 +91,13 @@ class MainWindow(QMainWindow):
     def video_writer_initializer(self):
         self.video_writer = cv2.VideoWriter(self.RECORD_FILENAME, cv2.VideoWriter_fourcc(*'MJPG'), 20, (640, 480))
         self.RECORD_ON = True
+        self.thread_video_stream.record_on = True
 
     def video_writer_release(self):
         if self.video_writer is not None:
             self.video_writer.release()
             self.RECORD_ON = False
-
+            self.thread_video_stream.record_on = False
 
 
 if __name__ == "__main__":

@@ -25,6 +25,7 @@ from recognition.cluster import k_mean_clustering
 from recognition.utils import load_model
 from recognition.distance import bulk_cosine_similarity
 from settings import BASE_DIR, GALLERY_CONF, MODEL_CONF, DETECTOR_CONF, DEFAULT_CONF
+from face_detection.utils import draw_face
 
 
 class ClusterThread(QThread):
@@ -103,17 +104,39 @@ class VideoSteamerThread(QThread):
     frame_update = pyqtSignal(np.ndarray)
     thread_active = None
 
+    record_on = False
+
     def run(self):
         self.thread_active = True
         cap = cv2.VideoCapture(0)
+
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH,640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
+
+        f_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        f_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+        x = int(f_w / 2)
+        y = int(f_h / 2)
+
+        w = 120
+        h = 120
+
         while self.thread_active:
             ret, frame = cap.read()
             if ret:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame_2 = frame
                 frame = cv2.resize(frame, (640, 480))
                 qt_frame = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
+
+                frame = draw_face(frame, (x - w, y - h), (x + w, y + h), 10, 20, (0, 204, 0), 2)
+
+                if self.record_on:
+                    cv2.putText(frame, 'REC', (550, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
+
                 self.image_update.emit(qt_frame)
-                self.frame_update.emit(frame)
+                self.frame_update.emit(frame_2)
         cap.release()
 
     def stop(self):
