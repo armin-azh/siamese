@@ -34,6 +34,7 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.setWindowIcon(QIcon("./icons/camera.png"))
+        self.ui.Pages.setCurrentIndex(0)
 
         # btn
         self.ui.btn_start_record.setIcon(QIcon("./icons/start.png"))
@@ -77,6 +78,9 @@ class MainWindow(QMainWindow):
 
     def slot_video_frame_qt(self, qt_frame):
         self.ui.label_camera.setPixmap(QtGui.QPixmap(qt_frame))
+
+    def slot_video_record_status(self, status):
+        self.RECORD_ON = status
 
     # methods
     def video_streamer_start(self):

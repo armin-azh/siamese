@@ -102,6 +102,7 @@ class VideoSteamerThread(QThread):
     """
     image_update = pyqtSignal(QtGui.QImage)
     frame_update = pyqtSignal(np.ndarray)
+    record_status = pyqtSignal(bool)
     thread_active = None
 
     record_on = False
@@ -110,8 +111,8 @@ class VideoSteamerThread(QThread):
         self.thread_active = True
         cap = cv2.VideoCapture(0)
 
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH,640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
         f_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         f_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -122,6 +123,10 @@ class VideoSteamerThread(QThread):
         w = 120
         h = 120
 
+        prev = 0
+
+        timer = int(DEFAULT_CONF.get("maximum_record_time"))
+
         while self.thread_active:
             ret, frame = cap.read()
             if ret:
@@ -131,12 +136,25 @@ class VideoSteamerThread(QThread):
                 qt_frame = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
 
                 frame = draw_face(frame, (x - w, y - h), (x + w, y + h), 10, 20, (0, 204, 0), 2)
+                cur = time.time()
+
+                if self.record_on and timer >= 0 and (cur - prev) >= 1:
+                    prev = cur
+                    timer -= 1
+
+                elif self.record_on and timer < 0:
+                    timer = int(DEFAULT_CONF.get("maximum_record_time"))
+                    self.record_on = False
 
                 if self.record_on:
-                    cv2.putText(frame, 'REC', (550, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
+                    cv2.putText(frame, f'REC {timer}', (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1,
+                                cv2.LINE_AA)
+
+
 
                 self.image_update.emit(qt_frame)
                 self.frame_update.emit(frame_2)
+                self.record_status.emit(self.record_on)
         cap.release()
 
     def stop(self):
