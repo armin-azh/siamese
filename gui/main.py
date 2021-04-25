@@ -5,6 +5,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
 import qtawesome as qta
 from MainWindow import *
+from dialog import Ui_Dialog
 
 import cv2
 from settings import BASE_DIR
@@ -63,11 +64,19 @@ class MainWindow(QMainWindow):
     def on_click_record_start(self):
         self.ui.Pages.setCurrentIndex(0)
         if not self.RECORD_ON:
-            if not self.CAMERA_ON:
-                self.video_streamer_start()
-            self.video_writer_initializer()
-            # self.thread_video_stream.frame_update.connect(self.slot_video_writer_frame)
-            self.change_btn_start_record_status()
+            dialog = QtWidgets.QDialog()
+            ui = Ui_Dialog()
+            ui.setupUi(dialog)
+            dialog.setWindowTitle("Add New Identity")
+            dialog.setWindowIcon(qta.icon('fa5.user'))
+            dialog.show()
+            res = dialog.exec_()
+            if res == QtWidgets.QDialog.Accepted:
+                if not self.CAMERA_ON:
+                    self.video_streamer_start()
+                self.video_writer_initializer()
+                # self.thread_video_stream.frame_update.connect(self.slot_video_writer_frame)
+                self.change_btn_start_record_status()
 
     def on_click_record_stop(self):
         self.video_writer_release()
