@@ -9,17 +9,22 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import pathlib
 import configparser
 
+import time
 import cv2
 import numpy as np
 import tensorflow as tf
+from sklearn import preprocessing
 
 from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5 import QtGui
 
 from face_detection.detector import FaceDetector
-from recognition.preprocessing import normalize_input
+from database.component import ImageDatabase
+from recognition.preprocessing import normalize_input, cvt_to_gray
 from recognition.cluster import k_mean_clustering
 from recognition.utils import load_model
-from settings import BASE_DIR
+from recognition.distance import bulk_cosine_similarity
+from settings import BASE_DIR, GALLERY_CONF, MODEL_CONF, DETECTOR_CONF, DEFAULT_CONF
 
 
 class ClusterThread(QThread):
@@ -51,7 +56,6 @@ class ClusterThread(QThread):
         gallery_conf = conf['Gallery']
         with tf.Graph().as_default():
             with tf.compat.v1.Session() as sess:
-                print(base_path.joinpath(model_conf.get('facenet')))
                 load_model(base_path.joinpath(model_conf.get('facenet')))
                 input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
                 embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
@@ -88,4 +92,34 @@ class ClusterThread(QThread):
 
                     print(clusters)
         self.cluster_signal.emit()
+        self.quit()
+
+
+class VideoSteamerThread(QThread):
+    """
+    thread for get video stream from webcam
+    """
+    image_update = pyqtSignal(QtGui.QImage)
+    frame_update = pyqtSignal(np.ndarray)
+    thread_active = None
+
+    def run(self):
+        self.thread_active = True
+        cap = cv2.VideoCapture(0)
+        while self.thread_active:
+            ret, frame = cap.read()
+            if ret:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.resize(frame, (640, 480))
+                qt_frame = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
+                self.image_update.emit(qt_frame)
+                self.frame_update.emit(frame)
+        cap.release()
+
+    def stop(self):
+        """
+        stop and release webcam
+        :return:
+        """
+        self.thread_active = False
         self.quit()

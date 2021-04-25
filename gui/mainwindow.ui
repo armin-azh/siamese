@@ -115,7 +115,7 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QPushButton" name="Btn_Toggle">
+           <widget class="QPushButton" name="btn_toggle">
             <property name="styleSheet">
              <string notr="true">color: rgb(255, 255, 255);
 border: 0px solid;</string>
@@ -229,57 +229,11 @@ border: 0px solid;</string>
               <number>0</number>
              </property>
              <item>
-              <widget class="QPushButton" name="btn_identity">
+              <widget class="QPushButton" name="btn_cam">
                <property name="minimumSize">
                 <size>
                  <width>0</width>
-                 <height>50</height>
-                </size>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton{
-	color: rgb(255, 255, 255);
-	background-color: rgb(35, 35, 35);
-	border: 0px solid;
-}
-QPushButton:hover{
-	background-color: rgb(85, 170, 255);
-}</string>
-               </property>
-               <property name="text">
-                <string>Identity</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="btn_setting">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>50</height>
-                </size>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton{
-	color: rgb(255, 255, 255);
-	background-color: rgb(35, 35, 35);
-	border: 0px solid;
-}
-QPushButton:hover{
-	background-color: rgb(85, 170, 255);
-}</string>
-               </property>
-               <property name="text">
-                <string>Setting</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="btn_camera">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>50</height>
+                 <height>60</height>
                 </size>
                </property>
                <property name="styleSheet">
@@ -297,6 +251,52 @@ QPushButton:hover{
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="btn_gallery">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>60</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QPushButton{
+	color: rgb(255, 255, 255);
+	background-color: rgb(35, 35, 35);
+	border: 0px solid;
+}
+QPushButton:hover{
+	background-color: rgb(85, 170, 255);
+}</string>
+               </property>
+               <property name="text">
+                <string>Gallery</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btn_setting">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>60</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QPushButton{
+	color: rgb(255, 255, 255);
+	background-color: rgb(35, 35, 35);
+	border: 0px solid;
+}
+QPushButton:hover{
+	background-color: rgb(85, 170, 255);
+}</string>
+               </property>
+               <property name="text">
+                <string>Setting</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
           </item>
@@ -305,7 +305,7 @@ QPushButton:hover{
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>120</height>
+              <height>80</height>
              </size>
             </property>
             <property name="frameShape">
@@ -330,37 +330,6 @@ QPushButton:hover{
              <property name="bottomMargin">
               <number>0</number>
              </property>
-             <item>
-              <widget class="QPushButton" name="btn_start">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>40</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>10</pointsize>
-                 <weight>50</weight>
-                 <bold>false</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton{
-	color: rgb(255, 255, 255);
-	background-color: rgb(35, 35, 35);
-	border: 0px solid;
-}
-
-QPushButton:hover{
-	background-color: rgb(229, 0, 0);
-}</string>
-               </property>
-               <property name="text">
-                <string>Start</string>
-               </property>
-              </widget>
-             </item>
              <item>
               <widget class="QPushButton" name="btn_start_record">
                <property name="minimumSize">
@@ -445,11 +414,11 @@ QPushButton:hover{
              <number>0</number>
             </property>
             <widget class="QWidget" name="camera_page">
-             <widget class="QLabel" name="image_label">
+             <widget class="QLabel" name="label_camera">
               <property name="geometry">
                <rect>
-                <x>150</x>
-                <y>20</y>
+                <x>140</x>
+                <y>30</y>
                 <width>640</width>
                 <height>480</height>
                </rect>
@@ -459,9 +428,6 @@ QPushButton:hover{
                 <width>640</width>
                 <height>480</height>
                </size>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">background-color: rgb(153, 255, 190);</string>
               </property>
               <property name="text">
                <string/>
@@ -485,52 +451,6 @@ QPushButton:hover{
               <property name="bottomMargin">
                <number>0</number>
               </property>
-              <item>
-               <widget class="QFrame" name="setting_left_frame">
-                <property name="frameShape">
-                 <enum>QFrame::StyledPanel</enum>
-                </property>
-                <property name="frameShadow">
-                 <enum>QFrame::Raised</enum>
-                </property>
-                <layout class="QGridLayout" name="gridLayout">
-                 <item row="0" column="0">
-                  <widget class="QTableWidget" name="setting_table">
-                   <property name="maximumSize">
-                    <size>
-                     <width>500</width>
-                     <height>500</height>
-                    </size>
-                   </property>
-                   <property name="styleSheet">
-                    <string notr="true">background-color: rgb(255, 255, 255);</string>
-                   </property>
-                   <property name="frameShape">
-                    <enum>QFrame::NoFrame</enum>
-                   </property>
-                   <property name="gridStyle">
-                    <enum>Qt::NoPen</enum>
-                   </property>
-                   <column>
-                    <property name="text">
-                     <string>Header</string>
-                    </property>
-                   </column>
-                   <column>
-                    <property name="text">
-                     <string>Name</string>
-                    </property>
-                   </column>
-                   <column>
-                    <property name="text">
-                     <string>Value</string>
-                    </property>
-                   </column>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
              </layout>
             </widget>
             <widget class="QWidget" name="identity_page">
@@ -550,138 +470,9 @@ QPushButton:hover{
               <property name="bottomMargin">
                <number>0</number>
               </property>
-              <item>
-               <widget class="QFrame" name="identity_form_frame">
-                <property name="frameShape">
-                 <enum>QFrame::StyledPanel</enum>
-                </property>
-                <property name="frameShadow">
-                 <enum>QFrame::Raised</enum>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QFrame" name="idnetity_camera_frame">
-                <property name="frameShape">
-                 <enum>QFrame::StyledPanel</enum>
-                </property>
-                <property name="frameShadow">
-                 <enum>QFrame::Raised</enum>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_7">
-                 <property name="spacing">
-                  <number>0</number>
-                 </property>
-                 <property name="leftMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>0</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>0</number>
-                 </property>
-                 <item>
-                  <widget class="QFrame" name="iden_top_sub_frame">
-                   <property name="minimumSize">
-                    <size>
-                     <width>60</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                   <layout class="QVBoxLayout" name="verticalLayout_9">
-                    <property name="spacing">
-                     <number>0</number>
-                    </property>
-                    <property name="leftMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="topMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="rightMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="bottomMargin">
-                     <number>0</number>
-                    </property>
-                    <item>
-                     <widget class="QLabel" name="label_record_camera">
-                      <property name="minimumSize">
-                       <size>
-                        <width>100</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>460</width>
-                        <height>300</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true"/>
-                      </property>
-                      <property name="text">
-                       <string/>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QFrame" name="iden_buttom_sub_frame">
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
              </layout>
             </widget>
-            <widget class="QWidget" name="start_page">
-             <widget class="QLabel" name="image_label_start">
-              <property name="geometry">
-               <rect>
-                <x>130</x>
-                <y>20</y>
-                <width>640</width>
-                <height>480</height>
-               </rect>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>640</width>
-                <height>480</height>
-               </size>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">background-color: rgb(35, 35, 35);
-color: rgb(255, 255, 255);</string>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </widget>
+            <widget class="QWidget" name="start_page"/>
            </widget>
           </item>
          </layout>
