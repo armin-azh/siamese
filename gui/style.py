@@ -1,0 +1,15 @@
+
+BTN_CAM_DEF = "QPushButton{\n"
+"    color: rgb(255, 255, 255);\n"
+"    background-color: rgb(35, 35, 35);\n"
+"    border: 0px solid;\n"
+"}\n"
+"QPushButton:hover{\n"
+"    background-color: rgb(85, 170, 255);\n"
+"}"
+
+BTN_CAM_LOCK = "QPushButton{\n"
+"    color: rgb(255, 255, 255);\n"
+"    background-color: rgb(45, 45, 45);\n"
+"    border: 0px solid;\n"
+"}"

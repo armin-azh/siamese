@@ -106,6 +106,7 @@ class VideoSteamerThread(QThread):
     thread_active = None
 
     record_on = False
+    record_cap = None
 
     def run(self):
         self.thread_active = True
@@ -130,8 +131,8 @@ class VideoSteamerThread(QThread):
         while self.thread_active:
             ret, frame = cap.read()
             if ret:
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame_2 = frame
+                frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
                 frame = cv2.resize(frame, (640, 480))
                 qt_frame = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
 
@@ -149,8 +150,10 @@ class VideoSteamerThread(QThread):
                 if self.record_on:
                     cv2.putText(frame, f'REC {timer}', (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1,
                                 cv2.LINE_AA)
+                    self.record_cap.write(frame_2)
 
-
+                if not self.record_on and self.record_cap is not None:
+                    self.record_cap.release()
 
                 self.image_update.emit(qt_frame)
                 self.frame_update.emit(frame_2)
