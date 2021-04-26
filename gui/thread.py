@@ -136,7 +136,7 @@ class VideoSteamerThread(QThread):
                 frame = cv2.resize(frame, (640, 480))
                 qt_frame = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
 
-                frame = draw_face(frame, (x - w, y - h), (x + w, y + h), 10, 20, (0, 204, 0), 2)
+                frame = draw_face(frame, (x - w, y - h), (x + w, y + h), 10, 20, (77, 154, 231), 2)
                 cur = time.time()
 
                 if self.record_on and timer >= 0 and (cur - prev) >= 1:

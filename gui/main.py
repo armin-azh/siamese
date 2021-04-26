@@ -8,10 +8,11 @@ from MainWindow import *
 from dialog import Ui_Dialog
 
 import cv2
-from settings import BASE_DIR
+from settings import BASE_DIR, DEFAULT_CONF, GALLERY_CONF
 
 from thread import VideoSteamerThread
 from style import BTN_CAM_DEF, BTN_CAM_LOCK
+from database.component import ImageDatabase
 
 base_path = pathlib.Path(BASE_DIR)
 
@@ -19,16 +20,18 @@ base_path = pathlib.Path(BASE_DIR)
 class MainWindow(QMainWindow):
     RECORD_ON = False
     CAMERA_ON = False
-    RECORD_FILENAME = './temp/xs1_tiger.avi'
+    RECORD_FILENAME = pathlib.Path(BASE_DIR).joinpath(DEFAULT_CONF.get("save_video"))
+    DIALOG = None
 
     def __init__(self):
         QMainWindow.__init__(self)
 
         # database
+        self.database = ImageDatabase(db_path=str(base_path.joinpath(GALLERY_CONF.get("database_path"))))
 
         # preprocessing
-        if not pathlib.Path(self.RECORD_FILENAME).parent.exists():
-            pathlib.Path(self.RECORD_FILENAME).parent.mkdir()
+        if not self.RECORD_FILENAME.exists():
+            self.RECORD_FILENAME.mkdir()
 
         # initialize main window
         self.ui = Ui_MainWindow()
@@ -67,19 +70,30 @@ class MainWindow(QMainWindow):
             dialog = QtWidgets.QDialog()
             ui = Ui_Dialog()
             ui.setupUi(dialog)
+            self.DIALOG = ui
             dialog.setWindowTitle("Add New Identity")
             dialog.setWindowIcon(qta.icon('fa5.user'))
             dialog.show()
+            ui.line_identity_name.textChanged.connect(self.on_change_text)
             res = dialog.exec_()
-            if res == QtWidgets.QDialog.Accepted:
+            identity_name = ui.line_identity_name.text()
+            identity_name = identity_name.title()
+            if res == QtWidgets.QDialog.Accepted and identity_name:
                 if not self.CAMERA_ON:
                     self.video_streamer_start()
-                self.video_writer_initializer()
+                self.video_writer_initializer(identity_name)
                 # self.thread_video_stream.frame_update.connect(self.slot_video_writer_frame)
                 self.change_btn_start_record_status()
 
     def on_click_record_stop(self):
         self.video_writer_release()
+
+    def on_change_text(self):
+        if self.DIALOG is not None:
+            if self.check_identity_name(self.DIALOG.line_identity_name.text().title()):
+                self.DIALOG.label_identity_name_status.setText("Exists")
+            else:
+                self.DIALOG.label_identity_name_status.setText("Not Exists")
 
     # slots
     # def slot_video_writer_frame(self, frame):
@@ -103,8 +117,9 @@ class MainWindow(QMainWindow):
             self.thread_video_stream.stop()
             self.CAMERA_ON = False
 
-    def video_writer_initializer(self):
-        self.video_writer = cv2.VideoWriter(self.RECORD_FILENAME, cv2.VideoWriter_fourcc(*'MJPG'), 20, (640, 480))
+    def video_writer_initializer(self, identity_name):
+        filename = self.RECORD_FILENAME.joinpath(identity_name + '.avi')
+        self.video_writer = cv2.VideoWriter(str(filename), cv2.VideoWriter_fourcc(*'MJPG'), 20, (640, 480))
         self.thread_video_stream.record_cap = self.video_writer
         self.RECORD_ON = True
         self.thread_video_stream.record_on = True
@@ -125,6 +140,10 @@ class MainWindow(QMainWindow):
         self.ui.btn_cam.setEnabled(True)
         self.ui.btn_setting.setEnabled(True)
         self.ui.btn_gallery.setEnabled(True)
+
+    def check_identity_name(self, identity_name):
+        ids = list(self.database.get_identity_image_paths().keys())
+        return True if identity_name in ids else False
 
 
 if __name__ == "__main__":

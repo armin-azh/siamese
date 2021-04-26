@@ -96,24 +96,27 @@ def face_recognition(args):
                 fps = FPS()
                 fps.start()
                 prev = 0
-
+                total_proc_time = list()
+                proc_timer = Timer()
                 while cap.isOpened():
-                    delta_time = time.time() - prev
+                    proc_timer.start()
                     ret, frame = cap.read()
+                    cur = time.time()
+                    delta_time = cur - prev
                     if not ret:
                         break
 
                     fps.update()
                     if delta_time > 1. / float(detector_conf['fps']):
 
-                        prev = time.time() - prev
+                        prev = cur
                         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                         if not args.cluster:
                             faces = list()
 
                         boxes = []
                         gray_frame = cvt_to_gray(frame) if not args.cluster else frame
-                        for face, bbox in detector.extract_faces(gray_frame, frame_width , frame_height):
+                        for face, bbox in detector.extract_faces(gray_frame, frame_width, frame_height):
                             faces.append(normalize_input(face))
                             boxes.append(bbox)
                             if args.cluster:
@@ -140,7 +143,7 @@ def face_recognition(args):
                                     color = (243, 32, 19) if status == 'unrecognised' else (0, 255, 0)
 
                                     if detector_type == detector.DT_MTCNN:
-                                        frame = cv2.rectangle(frame, (x, y), (x+w, y+h), color, 1)
+                                        frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
                                     elif detector_type == detector.DT_RES10:
                                         frame = cv2.rectangle(frame, (x, y), (w, h), color, 1)
 
@@ -162,6 +165,7 @@ def face_recognition(args):
                                 cv2.imshow('gray', gray_frame)
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
+                    total_proc_time.append(proc_timer.end())
                 fps.stop()
                 if args.cluster:
                     print('\n$ Cluster embeddings')
@@ -178,6 +182,7 @@ def face_recognition(args):
                 print("$ frame width {}".format(frame_width))
                 print("$ frame height {}".format(frame_height))
                 print("$ elapsed time: {:.2f}".format(fps.elapsed()))
+                print("$ Average time per iteration: {:.3f}".format(np.array(total_proc_time).mean()))
 
             cap.release()
             cv2.destroyAllWindows()
@@ -378,5 +383,6 @@ def test_recognition(args):
                 dists = np.array(dists)
                 bs_similarity_idx = np.argmin(dists, axis=1)
 
-                accuracy = np.mean(np.equal(test_label_encoder.transform(test_labels), np.array(gallery_labels)[bs_similarity_idx]))
-                print(f"$ accuracy {accuracy*100}")
+                accuracy = np.mean(
+                    np.equal(test_label_encoder.transform(test_labels), np.array(gallery_labels)[bs_similarity_idx]))
+                print(f"$ accuracy {accuracy * 100}")
