@@ -60,7 +60,7 @@ def face_recognition(args):
         encoded_labels = preprocessing.LabelEncoder()
         encoded_labels.fit(list(set(labels)))
         labels = encoded_labels.transform(labels)
-        motion_detection = BSMotionDetection()
+    motion_detection = BSMotionDetection()
 
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
@@ -110,8 +110,8 @@ def face_recognition(args):
                         break
 
                     fps.update()
-                    print(motion_detection.has_motion(frame))
-                    if (delta_time > 1. / float(detector_conf['fps'])) and (motion_detection.has_motion(frame) is not None):
+                    if (delta_time > 1. / float(detector_conf['fps'])) and (
+                            motion_detection.has_motion(frame) is not None or args.cluster):
 
                         prev = cur
                         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -135,7 +135,7 @@ def face_recognition(args):
                             embedded_array = sess.run(embeddings, feed_dic)
 
                             if args.eval_method == 'cosine':
-                                dists = bulk_cosine_similarity(embedded_array, embeds)
+                                dists = bulk_cosine_similarity_v2(embedded_array, embeds)
                                 bs_similarity_idx = np.argmin(dists, axis=1)
                                 bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
                                 pred_labels = np.array(labels)[bs_similarity_idx]
@@ -147,7 +147,7 @@ def face_recognition(args):
                                     color = (243, 32, 19) if status == 'unrecognised' else (0, 255, 0)
 
                                     if detector_type == detector.DT_MTCNN:
-                                        frame = draw_face(frame,(x, y),(x + w, y + h),5,10,color,1)
+                                        frame = draw_face(frame, (x, y), (x + w, y + h), 5, 10, color, 1)
                                         # frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
                                     elif detector_type == detector.DT_RES10:
                                         frame = draw_face(frame, (x, y), (w, h), 5, 10, color, 1)
