@@ -4,6 +4,7 @@ import cv2
 from settings import MOTION_CONF
 import numpy as np
 from recognition.utils import Counter
+from skimage.metrics import structural_similarity as ssim
 
 
 class BaseMotionDetection:
@@ -73,6 +74,33 @@ class BSMotionDetection(BaseMotionDetection, ABC):
         else:
             return None
 
+
+class SsimMotionDetection(BaseMotionDetection):
+    """
+    SSIM movement detection
+    """
+
+    def __init__(self, thresh=0.9):
+        super(SsimMotionDetection, self).__init__()
+        self._counter = Counter(int(MOTION_CONF.get("ssim change")))
+        self.background = None
+        self._thresh = thresh
+
+    def _run(self, im_frame):
+        im_frame = cv2.cvtColor(im_frame, cv2.COLOR_BGR2GRAY)
+
+        if self.background is None or self._counter() == 0:
+            self._counter.next()
+            self.background = im_frame
+            return None
+
+        self._counter.next()
+
+        ssim_mean = ssim(self.background, im_frame)
+        if ssim_mean > self._thresh:
+            return None
+
+        return im_frame
 
 # if __name__ == "__main__":
 #     motion = BSMotionDetection()
