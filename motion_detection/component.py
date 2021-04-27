@@ -77,26 +77,26 @@ class BSMotionDetection(BaseMotionDetection, ABC):
 
 class SsimMotionDetection(BaseMotionDetection):
     """
-    SSIM movment detection
+    SSIM movement detection
     """
 
     def __init__(self, thresh=0.9):
         super(SsimMotionDetection, self).__init__()
         self._counter = Counter(int(MOTION_CONF.get("ssim change")))
-        self._backgournd = None
+        self.background = None
         self._thresh = thresh
 
     def _run(self, im_frame):
         im_frame = cv2.cvtColor(im_frame, cv2.COLOR_BGR2GRAY)
 
-        if self._backgournd is None or self._counter() == 0:
+        if self.background is None or self._counter() == 0:
             self._counter.next()
-            self._backgournd = im_frame
+            self.background = im_frame
             return None
 
         self._counter.next()
 
-        ssim_mean = ssim(self._backgournd, im_frame)
+        ssim_mean = ssim(self.background, im_frame)
         if ssim_mean > self._thresh:
             return None
 
