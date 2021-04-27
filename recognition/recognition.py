@@ -19,6 +19,7 @@ from face_detection.detector import FaceDetector
 import tensorflow as tf
 from tensorflow.keras.models import load_model as h5_load
 from database.component import ImageDatabase, parse_test_dir
+from face_detection.utils import draw_face
 from settings import BASE_DIR
 from PIL import Image
 from sklearn import preprocessing
@@ -143,9 +144,11 @@ def face_recognition(args):
                                     color = (243, 32, 19) if status == 'unrecognised' else (0, 255, 0)
 
                                     if detector_type == detector.DT_MTCNN:
-                                        frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
+                                        frame = draw_face(frame,(x, y),(x + w, y + h),5,10,color,1)
+                                        # frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
                                     elif detector_type == detector.DT_RES10:
-                                        frame = cv2.rectangle(frame, (x, y), (w, h), color, 1)
+                                        frame = draw_face(frame, (x, y), (w, h), 5, 10, color, 1)
+                                        # frame = cv2.rectangle(frame, (x, y), (w, h), color, 1)
 
                                     cv2.putText(frame,
                                                 "{} {:.2f}".format(status[0],
@@ -386,3 +389,11 @@ def test_recognition(args):
                 accuracy = np.mean(
                     np.equal(test_label_encoder.transform(test_labels), np.array(gallery_labels)[bs_similarity_idx]))
                 print(f"$ accuracy {accuracy * 100}")
+
+
+def cluster_faces(args) -> None:
+    """
+    cluster videos
+    :param args:
+    :return:
+    """
