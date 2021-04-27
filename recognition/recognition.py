@@ -19,6 +19,7 @@ from face_detection.detector import FaceDetector
 import tensorflow as tf
 from tensorflow.keras.models import load_model as h5_load
 from database.component import ImageDatabase, parse_test_dir
+from motion_detection.component import BSMotionDetection
 from face_detection.utils import draw_face
 from settings import BASE_DIR
 from PIL import Image
@@ -59,6 +60,7 @@ def face_recognition(args):
         encoded_labels = preprocessing.LabelEncoder()
         encoded_labels.fit(list(set(labels)))
         labels = encoded_labels.transform(labels)
+        motion_detection = BSMotionDetection()
 
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
@@ -108,7 +110,8 @@ def face_recognition(args):
                         break
 
                     fps.update()
-                    if delta_time > 1. / float(detector_conf['fps']):
+                    print(motion_detection.has_motion(frame))
+                    if (delta_time > 1. / float(detector_conf['fps'])) and (motion_detection.has_motion(frame) is not None):
 
                         prev = cur
                         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

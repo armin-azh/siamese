@@ -7,7 +7,6 @@ import configparser
 
 conf = configparser.ConfigParser()
 
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 conf.read(os.path.join(BASE_DIR, "conf.ini"))
 
@@ -19,5 +18,6 @@ MODEL_CONF = conf['Model']
 GALLERY_CONF = conf['Gallery']
 DETECTOR_CONF = conf['Detector']
 DEFAULT_CONF = conf['Default']
+MOTION_CONF = conf["Motion"]
 
-SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log"]
+SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion"]
