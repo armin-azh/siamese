@@ -82,7 +82,7 @@ class SsimMotionDetection(BaseMotionDetection):
 
     def __init__(self, thresh=0.9):
         super(SsimMotionDetection, self).__init__()
-        self._counter = Counter(int(MOTION_CONF.get("ssim change")))
+        self._counter = Counter(int(MOTION_CONF.get("ssim_change_step")))
         self.background = None
         self._thresh = thresh
 
