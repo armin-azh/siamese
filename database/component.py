@@ -286,9 +286,10 @@ class ImageDatabase:
 
         for key, value in data.items():
             tm_id = Identity.create(key)
-            for im_path in chain(value):
-                tm_id.add_image(im_path)
-            self._identities.append(tm_id)
+            if tm_id is not None:
+                for im_path in chain(value):
+                    tm_id.add_image(im_path)
+                self._identities.append(tm_id)
 
     def save_clusters(self, clusters, faces, cluster_name):
         """

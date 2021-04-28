@@ -6,6 +6,7 @@ import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+import pathlib
 import time
 import configparser
 import cv2
@@ -19,9 +20,10 @@ from face_detection.detector import FaceDetector
 import tensorflow as tf
 from tensorflow.keras.models import load_model as h5_load
 from database.component import ImageDatabase, parse_test_dir
+from database.component import inference_db
 from motion_detection.component import BSMotionDetection
 from face_detection.utils import draw_face
-from settings import BASE_DIR
+from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, GALLERY_ROOT
 from PIL import Image
 from sklearn import preprocessing
 from datetime import datetime
@@ -135,7 +137,7 @@ def face_recognition(args):
                             embedded_array = sess.run(embeddings, feed_dic)
 
                             if args.eval_method == 'cosine':
-                                dists = bulk_cosine_similarity_v2(embedded_array, embeds)
+                                dists = bulk_cosine_similarity(embedded_array, embeds)
                                 bs_similarity_idx = np.argmin(dists, axis=1)
                                 bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
                                 pred_labels = np.array(labels)[bs_similarity_idx]
@@ -400,4 +402,73 @@ def cluster_faces(args) -> None:
     :param args:
     :return:
     """
-    pass
+    physical_devices = tf.config.list_physical_devices('GPU')
+    print("$ On {}".format(physical_devices[0].name))
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+    database = ImageDatabase(db_path=GALLERY_ROOT)
+    ids = list(database.get_identity_image_paths().keys())
+
+    ls_video = pathlib.Path(BASE_DIR).joinpath(DEFAULT_CONF.get("save_video"))
+
+    print(ls_video)
+
+    with tf.Graph().as_default():
+        with tf.compat.v1.Session() as sess:
+
+            print(f"$ Initializing computation graph with {MODEL_CONF.get('facenet')} pretrained model.")
+            load_model(os.path.join(BASE_DIR, MODEL_CONF.get('facenet')))
+            print("$ Model has been loaded.")
+
+            detector = FaceDetector(sess=sess)
+
+            input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
+            embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
+            phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
+
+            for v_path in ls_video.glob("*.avi"):
+
+                filename = v_path.stem
+
+                if filename.find("done") == -1:
+
+                    if filename in ids:
+                        print(f"[WARN] This id is exists {filename}")
+                        continue
+                    else:
+                        cap = cv2.VideoCapture(str(v_path))
+
+                        f_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+                        f_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+                        n_faces = list()
+                        faces = list()
+
+                        cnt = 0
+                        while cap.isOpened():
+                            ret, frame = cap.read()
+                            if not ret:
+                                break
+
+                            frame=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                            for face, _ in detector.extract_faces(frame, f_w, f_h):
+                                if cnt % 10 == 0 and cnt > 0:
+                                    print("#", end="")
+                                n_faces.append(normalize_input(face))
+                                faces.append(face)
+                        cap.release()
+
+                        n_faces = np.array(n_faces)
+                        if n_faces.shape[0] > 0:
+                            feed_dic = {phase_train: False, input_plc: n_faces}
+                            embedded_array = sess.run(embeddings, feed_dic)
+                            clusters = k_mean_clustering(embeddings=embedded_array,
+                                                         n_cluster=int(GALLERY_CONF.get("n_clusters")))
+                            database.save_clusters(clusters, faces, filename.title())
+                            v_path.rename(v_path.parent.joinpath(v_path.stem+"_done"+v_path.suffix))
+
+                else:
+                    print(f"[INFO] this file is clustered {filename}")
+
+    inference_db(args)
+    print("$ finished")

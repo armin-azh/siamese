@@ -4,6 +4,7 @@ from __future__ import division
 
 import os
 import configparser
+import pathlib
 
 conf = configparser.ConfigParser()
 
@@ -16,6 +17,9 @@ GALLERY_LOG_DIR = os.path.join(conf["Log"].get("gallery"), 'gallery') if conf["L
 
 MODEL_CONF = conf['Model']
 GALLERY_CONF = conf['Gallery']
+GALLERY_ROOT = pathlib.Path(BASE_DIR).joinpath(GALLERY_CONF.get("database_path"))
+if not GALLERY_ROOT.exists():
+    GALLERY_ROOT.mkdir()
 DETECTOR_CONF = conf['Detector']
 DEFAULT_CONF = conf['Default']
 MOTION_CONF = conf["Motion"]

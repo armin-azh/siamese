@@ -2,7 +2,7 @@ import argparse
 import configparser
 import os
 import pathlib
-from recognition.recognition import face_recognition, face_recognition_on_keras, test_recognition
+from recognition.recognition import face_recognition, face_recognition_on_keras, test_recognition,cluster_faces
 from recognition.utils import convert_computation_graph_to_keras_model
 from database.component import inference_db
 from tools.computation_graph import computation_graph_inspect, pb_to_tensorboard
@@ -12,7 +12,10 @@ from settings import BASE_DIR
 
 def main(args):
     if (args.realtime or args.video or args.cluster) and not args.keras:
-        face_recognition(args)
+        if args.cluster and args.cluster_bulk:
+            cluster_faces(args)
+        else:
+            face_recognition(args)
 
     elif (args.realtime or args.video or args.cluster) and args.keras:
         face_recognition_on_keras(args)
@@ -57,6 +60,7 @@ if __name__ == "__main__":
                         default='cosine')
     parser.add_argument('--cluster', help="cluster video frame", action='store_true')
     parser.add_argument('--cluster_name', help="cluster name for saving images", type=str, default='')
+    parser.add_argument('--cluster_bulk',help = "bulk clustering",action="store_true")
     parser.add_argument('--save', help="save frame in a file", action='store_true')
     parser.add_argument('--keras', help="use keras model", action="store_true")
     parser.add_argument('--classifier', help='classifier filename', type=str, default='')
