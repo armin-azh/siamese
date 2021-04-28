@@ -305,7 +305,7 @@ QPushButton:hover{
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>80</height>
+              <height>120</height>
              </size>
             </property>
             <property name="frameShape">
@@ -375,6 +375,30 @@ QPushButton:hover{
                </property>
                <property name="text">
                 <string/>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btn_recognition">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QPushButton{
+	color: rgb(255, 255, 255);
+	background-color: rgb(35, 35, 35);
+	border: 0px solid;
+}
+
+QPushButton:hover{
+	background-color: rgb(255, 0, 0);
+}</string>
+               </property>
+               <property name="text">
+                <string>Start</string>
                </property>
               </widget>
              </item>
