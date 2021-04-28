@@ -126,7 +126,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_4.addWidget(self.btn_setting)
         self.verticalLayout_3.addWidget(self.frame_top_menus, 0, QtCore.Qt.AlignTop)
         self.frame_buttom_menues = QtWidgets.QFrame(self.frame_left_menu)
-        self.frame_buttom_menues.setMinimumSize(QtCore.QSize(0, 80))
+        self.frame_buttom_menues.setMinimumSize(QtCore.QSize(0, 120))
         self.frame_buttom_menues.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frame_buttom_menues.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_buttom_menues.setObjectName("frame_buttom_menues")
@@ -162,6 +162,19 @@ class Ui_MainWindow(object):
         self.btn_stop_record.setText("")
         self.btn_stop_record.setObjectName("btn_stop_record")
         self.verticalLayout_6.addWidget(self.btn_stop_record)
+        self.btn_recognition = QtWidgets.QPushButton(self.frame_buttom_menues)
+        self.btn_recognition.setMinimumSize(QtCore.QSize(0, 40))
+        self.btn_recognition.setStyleSheet("QPushButton{\n"
+"    color: rgb(255, 255, 255);\n"
+"    background-color: rgb(35, 35, 35);\n"
+"    border: 0px solid;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"    background-color: rgb(255, 0, 0);\n"
+"}")
+        self.btn_recognition.setObjectName("btn_recognition")
+        self.verticalLayout_6.addWidget(self.btn_recognition)
         self.verticalLayout_3.addWidget(self.frame_buttom_menues, 0, QtCore.Qt.AlignBottom)
         self.horizontalLayout_2.addWidget(self.frame_left_menu)
         self.frame_pages = QtWidgets.QFrame(self.Content)
@@ -222,6 +235,7 @@ class Ui_MainWindow(object):
         self.btn_cam.setText(_translate("MainWindow", "Camera"))
         self.btn_gallery.setText(_translate("MainWindow", "Gallery"))
         self.btn_setting.setText(_translate("MainWindow", "Setting"))
+        self.btn_recognition.setText(_translate("MainWindow", "Start"))
         self.actionIdentity.setText(_translate("MainWindow", "New Identity"))
         self.actionNew_Database.setText(_translate("MainWindow", "New Gallery"))
         self.actionProject_Settings.setText(_translate("MainWindow", "settings"))

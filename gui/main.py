@@ -6,11 +6,12 @@ from PyQt5.QtCore import Qt
 import qtawesome as qta
 from MainWindow import *
 from dialog import Ui_Dialog
+from dialog_recognition import Ui_Dialog as DialogRecognition
 
 import cv2
 from settings import BASE_DIR, DEFAULT_CONF, GALLERY_CONF
 
-from thread import VideoSteamerThread
+from thread import VideoSteamerThread,RecognitionThread
 from style import BTN_CAM_DEF, BTN_CAM_LOCK
 from database.component import ImageDatabase
 
@@ -34,9 +35,10 @@ class MainWindow(QMainWindow):
             self.RECORD_FILENAME.mkdir()
 
         # initialize main window
+        self.main_icon = QIcon("./icons/camera.png")
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.setWindowIcon(QIcon("./icons/camera.png"))
+        self.setWindowIcon(self.main_icon)
         self.ui.Pages.setCurrentIndex(0)
 
         # btn
@@ -47,9 +49,11 @@ class MainWindow(QMainWindow):
         self.ui.btn_cam.clicked.connect(self.on_click_camera)
         self.ui.btn_start_record.clicked.connect(self.on_click_record_start)
         self.ui.btn_stop_record.clicked.connect(self.on_click_record_stop)
+        self.ui.btn_recognition.clicked.connect(self.on_click_start)
 
         # thread
         self.thread_video_stream = VideoSteamerThread()
+        self.thread_recognition = RecognitionThread()
 
         # video writer
         self.video_writer = None
@@ -57,6 +61,19 @@ class MainWindow(QMainWindow):
         self.show()
 
     # events
+    def on_click_start(self):
+        pass
+        # dialog = QtWidgets.QDialog()
+        # self.ui_recogniton = DialogRecognition()
+        # self.ui_recogniton.setupUi(dialog)
+        # dialog.setWindowTitle("Realtime Recognition")
+        # dialog.setWindowIcon(self.main_icon)
+        # self.thread_recognition.start()
+        # self.thread_recognition.signal_qt_frame.connect(self.slot_recognition_frame_qt)
+        #
+        # dialog.show()
+        # dialog.exec_()
+
     def on_click_camera(self):
         self.ui.Pages.setCurrentIndex(0)
         if not self.CAMERA_ON:
@@ -99,6 +116,9 @@ class MainWindow(QMainWindow):
     # def slot_video_writer_frame(self, frame):
     #     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     #     self.video_writer.write(frame)
+
+    def slot_recognition_frame_qt(self,qt_frame):
+        self.ui_recogniton.label_recognition.setPixmap(QtGui.QPixmap(qt_frame))
 
     def slot_video_frame_qt(self, qt_frame):
         self.ui.label_camera.setPixmap(QtGui.QPixmap(qt_frame))

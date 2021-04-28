@@ -96,6 +96,61 @@ class ClusterThread(QThread):
         self.quit()
 
 
+class RecognitionThread(QThread):
+    """
+    a thread for recognition task
+    """
+    signal_frame = pyqtSignal(np.ndarray)
+    signal_qt_frame = pyqtSignal(QtGui.QImage)
+
+    active = False
+
+    def run(self) -> None:
+        self.active = True
+        print("b")
+        detector = FaceDetector(sess=None)
+
+        cap = cv2.VideoCapture(0)
+
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+        f_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        f_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+        w = 120
+        h = 120
+
+        prev = 0
+        print("a")
+
+        with tf.device('/device:gpu:0'):
+            with tf.Graph().as_default():
+                with tf.compat.v1.Session() as sess:
+                    while self.active:
+                        print("c")
+                        ret, frame = cap.read()
+                        if ret:
+                            # boxes = list()
+                            for face, bbox in detector.extract_faces(frame, f_w, f_h):
+                                # faces.append(normalize_input(face))
+                                # boxes.append(bbox)
+                                x, y, w, h = bbox
+                                frame = draw_face(frame, (x, y), (x + w, y + h), 5, 10, (35, 65, 45), 1)
+
+                            frame = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
+
+                            self.signal_qt_frame.emit(frame)
+
+    def stop(self):
+        """
+        stop and release webcam
+        :return:
+        """
+        self.active = False
+        self.quit()
+
+
 class VideoSteamerThread(QThread):
     """
     thread for get video stream from webcam
@@ -132,7 +187,7 @@ class VideoSteamerThread(QThread):
             ret, frame = cap.read()
             if ret:
                 frame_2 = frame
-                frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame = cv2.resize(frame, (640, 480))
                 qt_frame = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
 
