@@ -1,6 +1,8 @@
 import time
 from filter import Kalman
 
+from settings import TRACKER_CONF
+
 
 class TrackerCounter:
     """
@@ -27,10 +29,14 @@ class TrackerCounter:
 
 class FaceTracker:
 
+    _STATUS_MATCHED = 'matched'
+    _STATUS_UNMATCHED = 'unmatched'
+
     def __init__(self, initial_name):
         self._tk_cnt = TrackerCounter()
         self._id_name = initial_name
         self._modified = time.time()
+        self._status = self._STATUS_UNMATCHED
 
     @property
     def name(self):
@@ -48,6 +54,7 @@ class FaceTracker:
         if n_name is not None:
             self._id_name = n_name
         self._tk_cnt()  # increase detected counter
+        self.modify()
 
     def modify(self) -> None:
         """
@@ -56,8 +63,48 @@ class FaceTracker:
         """
         self._modified = time.time()
 
+    @property
+    def last_modified(self):
+        return self._modified
+
 
 class KalmanFaceTracker(FaceTracker, Kalman):
 
     def __init__(self, initial_name):
         super().__init__(initial_name)
+
+
+class Tracker:
+    """
+    management class for trackers
+    """
+    _global_time = time.time()
+
+    def __init__(self):
+        self._in_memory_tk_faces = []
+        self._max_keep_tk_sec = int(TRACKER_CONF.get("kalman_max_save_tk_sec"))
+
+    @property
+    def global_time(self):
+        return self._global_time
+
+    def _update_global_time(self) -> None:
+        """
+        this method should be call on every main operation that the class do
+        :return:
+        """
+        self._global_time = time.time()
+
+    def _refactor_in_memory_tk(self):
+        """
+        delete instances that force _max_keep_tk_sec
+        :return:
+        """
+        if self._in_memory_tk_faces:
+            for idx, tk_face in enumerate(self._in_memory_tk_faces):
+                if abs(self._global_time - tk_face.last_modified) > self._max_keep_tk_sec:
+                    self._in_memory_tk_faces.remove(self._in_memory_tk_faces[idx])
+
+    def _modifier(self):
+        self._refactor_in_memory_tk()
+        self._update_global_time()

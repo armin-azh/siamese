@@ -23,5 +23,6 @@ if not GALLERY_ROOT.exists():
 DETECTOR_CONF = conf['Detector']
 DEFAULT_CONF = conf['Default']
 MOTION_CONF = conf["Motion"]
+TRACKER_CONF = conf["Tracker"]
 
 SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion"]
