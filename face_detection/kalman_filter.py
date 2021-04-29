@@ -94,8 +94,12 @@ class Kalman:
         self.kf.update(measurement)
 
     def get_current_state(self):
-        bbox = (np.array([self.kf.x[0], self.kf.x[1], self.kf.x[2], self.kf.x[3]]).reshape((1, 4)))
-        return bbox
+        """
+        get current state of the kalman filter
+        :return:
+        """
+        coordinate = (np.array([self.kf.x[0], self.kf.x[1], self.kf.x[2], self.kf.x[3]]).reshape((1, 4)))
+        return coordinate
 
 
 class FaceTracker:
