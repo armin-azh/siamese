@@ -36,7 +36,7 @@ class FilterTest(unittest.TestCase):
     def test_kalman_face_tracker(self):
         ts_name = "Armin Azhdehnia"
         ts_coordinate = np.array([337, 12, 22, 44])
-        tk = KalmanFaceTracker(initial_name=ts_name,det=ts_coordinate)
+        tk = KalmanFaceTracker(initial_name=ts_name, det=ts_coordinate)
         self.assertEqual(tk.name, ts_name)
 
         self.assertEqual(tk.face_id, 1)
@@ -53,8 +53,6 @@ class FilterTest(unittest.TestCase):
         ts_coordinate = np.array([114, 122, 32, 48])
 
         tk.correction(ts_coordinate)
-
-
 
     def test_tracker(self):
         tk = Tracker()
