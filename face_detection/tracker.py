@@ -1,5 +1,5 @@
 import time
-from filter import Kalman
+from .filter import Kalman
 
 from settings import TRACKER_CONF
 
@@ -28,15 +28,14 @@ class TrackerCounter:
 
 
 class FaceTracker:
-
-    _STATUS_MATCHED = 'matched'
-    _STATUS_UNMATCHED = 'unmatched'
+    STATUS_MATCHED = 'matched'
+    STATUS_UNMATCHED = 'unmatched'
 
     def __init__(self, initial_name):
         self._tk_cnt = TrackerCounter()
         self._id_name = initial_name
         self._modified = time.time()
-        self._status = self._STATUS_UNMATCHED
+        self._status = self.STATUS_UNMATCHED
 
     @property
     def name(self):
@@ -62,10 +61,20 @@ class FaceTracker:
         :return:
         """
         self._modified = time.time()
+        if self._tk_cnt.counter == int(TRACKER_CONF.get("max_frame_conf")):
+            self._status = self.STATUS_MATCHED
 
     @property
     def last_modified(self):
         return self._modified
+
+    @property
+    def counter(self):
+        return self._tk_cnt.counter
+
+    @property
+    def status(self):
+        return self._status
 
 
 class KalmanFaceTracker(FaceTracker, Kalman):
@@ -108,3 +117,32 @@ class Tracker:
     def _modifier(self):
         self._refactor_in_memory_tk()
         self._update_global_time()
+
+    def add_new_tracker(self, id_name) -> KalmanFaceTracker:
+        """
+        add new id name to the list
+        :param id_name:
+        :return:
+        """
+        result = self.search(id_name)
+        if result is not None:
+            return result
+        else:
+            result = KalmanFaceTracker(initial_name=id_name)
+            self._in_memory_tk_faces.append(result)
+            return result
+
+    def search(self, id_name):
+        """
+        search a tracker with identity name
+        :param id_name:
+        :return:
+        """
+
+        for tk in self._in_memory_tk_faces:
+            if tk.name == id_name:
+                return tk
+        return None
+
+    def modify_tracker(self, id_name):
+        pass
