@@ -31,11 +31,12 @@ class FaceTracker:
     STATUS_MATCHED = 'matched'
     STATUS_UNMATCHED = 'unmatched'
 
-    def __init__(self, initial_name):
+    def __init__(self, initial_name, **kwargs):
         self._tk_cnt = TrackerCounter()
         self._id_name = initial_name
         self._modified = time.time()
         self._status = self.STATUS_UNMATCHED
+        super().__init__(**kwargs)
 
     @property
     def name(self):
@@ -79,8 +80,8 @@ class FaceTracker:
 
 class KalmanFaceTracker(FaceTracker, Kalman):
 
-    def __init__(self, initial_name):
-        super().__init__(initial_name)
+    def __init__(self, initial_name, det):
+        super().__init__(initial_name=initial_name, det=det)
 
 
 class Tracker:
@@ -114,9 +115,13 @@ class Tracker:
                 if abs(self._global_time - tk_face.last_modified) > self._max_keep_tk_sec:
                     self._in_memory_tk_faces.remove(self._in_memory_tk_faces[idx])
 
-    def _modifier(self):
-        self._refactor_in_memory_tk()
+    def _modifier(self) -> None:
+        """
+        modify global time and refactor tracker list
+        :return:
+        """
         self._update_global_time()
+        self._refactor_in_memory_tk()
 
     def add_new_tracker(self, id_name) -> KalmanFaceTracker:
         """
@@ -145,4 +150,15 @@ class Tracker:
         return None
 
     def modify_tracker(self, id_name):
-        pass
+        result = self.search(id_name)
+        if result is not None:
+            result()
+
+    def update(self):
+        """
+        update tracker state
+        :return:
+        """
+        self._modifier()
+
+    # def modify_trackers

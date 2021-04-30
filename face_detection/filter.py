@@ -19,8 +19,9 @@ class Kalman:
         self.kf.Q[-1, -1] *= 0.01
         self.kf.Q[4:, 4:] *= 0.01
         self.kf.x[:4] = np.array([det[0], det[1], det[2], det[3]]).reshape((4, 1))
+        super().__init__()
 
-    def __call__(self):
+    def predict(self):
         """
         predict new coordinate with kalman filter
         :return:
