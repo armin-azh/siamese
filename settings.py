@@ -19,7 +19,7 @@ MODEL_CONF = conf['Model']
 GALLERY_CONF = conf['Gallery']
 GALLERY_ROOT = pathlib.Path(BASE_DIR).joinpath(GALLERY_CONF.get("database_path"))
 if not GALLERY_ROOT.exists():
-    GALLERY_ROOT.mkdir()
+    GALLERY_ROOT.mkdir(parents=True)
 DETECTOR_CONF = conf['Detector']
 DEFAULT_CONF = conf['Default']
 MOTION_CONF = conf["Motion"]
