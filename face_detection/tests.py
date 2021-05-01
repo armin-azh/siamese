@@ -1,5 +1,6 @@
 import unittest
 from .tracker import *
+from .utils import bulk_calculate_iou
 from settings import TRACKER_CONF
 import time
 import numpy as np
@@ -59,7 +60,8 @@ class FilterTest(unittest.TestCase):
         self.assertGreaterEqual(time.time(), tk.global_time)
 
         ts_name = "David Cage"
-        tk.add_new_tracker(id_name=ts_name)
+        ts_coordinate = np.array([337, 12, 22, 44])
+        tk.add_new_tracker(id_name=ts_name, coordinate=ts_coordinate)
 
         self.assertEqual(tk.search(id_name=ts_name).name, ts_name)
         time.sleep(int(TRACKER_CONF.get("kalman_max_save_tk_sec")))
@@ -67,14 +69,21 @@ class FilterTest(unittest.TestCase):
         self.assertEqual(tk.search(id_name=ts_name), None)
 
         ts_name = "Shultz"
-        tk.add_new_tracker(ts_name)
+        tk.add_new_tracker(ts_name, coordinate=ts_coordinate)
         time.sleep(int(TRACKER_CONF.get("kalman_max_save_tk_sec")))
         tk.modify_tracker(ts_name)
         tk.update()
         self.assertEqual(tk.search(id_name=ts_name).name, ts_name)
 
-    def test_tracker_main_functionality(self):
-        pass
+        for i in range(3, 10):
+            tk.modify_tracker(ts_name)
+
+    def test_calculate_iou(self):
+        boxes1 = np.random.random((10, 4))
+        boxes2 = np.random.random((40, 4))
+        iou_matrix = bulk_calculate_iou(boxes1, boxes2)
+        self.assertEqual(iou_matrix.shape[0], 10)
+        self.assertEqual(iou_matrix.shape[1], 40)
 
 
 if __name__ == "__main__":

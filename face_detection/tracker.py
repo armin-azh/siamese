@@ -1,5 +1,7 @@
 import time
+import numpy as np
 from .filter import Kalman
+from .utils import bulk_calculate_iou
 
 from settings import TRACKER_CONF
 
@@ -123,17 +125,21 @@ class Tracker:
         self._update_global_time()
         self._refactor_in_memory_tk()
 
-    def add_new_tracker(self, id_name) -> KalmanFaceTracker:
+    def add_new_tracker(self, id_name, coordinate) -> KalmanFaceTracker:
         """
         add new id name to the list
+        :param coordinate:
         :param id_name:
         :return:
         """
         result = self.search(id_name)
         if result is not None:
+            if result.status == KalmanFaceTracker.STATUS_UNMATCHED:
+                result.correction(coordinate)
+            self.modify_tracker(id_name)
             return result
         else:
-            result = KalmanFaceTracker(initial_name=id_name)
+            result = KalmanFaceTracker(initial_name=id_name, det=coordinate)
             self._in_memory_tk_faces.append(result)
             return result
 
@@ -154,6 +160,22 @@ class Tracker:
         if result is not None:
             result()
 
+    def _split_trackers(self):
+        """
+        split the tracker in to which satisfies the condition
+        :return:
+        """
+        satisfied = list()
+        n_satisfied = list()
+
+        for tk in self._in_memory_tk_faces:
+            if tk.status == FaceTracker.STATUS_MATCHED:
+                satisfied.append(tk)
+            else:
+                n_satisfied.append(tk)
+
+        return satisfied, n_satisfied
+
     def update(self):
         """
         update tracker state
@@ -161,4 +183,52 @@ class Tracker:
         """
         self._modifier()
 
-    # def modify_trackers
+    def grab_satisfied_trackers(self):
+        """
+        find trackers that are satisfied more than the threshold
+        :return: generator
+        """
+        for tk in self._in_memory_tk_faces:
+            if tk.status == KalmanFaceTracker.STATUS_MATCHED:
+                yield tk
+
+    def find_relative_boxes(self, detections):
+        """
+        find match and un-matched boxes
+        :param detections: matrix in shape (m,4)
+        :return: matches and un-matches list
+        """
+
+        boxes = []
+        for tk in self.grab_satisfied_trackers():
+            tk.predict()
+            boxes.append(tk.get_current_state()[0])
+
+        boxes = np.array(boxes)
+        iou_matrix = bulk_calculate_iou(detections, boxes)
+        if iou_matrix.shape[0] > 0 and iou_matrix.shape[1] > 0:
+            max_iou = np.max(iou_matrix, axis=1)
+            max_args_iou = np.argmax(iou_matrix, axis=1)
+            un_matches = np.where(max_iou < float(TRACKER_CONF.get("iou_threshold")))
+            matches = np.where(max_iou >= float(TRACKER_CONF.get("iou_threshold")))
+            # print(matches)
+            # print(len(matches))
+            if len(matches) > 0:
+                matches = matches[0][max_args_iou]
+            else:
+                matches = None
+            return un_matches, matches
+        else:
+            return None, None
+
+    @property
+    def number_of_trackers(self):
+        return len(self._in_memory_tk_faces)
+
+    def retrieve_trackers_by_index(self, indexes):
+        for idx, tk in enumerate(self._in_memory_tk_faces):
+            if idx in indexes:
+                yield tk
+
+    def get_tracker_current_state(self,key):
+        return self._in_memory_tk_faces[key].get_current_state()

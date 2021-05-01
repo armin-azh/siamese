@@ -6,6 +6,7 @@ class Kalman:
     """
     initiate Kalman filter
     """
+
     def __init__(self, det):
         self.kf = KalmanFilter(dim_x=7, dim_z=4)
         self.kf.F = np.array(

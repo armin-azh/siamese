@@ -22,12 +22,16 @@ from tensorflow.keras.models import load_model as h5_load
 from database.component import ImageDatabase, parse_test_dir
 from database.component import inference_db
 from motion_detection.component import BSMotionDetection
+from face_detection.tracker import Tracker, KalmanFaceTracker
 from face_detection.utils import draw_face
 from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, GALLERY_ROOT
 from PIL import Image
 from sklearn import preprocessing
 from datetime import datetime
 from tqdm import tqdm
+from settings import (COLOR_WARN,
+                      COLOR_DANG,
+                      COLOR_SUCCESS)
 
 
 def face_recognition(args):
@@ -450,7 +454,7 @@ def cluster_faces(args) -> None:
                             if not ret:
                                 break
 
-                            frame=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                             for face, _ in detector.extract_faces(frame, f_w, f_h):
                                 if cnt % 10 == 0 and cnt > 0:
                                     print("#", end="")
@@ -465,10 +469,177 @@ def cluster_faces(args) -> None:
                             clusters = k_mean_clustering(embeddings=embedded_array,
                                                          n_cluster=int(GALLERY_CONF.get("n_clusters")))
                             database.save_clusters(clusters, faces, filename.title())
-                            v_path.rename(v_path.parent.joinpath(v_path.stem+"_done"+v_path.suffix))
+                            v_path.rename(v_path.parent.joinpath(v_path.stem + "_done" + v_path.suffix))
 
                 else:
                     print(f"[INFO] this file is clustered {filename}")
 
     inference_db(args)
     print("$ finished")
+
+
+def face_recognition_kalman(args):
+    """
+    argument from arg parser
+    :param args:
+    :return:
+    """
+    physical_devices = tf.config.list_physical_devices('GPU')
+    print("$ On {}".format(physical_devices[0].name))
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+    print(f"$ {parse_status(args)} recognition mode ...")
+
+    conf = configparser.ConfigParser()
+    conf.read(os.path.join(BASE_DIR, "conf.ini"))
+    model_conf = conf['Model']
+    detector_conf = conf['Detector']
+    gallery_conf = conf['Gallery']
+    default_conf = conf['Default']
+
+    database = ImageDatabase(db_path=gallery_conf.get("database_path"))
+
+    if (args.realtime or args.video) and args.eval_method == "cosine":
+        print("$ loading embeddings ...")
+        embeds, labels = database.bulk_embeddings()
+        encoded_labels = preprocessing.LabelEncoder()
+        encoded_labels.fit(list(set(labels)))
+        labels = encoded_labels.transform(labels)
+    motion_detection = BSMotionDetection()
+
+    with tf.device('/device:gpu:0'):
+        with tf.Graph().as_default():
+            with tf.compat.v1.Session() as sess:
+                print(f"$ Initializing computation graph with {model_conf.get('facenet')} pretrained model.")
+                load_model(os.path.join(BASE_DIR, model_conf.get('facenet')))
+                print("$ Model has been loaded.")
+                input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
+                embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
+                phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
+
+                detector = FaceDetector(sess=sess)
+                detector_type = detector_conf.get("type")
+                print(f"$ {detector_type} face detector has been loaded.")
+
+                cap = cv2.VideoCapture(0 if args.realtime else args.video_file)
+
+                frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+                frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+                fps = FPS()
+                fps.start()
+                prev = 0
+                total_proc_time = list()
+                proc_timer = Timer()
+
+                tracker = Tracker()
+                while cap.isOpened():
+                    proc_timer.start()
+                    ret, frame = cap.read()
+                    cur = time.time()
+                    delta_time = cur - prev
+                    if not ret:
+                        break
+
+                    fps.update()
+                    if (delta_time > 1. / float(detector_conf['fps'])) and (
+                            motion_detection.has_motion(frame) is not None):
+
+                        prev = cur
+                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                        faces = []
+                        boxes = []
+
+                        gray_frame = cvt_to_gray(frame) if not args.cluster else frame
+                        for face, bbox in detector.extract_faces(gray_frame, frame_width, frame_height):
+                            faces.append(normalize_input(face))
+                            boxes.append(bbox)
+
+                        boxes = np.array(boxes)
+                        faces = np.array(faces)
+                        un_matches, tracker_indexes = tracker.find_relative_boxes(boxes)
+
+                        if un_matches is not None:
+                            boxes = boxes[un_matches[0], :]
+                            faces = faces[un_matches[0], ...]
+
+                        if tracker_indexes is not None:
+
+                            for idx in tracker_indexes:
+                                x, y, w, h = tracker.get_tracker_current_state(idx).reshape((4,))
+                                x = int(x)
+                                y = int(y)
+                                w = int(w)
+                                h = int(h)
+                                frame = draw_face(frame, (x, y), (x + w, y + h), 5, 10, COLOR_SUCCESS, 1)
+                                cv2.putText(frame, "{}".format(tk.name),
+                                            (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLOR_SUCCESS, 1)
+
+
+                        if (args.video or args.realtime) and (faces.shape[0] > 0):
+                            feed_dic = {phase_train: False, input_plc: faces}
+                            embedded_array = sess.run(embeddings, feed_dic)
+
+                            if args.eval_method == 'cosine':
+                                dists = bulk_cosine_similarity(embedded_array, embeds)
+                                bs_similarity_idx = np.argmin(dists, axis=1)
+                                bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
+                                pred_labels = np.array(labels)[bs_similarity_idx]
+                                for i in range(len(pred_labels)):
+                                    x, y, w, h = boxes[i]
+                                    status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
+                                                                                                       i] < float(
+                                        default_conf.get("similarity_threshold")) else 'unrecognised'
+
+                                    if status != "unrecognised":
+                                        tk = tracker.add_new_tracker(status, np.array(boxes[i]))
+                                        tk.predict()
+                                        tk.correction(boxes[i])
+
+                                        # print(tk.status)
+                                        color = COLOR_SUCCESS if tk.status == KalmanFaceTracker.STATUS_MATCHED else COLOR_WARN
+                                    else:
+                                        color = COLOR_DANG
+
+                                    if detector_type == detector.DT_MTCNN:
+                                        frame = draw_face(frame, (x, y), (x + w, y + h), 5, 10, color, 1)
+                                        # frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
+                                    elif detector_type == detector.DT_RES10:
+                                        frame = draw_face(frame, (x, y), (w, h), 5, 10, color, 1)
+                                        # frame = cv2.rectangle(frame, (x, y), (w, h), color, 1)
+
+                                    # cv2.putText(frame,
+                                    #             "{} {:.2f}".format(status[0],
+                                    #                                bs_similarity[i]),
+                                    #             (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+                                    text = status[0] if tk.status != KalmanFaceTracker.STATUS_UNMATCHED else ""
+                                    cv2.putText(frame, "{}".format(text),
+                                                (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+                            else:
+                                break
+
+                            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                            cv2.imshow(parse_status(args), frame)
+                            # cv2.imshow('gray', gray_frame)
+                            # print(f"Tracker: {tracker.number_of_trackers}")
+                            # tracker.update()
+                        else:
+                            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                            cv2.imshow(parse_status(args), frame)
+                            # cv2.imshow('gray', gray_frame)
+
+                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                        break
+                    total_proc_time.append(proc_timer.end())
+                fps.stop()
+
+                print("$ fps: {:.2f}".format(fps.fps()))
+                print("$ expected fps: {}".format(int(cap.get(cv2.CAP_PROP_FPS))))
+                print("$ frame width {}".format(frame_width))
+                print("$ frame height {}".format(frame_height))
+                print("$ elapsed time: {:.2f}".format(fps.elapsed()))
+                print("$ Average time per iteration: {:.3f}".format(np.array(total_proc_time).mean()))
+
+            cap.release()
+            cv2.destroyAllWindows()

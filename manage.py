@@ -2,7 +2,8 @@ import argparse
 import configparser
 import os
 import pathlib
-from recognition.recognition import face_recognition, face_recognition_on_keras, test_recognition,cluster_faces
+from recognition.recognition import face_recognition, face_recognition_on_keras, test_recognition, cluster_faces
+from recognition.recognition import face_recognition_kalman
 from recognition.utils import convert_computation_graph_to_keras_model
 from database.component import inference_db
 from tools.computation_graph import computation_graph_inspect, pb_to_tensorboard
@@ -11,7 +12,10 @@ from settings import BASE_DIR
 
 
 def main(args):
-    if (args.realtime or args.video or args.cluster) and not args.keras:
+    if (args.realtime or args.video) and args.kalman_tracker:
+        face_recognition_kalman(args)
+
+    elif (args.realtime or args.video or args.cluster) and not args.keras:
         if args.cluster and args.cluster_bulk:
             cluster_faces(args)
         else:
@@ -54,13 +58,14 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--realtime', help="realtime recognition flag", action='store_true')
+    parser.add_argument('--kalman_tracker', help='use kalman tracker', action='store_true')
     parser.add_argument('--video', help="video recognition flag", action='store_true')
     parser.add_argument('--video_file', help='video filename for recognition', type=str, default="")
     parser.add_argument('--eval_method', help='evaluation method', choices=['cosine', 'svm', 'euclidean'],
                         default='cosine')
     parser.add_argument('--cluster', help="cluster video frame", action='store_true')
     parser.add_argument('--cluster_name', help="cluster name for saving images", type=str, default='')
-    parser.add_argument('--cluster_bulk',help = "bulk clustering",action="store_true")
+    parser.add_argument('--cluster_bulk', help="bulk clustering", action="store_true")
     parser.add_argument('--save', help="save frame in a file", action='store_true')
     parser.add_argument('--keras', help="use keras model", action="store_true")
     parser.add_argument('--classifier', help='classifier filename', type=str, default='')
