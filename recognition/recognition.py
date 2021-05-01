@@ -102,8 +102,9 @@ def face_recognition(args):
                                             parse_status() + datetime.strftime(datetime.now(), '%H%M%S') + ".avi")
                     out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'XVID'), )
 
-                fps = FPS()
-                fps.start()
+                if not args.cluster:
+                    fps = FPS()
+                    fps.start()
                 prev = 0
                 total_proc_time = list()
                 proc_timer = Timer()
@@ -115,7 +116,8 @@ def face_recognition(args):
                     if not ret:
                         break
 
-                    fps.update()
+                    if not args.cluster:
+                        fps.update()
                     if (delta_time > 1. / float(detector_conf['fps'])) and (
                             motion_detection.has_motion(frame) is not None or args.cluster):
 
@@ -178,7 +180,9 @@ def face_recognition(args):
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
                     total_proc_time.append(proc_timer.end())
-                fps.stop()
+
+                if not args.cluster:
+                    fps.stop()
                 if args.cluster:
                     print('\n$ Cluster embeddings')
                     faces = np.array(faces)
@@ -189,12 +193,13 @@ def face_recognition(args):
                                                      n_cluster=int(gallery_conf['n_clusters']))
                         database.save_clusters(clusters, faces_, args.cluster_name)
 
-                print("$ fps: {:.2f}".format(fps.fps()))
-                print("$ expected fps: {}".format(int(cap.get(cv2.CAP_PROP_FPS))))
-                print("$ frame width {}".format(frame_width))
-                print("$ frame height {}".format(frame_height))
-                print("$ elapsed time: {:.2f}".format(fps.elapsed()))
-                print("$ Average time per iteration: {:.3f}".format(np.array(total_proc_time).mean()))
+                if not args.cluster:
+                    print("$ fps: {:.2f}".format(fps.fps()))
+                    print("$ expected fps: {}".format(int(cap.get(cv2.CAP_PROP_FPS))))
+                    print("$ frame width {}".format(frame_width))
+                    print("$ frame height {}".format(frame_height))
+                    print("$ elapsed time: {:.2f}".format(fps.elapsed()))
+                    print("$ Average time per iteration: {:.3f}".format(np.array(total_proc_time).mean()))
 
             cap.release()
             cv2.destroyAllWindows()
@@ -575,7 +580,6 @@ def face_recognition_kalman(args):
                                 frame = draw_face(frame, (x, y), (x + w, y + h), 5, 10, COLOR_SUCCESS, 1)
                                 cv2.putText(frame, "{}".format(tk.name),
                                             (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLOR_SUCCESS, 1)
-
 
                         if (args.video or args.realtime) and (faces.shape[0] > 0):
                             feed_dic = {phase_train: False, input_plc: faces}
