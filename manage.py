@@ -1,11 +1,12 @@
 import argparse
 import configparser
 import os
-import pathlib
+import sys
 from recognition.recognition import face_recognition, face_recognition_on_keras, test_recognition, cluster_faces
 from recognition.recognition import face_recognition_kalman
 from recognition.utils import convert_computation_graph_to_keras_model
 from database.component import inference_db
+from gui.main import *
 from tools.computation_graph import computation_graph_inspect, pb_to_tensorboard
 from tools.shadow import add_shadow
 from settings import BASE_DIR
@@ -54,6 +55,11 @@ def main(args):
     elif args.im_mani and (args.im_darker or args.im_brighter):
         add_shadow(args)
 
+    elif args.gui:
+        app = QApplication(sys.argv)
+        window = MainWindow()
+        sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -88,6 +94,7 @@ if __name__ == "__main__":
     parser.add_argument('--im_darker', help="darker images", action='store_true')
     parser.add_argument('--im_brighter', help="brighter images", action='store_true')
     parser.add_argument('--im_save', help="save manipulated images", default="", type=str)
+    parser.add_argument('--gui',help="run gui",action='store_true')
 
     args = parser.parse_args()
 

@@ -1,18 +1,14 @@
-import sys
 import pathlib
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
 import qtawesome as qta
-from MainWindow import *
-from dialog import Ui_Dialog
-from dialog_recognition import Ui_Dialog as DialogRecognition
+from .MainWindow import *
+from .dialog import Ui_Dialog
 
 import cv2
 from settings import BASE_DIR, DEFAULT_CONF, GALLERY_CONF
 
-from thread import VideoSteamerThread,RecognitionThread
-from style import BTN_CAM_DEF, BTN_CAM_LOCK
+from .thread import VideoSteamerThread,RecognitionThread
 from database.component import ImageDatabase
 
 base_path = pathlib.Path(BASE_DIR)
@@ -35,15 +31,15 @@ class MainWindow(QMainWindow):
             self.RECORD_FILENAME.mkdir()
 
         # initialize main window
-        self.main_icon = QIcon("./icons/camera.png")
+        self.main_icon = QIcon(str(base_path.joinpath("gui/icons/camera.png")))
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.setWindowIcon(self.main_icon)
         self.ui.Pages.setCurrentIndex(0)
 
         # btn
-        self.ui.btn_start_record.setIcon(QIcon("./icons/start.png"))
-        self.ui.btn_stop_record.setIcon(QIcon("./icons/stop.png"))
+        self.ui.btn_start_record.setIcon(QIcon(str(base_path.joinpath("gui/icons/start.png"))))
+        self.ui.btn_stop_record.setIcon(QIcon(str(base_path.joinpath("gui/icons/stop.png"))))
 
         # btn event bind
         self.ui.btn_cam.clicked.connect(self.on_click_camera)
@@ -165,8 +161,3 @@ class MainWindow(QMainWindow):
         ids = list(self.database.get_identity_image_paths().keys())
         return True if identity_name in ids else False
 
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    sys.exit(app.exec_())
