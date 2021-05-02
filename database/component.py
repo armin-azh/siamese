@@ -291,6 +291,16 @@ class ImageDatabase:
                     tm_id.add_image(im_path)
                 self._identities.append(tm_id)
 
+    def is_db_stable(self):
+        status = True
+        has_min_person = False
+        for key, value in self.parse().items():
+            has_min_person = True
+            if not value[1]:
+                status = False
+                break
+        return status and has_min_person
+
     def save_clusters(self, clusters, faces, cluster_name):
         """
         save cluster images

@@ -6,6 +6,7 @@ import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+import sys
 import pathlib
 import time
 import configparser
@@ -61,6 +62,11 @@ def face_recognition(args):
             print(f" {args.cluster_name} is exists.")
 
     if (args.realtime or args.video) and args.eval_method == "cosine":
+        if not database.is_db_stable():
+            print("$ database is not stable, build npy file or no one is registered")
+            sys.exit()
+        else:
+            print("$ database is stable")
         print("$ loading embeddings ...")
         embeds, labels = database.bulk_embeddings()
         encoded_labels = preprocessing.LabelEncoder()
@@ -88,6 +94,9 @@ def face_recognition(args):
                     faces = list()
                     faces_ = list()
                     print("$ ", end='')
+
+                # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
                 frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
                 frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
