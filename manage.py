@@ -7,6 +7,7 @@ from recognition.recognition import face_recognition_kalman
 from recognition.utils import convert_computation_graph_to_keras_model
 from database.component import inference_db
 from tools.system import system_status
+from tools.download import download_models
 from gui.main import *
 from tools.computation_graph import computation_graph_inspect, pb_to_tensorboard
 from tools.shadow import add_shadow
@@ -64,6 +65,9 @@ def main(args):
     elif args.sys:
         system_status(args)
 
+    elif args.download_models:
+        download_models()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -100,6 +104,7 @@ if __name__ == "__main__":
     parser.add_argument('--im_save', help="save manipulated images", default="", type=str)
     parser.add_argument('--gui', help="run gui", action='store_true')
     parser.add_argument('--sys', help="check system status and information", action="store_true")
+    parser.add_argument("--download_models",help = "download model and save on local storage",action='store_true')
 
     args = parser.parse_args()
 

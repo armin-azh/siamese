@@ -19,3 +19,4 @@ Keras==2.4.3
 PyQt5==5.12.3
 scikit-image==0.18.1
 qtawesome
+gdown
