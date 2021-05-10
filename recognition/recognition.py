@@ -25,6 +25,7 @@ from database.component import inference_db
 from motion_detection.component import BSMotionDetection
 from face_detection.tracker import Tracker, KalmanFaceTracker
 from face_detection.utils import draw_face
+from tracker import TrackerList, MATCHED, UN_MATCHED
 from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, GALLERY_ROOT
 from PIL import Image
 from sklearn import preprocessing
@@ -32,7 +33,8 @@ from datetime import datetime
 from tqdm import tqdm
 from settings import (COLOR_WARN,
                       COLOR_DANG,
-                      COLOR_SUCCESS)
+                      COLOR_SUCCESS,
+                      TRACKER_CONF)
 
 
 def face_recognition(args):
@@ -114,6 +116,8 @@ def face_recognition(args):
                 if not args.cluster:
                     fps = FPS()
                     fps.start()
+                    tk = TrackerList(float(TRACKER_CONF.get("max_modify_time")),
+                                     int(TRACKER_CONF.get("max_frame_conf")))
                 prev = 0
                 total_proc_time = list()
                 proc_timer = Timer()
@@ -160,8 +164,16 @@ def face_recognition(args):
                                     x, y, w, h = boxes[i]
                                     status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
                                                                                                        i] < float(
-                                        default_conf.get("similarity_threshold")) else 'unrecognised'
-                                    color = (243, 32, 19) if status == 'unrecognised' else (0, 255, 0)
+                                        default_conf.get("similarity_threshold")) else ['unrecognised']
+                                    if status[0] == "unrecognised":
+                                        color = COLOR_DANG
+                                    else:
+                                        res = tk(name=status)
+                                        if res == MATCHED:
+                                            color = COLOR_SUCCESS
+                                        else:
+                                            color = COLOR_WARN
+                                            status = []
 
                                     if detector_type == detector.DT_MTCNN:
                                         frame = draw_face(frame, (x, y), (x + w, y + h), 5, 10, color, 1)
@@ -181,6 +193,7 @@ def face_recognition(args):
                                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                                 cv2.imshow(parse_status(args), frame)
                                 cv2.imshow('gray', gray_frame)
+                            tk.modify()
                         else:
                             if not args.cluster:
                                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
