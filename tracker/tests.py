@@ -1,7 +1,7 @@
 import unittest
 import time
 from .timer import Timer
-from .tk import IdentityTracker
+from .tk import IdentityTracker, TrackerList
 
 
 class TrackerTestCase(unittest.TestCase):
@@ -25,6 +25,28 @@ class TrackerTestCase(unittest.TestCase):
         self.assertEqual(tk.status, IdentityTracker.MATCHED)
         time.sleep(timer_thresh)
         self.assertFalse(tk())
+
+    def test_tracker_list(self):
+        max_conf = 5
+        timer_thresh = 3.4
+        tk = TrackerList(timer_thresh, max_conf)
+        res = tk("armin")
+
+        self.assertEqual(res, IdentityTracker.UN_MATCHED)
+        tk.modify()
+        res = tk("armin")
+
+        self.assertEqual(res, IdentityTracker.UN_MATCHED)
+
+        for i in range(max_conf):
+            tk("armin")
+
+        res = tk("armin")
+        self.assertEqual(res, IdentityTracker.MATCHED)
+        time.sleep(timer_thresh)
+
+        res = tk("armin")
+        self.assertEqual(res, IdentityTracker.MATCHED)
 
 
 if __name__ == "__main__":
