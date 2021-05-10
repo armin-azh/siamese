@@ -104,7 +104,8 @@ if __name__ == "__main__":
     parser.add_argument('--im_save', help="save manipulated images", default="", type=str)
     parser.add_argument('--gui', help="run gui", action='store_true')
     parser.add_argument('--sys', help="check system status and information", action="store_true")
-    parser.add_argument("--download_models",help = "download model and save on local storage",action='store_true')
+    parser.add_argument("--download_models", help="download model and save on local storage", action='store_true')
+    parser.add_argument("--scene", help="scenario detail", type=str, default='')
 
     args = parser.parse_args()
 

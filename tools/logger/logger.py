@@ -1,11 +1,12 @@
 from datetime import datetime
 from colorama import Fore
+import pathlib
 
 
 class Logger:
-    def __init__(self, log_dir=None):
+    def __init__(self, log_dir: pathlib.Path = None):
         self._time_format = '[%H:%M:%S] '
-        self._log_dir = log_dir
+        self._log_dir = log_dir.joinpath("summary.txt")
 
     def _now_time(self):
         return datetime.strftime(datetime.now(), self._time_format)
@@ -33,3 +34,11 @@ class Logger:
 
         status = Fore.LIGHTRED_EX + time + Fore.RED + message
         print(status)
+
+    def _write(self, data: dict) -> None:
+        with open(str(self._log_dir), 'a') as file:
+            for key, value in data.items():
+                file.write(f"{key} = {value}\n")
+
+    def log(self, data: dict) -> None:
+        self._write(data)

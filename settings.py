@@ -15,6 +15,8 @@ GALLERY_LOG_DIR = os.path.join(conf["Log"].get("gallery"), 'gallery') if conf["L
     "gallery") is None else os.path.join(
     BASE_DIR, 'log/gallery')
 
+SUMMARY_LOG_DIR = pathlib.Path(BASE_DIR).joinpath("log/"+conf["Log"].get("summary"))
+
 MODEL_CONF = conf['Model']
 GALLERY_CONF = conf['Gallery']
 GALLERY_ROOT = pathlib.Path(BASE_DIR).joinpath(GALLERY_CONF.get("database_path"))

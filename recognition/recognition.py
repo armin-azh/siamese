@@ -31,10 +31,13 @@ from PIL import Image
 from sklearn import preprocessing
 from datetime import datetime
 from tqdm import tqdm
+from tools.system import system_status
+from tools.logger import Logger
 from settings import (COLOR_WARN,
                       COLOR_DANG,
                       COLOR_SUCCESS,
-                      TRACKER_CONF)
+                      TRACKER_CONF,
+                      SUMMARY_LOG_DIR)
 
 
 def face_recognition(args):
@@ -43,11 +46,16 @@ def face_recognition(args):
     :param args:
     :return:
     """
+    log_subdir = SUMMARY_LOG_DIR.joinpath(datetime.strftime(datetime.now(), '%Y-%m-%d(%H-%M-%S)'))
+    logger = Logger(log_dir=log_subdir)
+    if not log_subdir.exists():
+        log_subdir.mkdir(parents=True)
+
     physical_devices = tf.config.list_physical_devices('GPU')
-    print("$ On {}".format(physical_devices[0].name))
+    logger.info("$ On {}".format(physical_devices[0].name))
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    print(f"$ {parse_status(args)} recognition mode ...")
+    logger.info(f"$ {parse_status(args)} recognition mode ...")
 
     conf = configparser.ConfigParser()
     conf.read(os.path.join(BASE_DIR, "conf.ini"))
@@ -61,15 +69,15 @@ def face_recognition(args):
     # check cluster name existence
     if args.cluster:
         if args.cluster_name and database.check_name_exists(args.cluster_name):
-            print(f" {args.cluster_name} is exists.")
+            logger.info(f" {args.cluster_name} is exists.")
 
     if (args.realtime or args.video) and args.eval_method == "cosine":
         if not database.is_db_stable():
-            print("$ database is not stable, build npy file or no one is registered")
+            logger.info("$ database is not stable, build npy file or no one is registered")
             sys.exit()
         else:
-            print("$ database is stable")
-        print("$ loading embeddings ...")
+            logger.info("$ database is stable")
+        logger.info("$ loading embeddings ...")
         embeds, labels = database.bulk_embeddings()
         encoded_labels = preprocessing.LabelEncoder()
         encoded_labels.fit(list(set(labels)))
@@ -79,16 +87,16 @@ def face_recognition(args):
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
             with tf.compat.v1.Session() as sess:
-                print(f"$ Initializing computation graph with {model_conf.get('facenet')} pretrained model.")
+                logger.info(f"$ Initializing computation graph with {model_conf.get('facenet')} pretrained model.")
                 load_model(os.path.join(BASE_DIR, model_conf.get('facenet')))
-                print("$ Model has been loaded.")
+                logger.info("$ Model has been loaded.")
                 input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
                 embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
                 phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
 
                 detector = FaceDetector(sess=sess)
                 detector_type = detector_conf.get("type")
-                print(f"$ {detector_type} face detector has been loaded.")
+                logger.info(f"$ {detector_type} face detector has been loaded.")
 
                 cap = cv2.VideoCapture(0 if args.realtime else args.video_file)
 
@@ -192,14 +200,14 @@ def face_recognition(args):
                             if not args.cluster:
                                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                                 cv2.imshow(parse_status(args), frame)
-                                cv2.imshow('gray', gray_frame)
+                                # cv2.imshow('gray', gray_frame)
                             tk.modify()
 
                         else:
                             if not args.cluster:
                                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                                 cv2.imshow(parse_status(args), frame)
-                                cv2.imshow('gray', gray_frame)
+                                # cv2.imshow('gray', gray_frame)
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
                     total_proc_time.append(proc_timer.end())
@@ -207,7 +215,7 @@ def face_recognition(args):
                 if not args.cluster:
                     fps.stop()
                 if args.cluster:
-                    print('\n$ Cluster embeddings')
+                    logger.info('\n$ Cluster embeddings')
                     faces = np.array(faces)
                     if faces.shape[0] > 0:
                         feed_dic = {phase_train: False, input_plc: faces}
@@ -217,12 +225,20 @@ def face_recognition(args):
                         database.save_clusters(clusters, faces_, args.cluster_name)
 
                 if not args.cluster:
-                    print("$ fps: {:.2f}".format(fps.fps()))
-                    print("$ expected fps: {}".format(int(cap.get(cv2.CAP_PROP_FPS))))
-                    print("$ frame width {}".format(frame_width))
-                    print("$ frame height {}".format(frame_height))
-                    print("$ elapsed time: {:.2f}".format(fps.elapsed()))
-                    print("$ Average time per iteration: {:.3f}".format(np.array(total_proc_time).mean()))
+                    fps_rate = fps.fps()
+                    fps_elapsed = fps.elapsed()
+                    average_iterations = np.array(total_proc_time).mean()
+                    logger.info("$ fps: {:.2f}".format(fps_rate))
+                    logger.info("$ expected fps: {}".format(int(cap.get(cv2.CAP_PROP_FPS))))
+                    logger.info("$ frame width {}".format(frame_width))
+                    logger.info("$ frame height {}".format(frame_height))
+                    logger.info("$ elapsed time: {:.2f}".format(fps_elapsed))
+                    logger.info("$ Average time per iteration: {:.3f}".format(average_iterations))
+
+                    system_result = system_status(args, printed=False)
+                    data = {"Scenario": args.scene, "Fps_Rate": fps_rate, "Fps_Elapsed": fps_elapsed,
+                            "Average_Time_Per_Iteration": average_iterations, **system_result}
+                    logger.log(data)
 
             cap.release()
             cv2.destroyAllWindows()
