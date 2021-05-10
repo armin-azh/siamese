@@ -173,7 +173,7 @@ def face_recognition(args):
                                             color = COLOR_SUCCESS
                                         else:
                                             color = COLOR_WARN
-                                            status = []
+                                            status = [""]
 
                                     if detector_type == detector.DT_MTCNN:
                                         frame = draw_face(frame, (x, y), (x + w, y + h), 5, 10, color, 1)
@@ -194,6 +194,7 @@ def face_recognition(args):
                                 cv2.imshow(parse_status(args), frame)
                                 cv2.imshow('gray', gray_frame)
                             tk.modify()
+
                         else:
                             if not args.cluster:
                                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
