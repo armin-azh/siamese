@@ -1,3 +1,4 @@
+import itertools
 from .counter import Counter
 from .timer import Timer
 
@@ -39,3 +40,38 @@ class IdentityTracker:
 
     def validated(self):
         return True if self._cnt() >= self._max_conf else False
+
+    def time_validated(self):
+        return self._timer.validate()
+
+
+class TrackerList:
+    def __init__(self, max_time: float, max_conf: int):
+        self._tk_ls = []
+        self._max_conf = max_conf
+        self._max_time = max_time
+
+    def _search(self, name: str):
+        res = None
+        for idx, tk in enumerate(self._tk_ls):
+            if tk.name == name:
+                res = (idx, tk)
+                break
+        return res
+
+    def __call__(self, name: str):
+        res = self._search(name)
+        if res is not None:
+            idx, tk = res
+            tk()
+            return tk.status
+
+        else:
+            new_tk = IdentityTracker(name,self._max_time,self._max_conf)
+            self._tk_ls.append(new_tk)
+            return new_tk.status
+
+    def modify(self):
+        for tk in self._tk_ls:
+            if not tk.time_validated():
+                del tk
