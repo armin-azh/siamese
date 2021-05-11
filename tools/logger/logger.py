@@ -6,7 +6,7 @@ import pathlib
 class Logger:
     def __init__(self, log_dir: pathlib.Path = None):
         self._time_format = '[%H:%M:%S] '
-        self._log_dir = log_dir.joinpath("summary.txt")
+        self._log_dir = log_dir.joinpath("summary.txt") if log_dir is not None else ""
 
     def _now_time(self):
         return datetime.strftime(datetime.now(), self._time_format)

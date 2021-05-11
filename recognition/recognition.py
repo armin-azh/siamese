@@ -450,8 +450,9 @@ def cluster_faces(args) -> None:
     :param args:
     :return:
     """
+    logger = Logger()
     physical_devices = tf.config.list_physical_devices('GPU')
-    print("$ On {}".format(physical_devices[0].name))
+    logger.info("$ On {}".format(physical_devices[0].name))
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
     database = ImageDatabase(db_path=GALLERY_ROOT)
@@ -459,14 +460,14 @@ def cluster_faces(args) -> None:
 
     ls_video = pathlib.Path(BASE_DIR).joinpath(DEFAULT_CONF.get("save_video"))
 
-    print(ls_video)
+    logger.info(str(ls_video))
 
     with tf.Graph().as_default():
         with tf.compat.v1.Session() as sess:
 
-            print(f"$ Initializing computation graph with {MODEL_CONF.get('facenet')} pretrained model.")
+            logger.info(f"$ Initializing computation graph with {MODEL_CONF.get('facenet')} pretrained model.")
             load_model(os.path.join(BASE_DIR, MODEL_CONF.get('facenet')))
-            print("$ Model has been loaded.")
+            logger.info("$ Model has been loaded.")
 
             detector = FaceDetector(sess=sess)
 
@@ -481,45 +482,44 @@ def cluster_faces(args) -> None:
                 if filename.find("done") == -1:
 
                     if filename in ids:
-                        print(f"[WARN] This id is exists {filename}")
-                        continue
-                    else:
-                        cap = cv2.VideoCapture(str(v_path))
+                        logger.warn(f"[WARN] This id is exists {filename}")
+                    # else:
+                    cap = cv2.VideoCapture(str(v_path))
 
-                        f_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-                        f_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+                    f_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+                    f_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
-                        n_faces = list()
-                        faces = list()
+                    n_faces = list()
+                    faces = list()
 
-                        cnt = 0
-                        while cap.isOpened():
-                            ret, frame = cap.read()
-                            if not ret:
-                                break
+                    cnt = 0
+                    while cap.isOpened():
+                        ret, frame = cap.read()
+                        if not ret:
+                            break
 
-                            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                            for face, _ in detector.extract_faces(frame, f_w, f_h):
-                                if cnt % 10 == 0 and cnt > 0:
-                                    print("#", end="")
-                                n_faces.append(normalize_input(face))
-                                faces.append(face)
-                        cap.release()
+                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        for face, _ in detector.extract_faces(frame, f_w, f_h):
+                            if cnt % 10 == 0 and cnt > 0:
+                                print("#", end="")
+                            n_faces.append(normalize_input(face))
+                            faces.append(face)
+                    cap.release()
 
-                        n_faces = np.array(n_faces)
-                        if n_faces.shape[0] > 0:
-                            feed_dic = {phase_train: False, input_plc: n_faces}
-                            embedded_array = sess.run(embeddings, feed_dic)
-                            clusters = k_mean_clustering(embeddings=embedded_array,
-                                                         n_cluster=int(GALLERY_CONF.get("n_clusters")))
-                            database.save_clusters(clusters, faces, filename.title())
-                            v_path.rename(v_path.parent.joinpath(v_path.stem + "_done" + v_path.suffix))
+                    n_faces = np.array(n_faces)
+                    if n_faces.shape[0] > 0:
+                        feed_dic = {phase_train: False, input_plc: n_faces}
+                        embedded_array = sess.run(embeddings, feed_dic)
+                        clusters = k_mean_clustering(embeddings=embedded_array,
+                                                     n_cluster=int(GALLERY_CONF.get("n_clusters")))
+                        database.save_clusters(clusters, faces, filename.title())
+                        v_path.rename(v_path.parent.joinpath(v_path.stem + "_done" + v_path.suffix))
 
                 else:
-                    print(f"[INFO] this file is clustered {filename}")
+                    logger.info(f"[INFO] this file is clustered {filename}")
 
     inference_db(args)
-    print("$ finished")
+    logger.info("$ finished")
 
 
 def face_recognition_kalman(args):
