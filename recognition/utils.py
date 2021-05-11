@@ -4,12 +4,13 @@ from __future__ import print_function
 
 import datetime
 import time
-import pathlib
 import tensorflow as tf
 from tensorflow.python.platform import gfile
 import os
 import re
 import numpy as np
+import string
+import random
 from .model import *
 
 
@@ -215,3 +216,14 @@ class Counter:
 
     def __call__(self, *args, **kwargs):
         return self._cnt
+
+
+def create_random_name(max_length: int) -> str:
+    alphabet = string.ascii_letters
+    res = ""
+    for i in range(max_length):
+        res += random.choice(alphabet)
+
+    return res
+
+

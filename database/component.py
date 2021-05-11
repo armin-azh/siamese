@@ -13,6 +13,7 @@ import numpy as np
 from itertools import chain
 from sklearn import preprocessing
 from .utils import extract_filename, tabulate_print
+from recognition.utils import create_random_name
 from .npy_builder import builder
 from PIL import ImageOps
 
@@ -315,7 +316,8 @@ class ImageDatabase:
 
         for key, value in clusters.items():
             idx = np.random.choice(value)
-            save_path = os.path.join(base_path, f"image_{key}_{idx}.jpg")
+            post = create_random_name(max_length=6)
+            save_path = os.path.join(base_path, f"image_{key}_{idx}_{post}.jpg")
             faces[idx].save(save_path)
         self.modify()
         print(f"$ Images saved at {base_path}")
