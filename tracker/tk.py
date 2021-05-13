@@ -62,16 +62,16 @@ class TrackerList:
     def __call__(self, name: str):
         res = self._search(name)
         if res is not None:
-            idx, tk = res
-            tk()
-            return tk.status
+            idx, tk_ = res
+            tk_()
+            return tk_.status
 
         else:
-            new_tk = IdentityTracker(name,self._max_time,self._max_conf)
+            new_tk = IdentityTracker(name, self._max_time, self._max_conf)
             self._tk_ls.append(new_tk)
             return new_tk.status
 
     def modify(self):
-        for tk in self._tk_ls:
-            if not tk.time_validated():
-                del tk
+        for tk_ in self._tk_ls:
+            if not tk_.time_validated():
+                del tk_

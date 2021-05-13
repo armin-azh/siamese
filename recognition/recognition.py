@@ -181,7 +181,7 @@ def face_recognition(args):
                                             color = COLOR_SUCCESS
                                         else:
                                             color = COLOR_WARN
-                                            status = [""]
+                                            # status = [""]
 
                                     if detector_type == detector.DT_MTCNN:
                                         frame = draw_face(frame, (x, y), (x + w, y + h), 5, 10, color, 1)
