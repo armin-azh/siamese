@@ -192,7 +192,9 @@ class MultiCascadeFaceDetector(AbstractFaceDetector):
         idx_ = 0
         for box in boxes:
             x_, y_, w_, h_ = box
-            sub_img = img[x_:x_ + w_, y_:y_ + h_, :]
+            x1, y1 = abs(x_), abs(y_)
+            x2, y2 = x1 + w_, y1 + h_
+            sub_img = img[x1:x2, y1:y2]
             sub_img = Image.fromarray(sub_img)
             sub_img = np.array(sub_img.resize(self._output_shape))
             f_s[idx_, :, :, :] = sub_img

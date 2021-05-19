@@ -12,12 +12,12 @@ import time
 import configparser
 import cv2
 import numpy as np
-from .utils import load_model, parse_status, FPS, Timer
-from .preprocessing import normalize_input, cvt_to_gray
+from .utils import load_model, parse_status, FPS, Timer, get_video_source_dim
+from .preprocessing import normalize_input, cvt_to_gray, normalize_faces
 from .cluster import k_mean_clustering
 from .distance import bulk_cosine_similarity, bulk_cosine_similarity_v2
 from settings import BASE_DIR
-from face_detection.detector import FaceDetector
+from face_detection.detector import FaceDetector, MultiCascadeFaceDetector
 import tensorflow as tf
 from tensorflow.keras.models import load_model as h5_load
 from database.component import ImageDatabase, parse_test_dir
@@ -94,11 +94,12 @@ def face_recognition(args):
                 embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
                 phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
 
-                detector = FaceDetector(sess=sess)
                 detector_type = detector_conf.get("type")
                 logger.info(f"$ {detector_type} face detector has been loaded.")
 
                 cap = cv2.VideoCapture(0 if args.realtime else args.video_file)
+                f_w, f_h = get_video_source_dim(cap)
+                detector = MultiCascadeFaceDetector(sess=sess, f_width=f_w, f_height=f_h)
 
                 if args.cluster:
                     faces = list()
@@ -144,23 +145,29 @@ def face_recognition(args):
 
                         prev = cur
                         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        if not args.cluster:
-                            faces = list()
+                        # if not args.cluster:
+                        #     faces = list()
 
-                        boxes = []
                         gray_frame = cvt_to_gray(frame) if not args.cluster else frame
-                        for face, bbox in detector.extract_faces(gray_frame, frame_width, frame_height):
-                            faces.append(normalize_input(face))
-                            boxes.append(bbox)
-                            if args.cluster:
-                                faces_.append(face)
-                                print("#", end="")
 
-                        if not args.cluster:
-                            faces = np.array(faces)
+                        keypoint = detector.find_keypoint(gray_frame)
+                        boxes = detector.get_bounding_box(keypoint)
+                        faces = detector.extract_faces(gray_frame, keypoint)
+
+
+                        # for face, bbox in detector.extract_faces(gray_frame, frame_width, frame_height):
+                        #     faces.append(normalize_input(face))
+                        #     # boxes.append(bbox)
+                        #     if args.cluster:
+                        #         faces_.append(face)
+                        #         print("#", end="")
+
+                        # if not args.cluster:
+                        #     faces = np.array(faces)
 
                         if (args.video or args.realtime) and (faces.shape[0] > 0):
-                            feed_dic = {phase_train: False, input_plc: faces}
+                            n_faces = normalize_faces(faces)
+                            feed_dic = {phase_train: False, input_plc: n_faces}
                             embedded_array = sess.run(embeddings, feed_dic)
 
                             if args.eval_method == 'cosine':
@@ -183,10 +190,10 @@ def face_recognition(args):
                                             color = COLOR_WARN
                                             # status = [""]
 
-                                    if detector_type == detector.DT_MTCNN:
+                                    if detector_type == "mtcnn":
                                         frame = draw_face(frame, (x, y), (x + w, y + h), 5, 10, color, 1)
                                         # frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
-                                    elif detector_type == detector.DT_RES10:
+                                    elif detector_type == "res10":
                                         frame = draw_face(frame, (x, y), (w, h), 5, 10, color, 1)
                                         # frame = cv2.rectangle(frame, (x, y), (w, h), color, 1)
 
