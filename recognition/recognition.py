@@ -18,6 +18,7 @@ from .cluster import k_mean_clustering
 from .distance import bulk_cosine_similarity, bulk_cosine_similarity_v2
 from settings import BASE_DIR
 from face_detection.detector import FaceDetector, MultiCascadeFaceDetector
+from mask.detector import LaplacianMask
 import tensorflow as tf
 from tensorflow.keras.models import load_model as h5_load
 from database.component import ImageDatabase, parse_test_dir
@@ -83,6 +84,7 @@ def face_recognition(args):
         encoded_labels.fit(list(set(labels)))
         labels = encoded_labels.transform(labels)
     motion_detection = BSMotionDetection()
+    mask_detection = LaplacianMask()
 
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
@@ -101,16 +103,16 @@ def face_recognition(args):
                 f_w, f_h = get_video_source_dim(cap)
                 detector = MultiCascadeFaceDetector(sess=sess, f_width=f_w, f_height=f_h)
 
-                if args.cluster:
-                    faces = list()
-                    faces_ = list()
-                    print("$ ", end='')
+                # if args.cluster:
+                #     faces = list()
+                #     faces_ = list()
+                #     print("$ ", end='')
 
                 # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
                 # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-                frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-                frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+                # frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+                # frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
                 if args.save:
                     filename = os.path.join(BASE_DIR, default_conf.get("save_video"),
@@ -119,7 +121,7 @@ def face_recognition(args):
                     if not os.path.exists(filename):
                         os.makedirs(filename)
                     filename = os.path.join(filename,
-                                            parse_status() + datetime.strftime(datetime.now(), '%H%M%S') + ".avi")
+                                            parse_status(args) + datetime.strftime(datetime.now(), '%H%M%S') + ".avi")
                     out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'XVID'), )
 
                 if not args.cluster:
@@ -153,6 +155,12 @@ def face_recognition(args):
                         keypoint = detector.find_keypoint(gray_frame)
                         boxes = detector.get_bounding_box(keypoint)
                         faces = detector.extract_faces(gray_frame, keypoint)
+                        map_keypoint = detector.map_keypoint(keypoint)
+                        faces = mask_detection.run(faces, map_keypoint)
+
+                        for key in keypoint:
+                            if mask_detection.has_mask(frame,key):
+                                frame = mask_detection.put_mask(frame,key)
 
                         # for face, bbox in detector.extract_faces(gray_frame, frame_width, frame_height):
                         #     faces.append(normalize_input(face))
@@ -223,11 +231,12 @@ def face_recognition(args):
                 if args.cluster:
                     logger.info('\n$ Cluster embeddings')
                     if faces.shape[0] > 0:
-                        feed_dic = {phase_train: False, input_plc: faces}
+                        n_faces = normalize_faces(faces)
+                        feed_dic = {phase_train: False, input_plc: n_faces}
                         embedded_array = sess.run(embeddings, feed_dic)
                         clusters = k_mean_clustering(embeddings=embedded_array,
                                                      n_cluster=int(gallery_conf['n_clusters']))
-                        database.save_clusters(clusters, faces_, args.cluster_name)
+                        database.save_clusters(clusters, faces, args.cluster_name)
 
                 if not args.cluster:
                     fps_rate = fps.fps()
@@ -235,8 +244,8 @@ def face_recognition(args):
                     average_iterations = np.array(total_proc_time).mean()
                     logger.info("$ fps: {:.2f}".format(fps_rate))
                     logger.info("$ expected fps: {}".format(int(cap.get(cv2.CAP_PROP_FPS))))
-                    logger.info("$ frame width {}".format(frame_width))
-                    logger.info("$ frame height {}".format(frame_height))
+                    logger.info("$ frame width {}".format(f_w))
+                    logger.info("$ frame height {}".format(f_h))
                     logger.info("$ elapsed time: {:.2f}".format(fps_elapsed))
                     logger.info("$ Average time per iteration: {:.3f}".format(average_iterations))
 
