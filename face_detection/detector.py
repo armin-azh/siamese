@@ -142,6 +142,9 @@ class MultiCascadeFaceDetector(AbstractFaceDetector):
 
         super(MultiCascadeFaceDetector, self).__init__(*args, **kwargs)
 
+    def set_frame_dim(self, dim: tuple) -> None:
+        self._frame_width, self._frame_height = dim
+
     def find_keypoint(self, img: np.ndarray) -> np.ndarray:
         frame = Image.fromarray(img)
         frame = frame.convert('RGB')

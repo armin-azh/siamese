@@ -154,7 +154,6 @@ def face_recognition(args):
                         boxes = detector.get_bounding_box(keypoint)
                         faces = detector.extract_faces(gray_frame, keypoint)
 
-
                         # for face, bbox in detector.extract_faces(gray_frame, frame_width, frame_height):
                         #     faces.append(normalize_input(face))
                         #     # boxes.append(bbox)
@@ -223,7 +222,6 @@ def face_recognition(args):
                     fps.stop()
                 if args.cluster:
                     logger.info('\n$ Cluster embeddings')
-                    faces = np.array(faces)
                     if faces.shape[0] > 0:
                         feed_dic = {phase_train: False, input_plc: faces}
                         embedded_array = sess.run(embeddings, feed_dic)
@@ -476,7 +474,7 @@ def cluster_faces(args) -> None:
             load_model(os.path.join(BASE_DIR, MODEL_CONF.get('facenet')))
             logger.info("$ Model has been loaded.")
 
-            detector = FaceDetector(sess=sess)
+            detector = MultiCascadeFaceDetector(sess=sess, f_width=900, f_height=900)
 
             input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
             embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
@@ -493,28 +491,32 @@ def cluster_faces(args) -> None:
                     # else:
                     cap = cv2.VideoCapture(str(v_path))
 
-                    f_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-                    f_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+                    detector.set_frame_dim(dim=get_video_source_dim(cap))
 
                     n_faces = list()
                     faces = list()
 
-                    cnt = 0
+                    # cnt = 0
                     while cap.isOpened():
                         ret, frame = cap.read()
                         if not ret:
                             break
 
                         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        for face, _ in detector.extract_faces(frame, f_w, f_h):
-                            if cnt % 10 == 0 and cnt > 0:
-                                print("#", end="")
-                            n_faces.append(normalize_input(face))
-                            faces.append(face)
+
+                        keypoint = detector.find_keypoint(frame)
+                        faces = detector.extract_faces(frame, keypoint)
+                        logger.info(f"$ {faces.shape[0]} faces find in {filename}")
+                        # for face, _ in detector.extract_faces(frame, f_w, f_h):
+                        #     if cnt % 10 == 0 and cnt > 0:
+                        #         print("#", end="")
+                        #     n_faces.append(normalize_input(face))
+                        #     faces.append(face)
                     cap.release()
 
-                    n_faces = np.array(n_faces)
-                    if n_faces.shape[0] > 0:
+                    # n_faces = np.array(n_faces)
+                    if faces.shape[0] > 0:
+                        n_faces = normalize_faces(faces)
                         feed_dic = {phase_train: False, input_plc: n_faces}
                         embedded_array = sess.run(embeddings, feed_dic)
                         clusters = k_mean_clustering(embeddings=embedded_array,
