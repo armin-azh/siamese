@@ -493,8 +493,8 @@ def cluster_faces(args) -> None:
 
                     detector.set_frame_dim(dim=get_video_source_dim(cap))
 
-                    n_faces = list()
-                    faces = list()
+                    # n_faces = list()
+                    faces = None
 
                     # cnt = 0
                     while cap.isOpened():
@@ -505,8 +505,13 @@ def cluster_faces(args) -> None:
                         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
                         keypoint = detector.find_keypoint(frame)
-                        faces = detector.extract_faces(frame, keypoint)
-                        logger.info(f"$ {faces.shape[0]} faces find in {filename}")
+                        faces_ = detector.extract_faces(frame, keypoint)
+
+                        if faces is None:
+                            faces = faces_
+                        else:
+                            faces = np.concatenate([faces, faces_], axis=0)
+
                         # for face, _ in detector.extract_faces(frame, f_w, f_h):
                         #     if cnt % 10 == 0 and cnt > 0:
                         #         print("#", end="")
@@ -515,7 +520,7 @@ def cluster_faces(args) -> None:
                     cap.release()
 
                     # n_faces = np.array(n_faces)
-                    if faces.shape[0] > 0:
+                    if faces is not None and faces.shape[0] > 0:
                         n_faces = normalize_faces(faces)
                         feed_dic = {phase_train: False, input_plc: n_faces}
                         embedded_array = sess.run(embeddings, feed_dic)

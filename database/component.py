@@ -318,7 +318,10 @@ class ImageDatabase:
             idx = np.random.choice(value)
             post = create_random_name(max_length=6)
             save_path = os.path.join(base_path, f"image_{key}_{idx}_{post}.jpg")
-            faces[idx].save(save_path)
+            im_ = faces[idx]
+            im_ = im_.astype(np.uint8)
+            im_ = PilImage.fromarray(im_)
+            im_.save(save_path)
         self.modify()
         print(f"$ Images saved at {base_path}")
 
