@@ -12,6 +12,7 @@ import numpy as np
 import string
 import random
 from .model import *
+import cv2
 
 
 def get_model_filenames(model_dir):
@@ -227,3 +228,5 @@ def create_random_name(max_length: int) -> str:
     return res
 
 
+def get_video_source_dim(c: cv2.VideoCapture) -> tuple:
+    return c.get(cv2.CAP_PROP_FRAME_WIDTH), c.get(cv2.CAP_PROP_FRAME_HEIGHT)
