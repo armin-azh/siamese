@@ -218,7 +218,8 @@ class MultiCascadeFaceDetector(AbstractFaceDetector):
         mouth_ = np.abs(np.subtract(mouth_, origin_))
         nose_ = np.abs(np.subtract(nose_, origin))
 
-        m_k[:, 0:4] = self.get_bounding_box(keypoint)
+        m_k[:, 0:2] = np.zeros_like(keypoint[:, :2])
+        m_k[:, 2:4] = np.ones_like(keypoint[:, 2:4]) * self._output_shape[0]
         m_k[:, 4:6] = nose_
         m_k[:, 6:10] = eye_
         m_k[:, 10:] = mouth_

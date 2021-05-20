@@ -155,12 +155,13 @@ def face_recognition(args):
                         keypoint = detector.find_keypoint(gray_frame)
                         boxes = detector.get_bounding_box(keypoint)
                         faces = detector.extract_faces(gray_frame, keypoint)
-                        map_keypoint = detector.map_keypoint(keypoint)
-                        faces = mask_detection.run(faces, map_keypoint)
-
-                        for key in keypoint:
-                            if mask_detection.has_mask(frame,key):
-                                frame = mask_detection.put_mask(frame,key)
+                        # map_keypoint = detector.map_keypoint(keypoint)
+                        # print(map_keypoint)
+                        # faces = mask_detection.run(faces, map_keypoint)
+                        #
+                        # for key in keypoint:
+                        #     if mask_detection.has_mask(frame, key):
+                        #         frame = mask_detection.put_mask(frame, key)
 
                         # for face, bbox in detector.extract_faces(gray_frame, frame_width, frame_height):
                         #     faces.append(normalize_input(face))
