@@ -477,6 +477,8 @@ def cluster_faces(args) -> None:
 
     logger.info(str(ls_video))
 
+    mask_detection = LaplacianMask()
+
     with tf.Graph().as_default():
         with tf.compat.v1.Session() as sess:
 
@@ -516,6 +518,9 @@ def cluster_faces(args) -> None:
 
                         keypoint = detector.find_keypoint(frame)
                         faces_ = detector.extract_faces(frame, keypoint)
+                        map_keypoint = detector.map_keypoint(keypoint)
+                        # print(map_keypoint)
+                        faces_ = mask_detection.run(faces_, map_keypoint)
 
                         if faces is None:
                             faces = faces_
