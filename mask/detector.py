@@ -36,7 +36,7 @@ class LaplacianMask(AbstractMaskDetector):
         mouth_l = coordinate[12:]
         mouth_r = coordinate[10:12]
         mouth = img[mouth_r[1] - 10: mouth_r[1] + 10, mouth_l[0]:mouth_r[0], :]
-        if mouth and nose:
+        if mouth.size != 0 and nose.size != 0:
             mouth = cv2.cvtColor(mouth, cv2.COLOR_BGR2GRAY)
             nose = cv2.cvtColor(nose, cv2.COLOR_BGR2GRAY)
             av_mouth = np.average(mouth)
@@ -60,26 +60,26 @@ class LaplacianMask(AbstractMaskDetector):
         # r_eye = coordinate[6:8]
         #
         # mid_mouth_x = int((r_mouth[0] + l_mouth[0]) / 2)
-        mid_mouth_y = r_mouth[1]
+        mid_mouth_y = int(r_mouth[1])
 
         # mid_eye_x = int((l_eye[0] + r_eye[0]) / 2)
-        mid_eye_y = l_eye[1]
+        mid_eye_y = int(l_eye[1])
 
-        mid_nose_eye_y = int((noise_[1] - mid_eye_y) / 2)
+        mid_nose_eye_y = int((int(noise_[1]) - mid_eye_y) / 2)
 
-        h_ = (mid_mouth_y - noise_[1]) * 2
-        y_ = noise_[1] - mid_nose_eye_y
+        # h_ = abs(mid_mouth_y - int(noise_[1])) * 2
+        y_ = abs(noise_[1] - mid_nose_eye_y)
 
-        mask = img[y_:y_ + h_, x:x + w, :]
-        # print(mask)
-        if mask:
+        mask = img[y_:y+h, x:x + w, :]
+
+        # print(mask.size)
+        if mask.size != 0:
             mask_edge = self._laplacian_edge_detector(mask)
             #
             mask_edge = np.dstack([mask_edge, mask_edge, mask_edge])
-            img[y_:y_ + h_, x:x + w, :] = mask_edge
+            img[y_:y+h, x:x + w, :] = mask_edge
 
         return img
-
 
     def run(self, faces: np.ndarray, coordinates: np.ndarray) -> np.ndarray:
         faces = faces.astype(np.uint8)
@@ -88,9 +88,8 @@ class LaplacianMask(AbstractMaskDetector):
         idx = 0
 
         for face in faces:
-
-            if self.has_mask(img=face, coordinate=coordinates[idx]):
-                face = self.put_mask(face, coordinates[idx])
+            # if self.has_mask(img=face, coordinate=coordinates[idx]):
+            face = self.put_mask(face, coordinates[idx])
 
             f_[idx] = face
             idx += 1
