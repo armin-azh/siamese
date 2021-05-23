@@ -21,5 +21,4 @@ scikit-image==0.18.1
 qtawesome==1.0.2
 gdown==3.13.0
 colorama==0.4.4
-tk==8.6.10
 psutil==5.8.0

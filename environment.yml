@@ -86,3 +86,4 @@ dependencies:
     - wrapt==1.12.1
     - zipp==3.4.1
     - psutil==5.8.0
+    - colorama==0.4.4
