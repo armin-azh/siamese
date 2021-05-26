@@ -4,3 +4,4 @@ __pycache__
 data
 gui/temp/*.avi
 test.py
+test2.py
