@@ -37,7 +37,8 @@ from settings import (COLOR_WARN,
                       COLOR_DANG,
                       COLOR_SUCCESS,
                       TRACKER_CONF,
-                      SUMMARY_LOG_DIR)
+                      SUMMARY_LOG_DIR,
+                      SOURCE_CONF)
 
 
 def face_recognition(args):
@@ -98,7 +99,12 @@ def face_recognition(args):
                 detector_type = detector_conf.get("type")
                 logger.info(f"$ {detector_type} face detector has been loaded.")
 
-                cap = cv2.VideoCapture(0 if args.realtime else args.video_file)
+                _source = 0
+                if args.realtime and args.proto=="rtsp":
+                    _source = SOURCE_CONF.get("cam_1")
+                elif args.video_file:
+                    _source = args.video_file
+                cap = cv2.VideoCapture(_source)
 
                 if args.cluster:
                     faces = list()
@@ -126,7 +132,7 @@ def face_recognition(args):
                     fps.start()
                     tk = TrackerList(float(TRACKER_CONF.get("max_modify_time")),
                                      int(TRACKER_CONF.get("max_frame_conf")))
-                prev = 0
+                prev = 1
                 total_proc_time = list()
                 proc_timer = Timer()
                 while cap.isOpened():
@@ -180,8 +186,8 @@ def face_recognition(args):
                                         if res == MATCHED:
                                             color = COLOR_SUCCESS
                                         else:
-                                            color = COLOR_WARN
-                                            # status = [""]
+                                            color = COLOR_SUCCESS
+                                            status = [""]
 
                                     if detector_type == detector.DT_MTCNN:
                                         frame = draw_face(frame, (x, y), (x + w, y + h), 5, 10, color, 1)

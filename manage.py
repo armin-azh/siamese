@@ -72,6 +72,8 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--realtime', help="realtime recognition flag", action='store_true')
+    parser.add_argument('--proto', help="choose protocol streaming", choices=['rtsp', 'default'],
+                        default='default')
     parser.add_argument('--kalman_tracker', help='use kalman tracker', action='store_true')
     parser.add_argument('--video', help="video recognition flag", action='store_true')
     parser.add_argument('--video_file', help='video filename for recognition', type=str, default="")
