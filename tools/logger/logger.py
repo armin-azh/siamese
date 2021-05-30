@@ -4,9 +4,10 @@ import pathlib
 
 
 class Logger:
-    def __init__(self, log_dir: pathlib.Path = None):
+    def __init__(self, log_dir: pathlib.Path = None, *args, **kwargs):
         self._time_format = '[%H:%M:%S] '
         self._log_dir = log_dir.joinpath("summary.txt") if log_dir is not None else ""
+        super(Logger, self).__init__(*args, **kwargs)
 
     def _now_time(self):
         return datetime.strftime(datetime.now(), self._time_format)
@@ -35,10 +36,19 @@ class Logger:
         status = Fore.LIGHTRED_EX + time + Fore.RED + message
         print(status)
 
-    def _write(self, data: dict) -> None:
-        with open(str(self._log_dir), 'a') as file:
+    def _write(self, data: dict, path: pathlib.Path) -> None:
+        with open(str(path), 'a') as file:
             for key, value in data.items():
                 file.write(f"{key} = {value}\n")
 
     def log(self, data: dict) -> None:
-        self._write(data)
+        self._write(data, self._log_dir)
+
+
+class ExeLogger(Logger):
+    def __init__(self, log_dir: pathlib.Path = None, *args, **kwargs):
+        self._ex_log_dir = log_dir.joinpath("exe.log")
+        super(ExeLogger, self).__init__(log_dir, *args, **kwargs)
+
+    def exe_log(self, data: dict):
+        self._write(data, self._ex_log_dir)
