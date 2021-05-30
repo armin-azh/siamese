@@ -24,7 +24,7 @@ from recognition.preprocessing import normalize_input, cvt_to_gray
 from recognition.cluster import k_mean_clustering
 from recognition.utils import load_model
 from recognition.distance import bulk_cosine_similarity
-from settings import BASE_DIR, GALLERY_CONF, MODEL_CONF, DETECTOR_CONF, DEFAULT_CONF
+from settings import BASE_DIR, GALLERY_CONF, MODEL_CONF, DETECTOR_CONF, DEFAULT_CONF,SOURCE_CONF
 from face_detection.utils import draw_face
 
 
@@ -166,6 +166,79 @@ class VideoSteamerThread(QThread):
     def run(self):
         self.thread_active = True
         cap = cv2.VideoCapture(0)
+
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+        f_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        f_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+        x = int(f_w / 2)
+        y = int(f_h / 2)
+
+        w = 120
+        h = 120
+
+        prev = 0
+
+        timer = int(DEFAULT_CONF.get("maximum_record_time"))
+
+        while self.thread_active:
+            ret, frame = cap.read()
+            if ret:
+                frame_2 = frame
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.resize(frame, (640, 480))
+                qt_frame = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
+
+                frame = draw_face(frame, (x - w, y - h), (x + w, y + h), 10, 20, (77, 154, 231), 2)
+                cur = time.time()
+
+                if self.record_on and timer >= 0 and (cur - prev) >= 1:
+                    prev = cur
+                    timer -= 1
+
+                elif self.record_on and timer < 0:
+                    timer = int(DEFAULT_CONF.get("maximum_record_time"))
+                    self.record_on = False
+
+                if self.record_on:
+                    cv2.putText(frame, f'REC {timer}', (500, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1,
+                                cv2.LINE_AA)
+                    self.record_cap.write(frame_2)
+
+                if not self.record_on and self.record_cap is not None:
+                    self.record_cap.release()
+
+                self.image_update.emit(qt_frame)
+                self.frame_update.emit(frame_2)
+                self.record_status.emit(self.record_on)
+        cap.release()
+
+    def stop(self):
+        """
+        stop and release webcam
+        :return:
+        """
+        self.thread_active = False
+        self.quit()
+
+
+class RtspVideoSteamerThread(QThread):
+    """
+    thread for get video stream from webcam
+    """
+    image_update = pyqtSignal(QtGui.QImage)
+    frame_update = pyqtSignal(np.ndarray)
+    record_status = pyqtSignal(bool)
+    thread_active = None
+
+    record_on = False
+    record_cap = None
+
+    def run(self):
+        self.thread_active = True
+        cap = cv2.VideoCapture(SOURCE_CONF.get("cam_1"))
 
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)

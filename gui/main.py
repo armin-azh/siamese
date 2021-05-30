@@ -8,7 +8,7 @@ from .dialog import Ui_Dialog
 import cv2
 from settings import BASE_DIR, DEFAULT_CONF, GALLERY_CONF
 
-from .thread import VideoSteamerThread,RecognitionThread
+from .thread import VideoSteamerThread, RecognitionThread, RtspVideoSteamerThread
 from database.component import ImageDatabase
 
 base_path = pathlib.Path(BASE_DIR)
@@ -20,9 +20,9 @@ class MainWindow(QMainWindow):
     RECORD_FILENAME = pathlib.Path(BASE_DIR).joinpath(DEFAULT_CONF.get("save_video"))
     DIALOG = None
 
-    def __init__(self):
+    def __init__(self, args):
         QMainWindow.__init__(self)
-
+        self._args = args
         # database
         self.database = ImageDatabase(db_path=str(base_path.joinpath(GALLERY_CONF.get("database_path"))))
 
@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
         self.ui.btn_recognition.clicked.connect(self.on_click_start)
 
         # thread
-        self.thread_video_stream = VideoSteamerThread()
+        self.thread_video_stream = VideoSteamerThread() if args.proto == 'default' else RtspVideoSteamerThread()
         self.thread_recognition = RecognitionThread()
 
         # video writer
@@ -113,7 +113,7 @@ class MainWindow(QMainWindow):
     #     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     #     self.video_writer.write(frame)
 
-    def slot_recognition_frame_qt(self,qt_frame):
+    def slot_recognition_frame_qt(self, qt_frame):
         self.ui_recogniton.label_recognition.setPixmap(QtGui.QPixmap(qt_frame))
 
     def slot_video_frame_qt(self, qt_frame):
@@ -160,4 +160,3 @@ class MainWindow(QMainWindow):
     def check_identity_name(self, identity_name):
         ids = list(self.database.get_identity_image_paths().keys())
         return True if identity_name in ids else False
-

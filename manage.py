@@ -59,7 +59,7 @@ def main(args):
 
     elif args.gui:
         app = QApplication(sys.argv)
-        window = MainWindow()
+        window = MainWindow(args)
         sys.exit(app.exec_())
 
     elif args.sys:
