@@ -24,7 +24,7 @@ class OpencvSource(Source):
         self._name = name
         self._src = src
         self._source = cv2.VideoCapture(self._src)
-        super(OpencvSource, self).__init__(*args,**kwargs)
+        super(OpencvSource, self).__init__(*args, **kwargs)
 
     def read(self):
         return self._source.read()
@@ -34,6 +34,10 @@ class OpencvSource(Source):
 
     def release(self) -> None:
         self._source.release()
+
+    @property
+    def name(self) -> str:
+        return self._name
 
 
 class RtspSource(Source):
