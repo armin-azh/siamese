@@ -22,3 +22,5 @@ qtawesome==1.0.2
 gdown==3.13.0
 colorama==0.4.4
 psutil==5.8.0
+opencv-contrib-python
+imagezmq
