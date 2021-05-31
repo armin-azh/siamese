@@ -33,6 +33,7 @@ from datetime import datetime
 from tqdm import tqdm
 from tools.system import system_status
 from tools.logger import Logger
+from tools.logger.logger import ExeLogger
 from settings import (COLOR_WARN,
                       COLOR_DANG,
                       COLOR_SUCCESS,
@@ -49,6 +50,7 @@ def face_recognition(args):
     """
     log_subdir = SUMMARY_LOG_DIR.joinpath(datetime.strftime(datetime.now(), '%Y-%m-%d(%H-%M-%S)'))
     logger = Logger(log_dir=log_subdir)
+    ex_logger = ExeLogger(log_dir=log_subdir)
     if not log_subdir.exists():
         log_subdir.mkdir(parents=True)
 
@@ -100,7 +102,7 @@ def face_recognition(args):
                 logger.info(f"$ {detector_type} face detector has been loaded.")
 
                 _source = 0
-                if args.realtime and args.proto=="rtsp":
+                if args.realtime and args.proto == "rtsp":
                     _source = SOURCE_CONF.get("cam_1")
                 elif args.video_file:
                     _source = args.video_file
@@ -135,6 +137,7 @@ def face_recognition(args):
                 prev = 1
                 total_proc_time = list()
                 proc_timer = Timer()
+                global_counter = 0
                 while cap.isOpened():
                     proc_timer.start()
                     ret, frame = cap.read()
@@ -195,7 +198,11 @@ def face_recognition(args):
                                     elif detector_type == detector.DT_RES10:
                                         frame = draw_face(frame, (x, y), (w, h), 5, 10, color, 1)
                                         # frame = cv2.rectangle(frame, (x, y), (w, h), color, 1)
-
+                                    if len(status[0]) > 0 and status[0] != "unrecognised":
+                                        d_time_ = datetime.strftime(datetime.now(), '%Y-%m-%d(%H-%M-%S)')
+                                        ex_logger.exe_log(
+                                            {f"{global_counter} ": f"{d_time_} {status[0]} Access Granted"})
+                                        global_counter += 1
                                     cv2.putText(frame,
                                                 "{} {:.2f}".format(status[0],
                                                                    bs_similarity[i]),
