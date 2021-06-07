@@ -28,7 +28,9 @@ class OpencvSource(Source):
 
     def read(self):
         ret, frame = self._source.read()
+        # print(frame.dtype)
         frame = frame.astype(np.uint8) if frame is not None else frame
+
         return ret, frame
 
     def isOpened(self) -> bool:
@@ -36,6 +38,9 @@ class OpencvSource(Source):
 
     def release(self) -> None:
         self._source.release()
+
+    def get(self, att):
+        return self._source.get(att)
 
     @property
     def name(self) -> str:

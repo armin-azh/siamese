@@ -34,6 +34,7 @@ from tqdm import tqdm
 from tools.system import system_status
 from tools.logger import Logger
 from tools.logger.logger import ExeLogger
+from stream.source import OpencvSource
 from settings import (COLOR_WARN,
                       COLOR_DANG,
                       COLOR_SUCCESS,
@@ -102,11 +103,14 @@ def face_recognition(args):
                 logger.info(f"$ {detector_type} face detector has been loaded.")
 
                 _source = 0
+                _source_name = ""
                 if args.realtime and args.proto == "rtsp":
                     _source = SOURCE_CONF.get("cam_1")
+                    _source_name = "rtsp_video_cam_1"
                 elif args.video_file:
                     _source = args.video_file
-                cap = cv2.VideoCapture(_source)
+                    _source_name = "local_video_cam"
+                cap = OpencvSource(src=_source,name=_source_name)
 
                 if args.cluster:
                     faces = list()
