@@ -27,7 +27,9 @@ class OpencvSource(Source):
         super(OpencvSource, self).__init__(*args, **kwargs)
 
     def read(self):
-        return self._source.read()
+        ret, frame = self._source.read()
+        frame = frame.astype(np.uint8) if frame is not None else frame
+        return ret, frame
 
     def isOpened(self) -> bool:
         return self._source.isOpened()
