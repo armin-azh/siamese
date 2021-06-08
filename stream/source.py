@@ -20,16 +20,17 @@ class Source:
 
 
 class OpencvSource(Source):
-    def __init__(self, src, name, *args, **kwargs):
+    def __init__(self, src, name, width, height, *args, **kwargs):
         self._name = name
         self._src = src
+        self._size = (width, height)
         self._source = cv2.VideoCapture(self._src)
         super(OpencvSource, self).__init__(*args, **kwargs)
 
     def read(self):
         ret, frame = self._source.read()
         # print(frame.dtype)
-        frame = frame.astype(np.uint8) if frame is not None else frame
+        frame = cv2.resize(frame, self._size).astype(np.uint8) if frame is not None else frame
 
         return ret, frame
 
