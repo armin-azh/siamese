@@ -26,7 +26,7 @@ from motion_detection.component import BSMotionDetection
 from face_detection.tracker import Tracker, KalmanFaceTracker
 from face_detection.utils import draw_face
 from tracker import TrackerList, MATCHED, UN_MATCHED
-from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, GALLERY_ROOT
+from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, GALLERY_ROOT, CAMERA_MODEL_CONF
 from PIL import Image
 from sklearn import preprocessing
 from datetime import datetime
@@ -110,7 +110,8 @@ def face_recognition(args):
                 elif args.video_file:
                     _source = args.video_file
                     _source_name = "local_video_cam"
-                cap = OpencvSource(src=_source,name=_source_name)
+                cap = OpencvSource(src=_source, name=_source_name, width=int(CAMERA_MODEL_CONF.get("width")),
+                                   height=int(CAMERA_MODEL_CONF.get("height")))
 
                 if args.cluster:
                     faces = list()

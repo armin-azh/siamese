@@ -24,7 +24,7 @@ from recognition.preprocessing import normalize_input, cvt_to_gray
 from recognition.cluster import k_mean_clustering
 from recognition.utils import load_model
 from recognition.distance import bulk_cosine_similarity
-from settings import BASE_DIR, GALLERY_CONF, MODEL_CONF, DETECTOR_CONF, DEFAULT_CONF,SOURCE_CONF
+from settings import BASE_DIR, GALLERY_CONF, MODEL_CONF, DETECTOR_CONF, DEFAULT_CONF, SOURCE_CONF
 from face_detection.utils import draw_face
 
 
@@ -170,14 +170,8 @@ class VideoSteamerThread(QThread):
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-        f_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-        f_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-
-        x = int(f_w / 2)
-        y = int(f_h / 2)
-
-        w = 120
-        h = 120
+        f_w = 640
+        f_h = 480
 
         prev = 0
 
@@ -188,6 +182,13 @@ class VideoSteamerThread(QThread):
             if ret:
                 frame_2 = frame
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                x = int(f_w / 2)
+                y = int(f_h / 2)
+
+                w = 120
+                h = 120
+
                 frame = cv2.resize(frame, (640, 480))
                 qt_frame = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
 
@@ -243,14 +244,8 @@ class RtspVideoSteamerThread(QThread):
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-        f_w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-        f_h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-
-        x = int(f_w / 2)
-        y = int(f_h / 2)
-
-        w = 120
-        h = 120
+        f_w = 640
+        f_h = 480
 
         prev = 0
 
@@ -262,6 +257,13 @@ class RtspVideoSteamerThread(QThread):
                 frame_2 = frame
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame = cv2.resize(frame, (640, 480))
+
+                x = int(f_w / 2)
+                y = int(f_h / 2)
+
+                w = 120
+                h = 120
+
                 qt_frame = QtGui.QImage(frame.data, frame.shape[1], frame.shape[0], QtGui.QImage.Format_RGB888)
 
                 frame = draw_face(frame, (x - w, y - h), (x + w, y + h), 10, 20, (77, 154, 231), 2)
