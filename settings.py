@@ -27,6 +27,7 @@ DEFAULT_CONF = conf['Default']
 MOTION_CONF = conf["Motion"]
 TRACKER_CONF = conf["Tracker"]
 SOURCE_CONF = conf["Source"]
+CAMERA_MODEL_CONF = conf["CameraModel"]
 
 SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion","Source"]
 
