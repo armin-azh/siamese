@@ -8,6 +8,7 @@ class Hub:
 
     def run(self):
         image_hub = imagezmq.ImageHub()
+        sender = imagezmq.ImageSender(connect_to="tcp://127.0.0.1:5556")
 
         print(" Hub is starting ...")
 
@@ -17,3 +18,4 @@ class Hub:
             print(msg)
             cv2.waitKey(1)
             image_hub.send_reply(b'Ok')
+            sender.send_image("hub", frame)
