@@ -15,7 +15,7 @@ GALLERY_LOG_DIR = os.path.join(conf["Log"].get("gallery"), 'gallery') if conf["L
     "gallery") is None else os.path.join(
     BASE_DIR, 'log/gallery')
 
-SUMMARY_LOG_DIR = pathlib.Path(BASE_DIR).joinpath("log/"+conf["Log"].get("summary"))
+SUMMARY_LOG_DIR = pathlib.Path(BASE_DIR).joinpath("log/" + conf["Log"].get("summary"))
 
 MODEL_CONF = conf['Model']
 GALLERY_CONF = conf['Gallery']
@@ -28,8 +28,9 @@ MOTION_CONF = conf["Motion"]
 TRACKER_CONF = conf["Tracker"]
 SOURCE_CONF = conf["Source"]
 CAMERA_MODEL_CONF = conf["CameraModel"]
+ZERO_MQ_CONF = conf["ZeroMQ"]
 
-SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion","Source"]
+SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion", "Source", "ZeroMQ"]
 
 COLOR_SUCCESS = (0, 255, 0)
 COLOR_DANG = (243, 32, 19)
