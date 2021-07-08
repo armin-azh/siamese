@@ -74,7 +74,7 @@ class FaceDetector:
             im = im.resize(self._o_shape)
             return im
 
-    def extract_faces(self, frame, width,height):
+    def extract_faces(self, frame, width, height):
         if self._model_type == self.DT_MTCNN:
             frame = Image.fromarray(frame)
             frame = frame.convert('RGB')
@@ -83,7 +83,7 @@ class FaceDetector:
             for res in results:
                 _, _, w_, h_ = res.get('box')
                 area_ = w_ * h_
-                ratio = (float(area_) / (width*height))
+                ratio = (float(area_) / (width * height))
                 if float(self._default.get('min_ratio')) < ratio < float(self._default.get('max_ratio')):
                     yield self.extract_face(frame, res.get('box')), res.get('box')
 
@@ -102,4 +102,4 @@ class FaceDetector:
                     x_right_top = int(result[5] * width)
                     y_right_top = int(result[6] * height)
                     b_box = (x_left_bottom, y_left_bottom, x_right_top, y_right_top)
-                    yield self.extract_face(frame,b_box),b_box
+                    yield self.extract_face(frame, b_box), b_box

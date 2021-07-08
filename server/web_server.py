@@ -83,12 +83,18 @@ def stream_recognition():
     """
     global output_frame, lock
 
+    # database
     database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
     embeds, labels = database.bulk_embeddings()
     encoded_labels = preprocessing.LabelEncoder()
     encoded_labels.fit(list(set(labels)))
     labels = encoded_labels.transform(labels)
 
+    # memory growth
+    physical_devices = tf.config.list_physical_devices('GPU')
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+    # computation graph
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
             with tf.compat.v1.Session() as sess:
@@ -96,6 +102,8 @@ def stream_recognition():
                 input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
                 embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
                 phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
+
+                # face detector
                 detector = FaceDetector(sess=sess)
 
                 prev = 1
@@ -116,13 +124,13 @@ def stream_recognition():
 
                             boxes = []
                             faces = []
-
                             for face, bbox in detector.extract_faces(gray_frame, int(CAMERA_MODEL_CONF.get("width")),
                                                                      int(CAMERA_MODEL_CONF.get("height"))):
                                 faces.append(normalize_input(face))
                                 boxes.append(bbox)
 
                             faces = np.array(faces)
+                            print(faces.shape)
 
                             if faces.shape[0] > 0:
                                 feed_dic = {phase_train: False, input_plc: faces}
@@ -151,10 +159,10 @@ def stream_recognition():
 
                                     frame_ = cv2.cvtColor(frame_, cv2.COLOR_RGB2BGR)
 
-                                flag, encoded_image = cv2.imencode(".jpg", output_frame)
+                        flag, encoded_image = cv2.imencode(".jpg", output_frame)
 
-                                if not flag:
-                                    continue
+                        if not flag:
+                            continue
                         yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' +
                                bytearray(encoded_image) + b'\r\n')
 
