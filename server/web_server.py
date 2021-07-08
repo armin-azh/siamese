@@ -17,9 +17,6 @@ app = Flask(__name__)
 src = OpencvSource(src=0, name="default", width=640, height=480)
 
 
-# image_hub = imagezmq.ImageHub(open_port="tcp://127.0.0.1:5556")
-
-
 def get_stream():
     global src, lock, output_frame
 
@@ -75,8 +72,9 @@ def default_streamer():
                     mimetype="multipart/x-mixed-replace; boundary=frame")
 
 
-t = threading.Thread(target=get_stream, args=())
-t.daemon = True
-t.start()
+def run(args):
+    t = threading.Thread(target=get_stream, args=())
+    t.daemon = True
+    t.start()
 
-app.run(host="127.0.0.1", port=8000, debug=True, threaded=True, use_reloader=False)
+    app.run(host=args.host, port=args.port, debug=True, threaded=True, use_reloader=False)
