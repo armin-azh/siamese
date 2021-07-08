@@ -16,6 +16,7 @@ app = Flask(__name__)
 
 src = OpencvSource(src=0, name="default", width=640, height=480)
 
+
 # image_hub = imagezmq.ImageHub(open_port="tcp://127.0.0.1:5556")
 
 
@@ -30,11 +31,9 @@ def get_stream():
 
 
 def generate():
-    global image_hub
+    global output_frame, lock
 
     while True:
-        # msg, frame = image_hub.recv_image()
-        # image_hub.send_reply(b'Ok')
 
         with lock:
             if output_frame is None:
@@ -58,12 +57,21 @@ def index():
 
 @app.route("/api/stream/demo/")
 def demo():
+    """
+    demo show
+    :return:
+    """
     return render_template("demo.html")
 
 
-@app.route("/api/stream/default/")
+@app.route("/api/stream/default.mjpg")
 def default_streamer():
-    return Response(generate(),
+    """
+    default streamer
+    :return:
+    """
+    data_get = generate()
+    return Response(data_get,
                     mimetype="multipart/x-mixed-replace; boundary=frame")
 
 
@@ -71,4 +79,4 @@ t = threading.Thread(target=get_stream, args=())
 t.daemon = True
 t.start()
 
-app.run(host="127.0.0.1", port=8000, debug=True, threaded=True,use_reloader=False)
+app.run(host="127.0.0.1", port=8000, debug=True, threaded=True, use_reloader=False)
