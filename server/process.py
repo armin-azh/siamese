@@ -36,15 +36,15 @@ class MainHubNodeProcess(BasicProcess):
             try:
                 msg, frame = self._im_hub.recv_image()
                 cv2.imshow('Main', frame)
-                print(_d_format+" Received from " + msg)
+                print(_d_format + " Received from " + msg)
                 cv2.waitKey(1)
                 self._im_hub.send_reply(b'Ok')
 
             except zmq.error.ZMQError:
-                print(_d_format+" can`t connect")
+                print(_d_format + " can`t connect")
 
             except KeyboardInterrupt:
-                print(_d_format+" terminated")
+                print(_d_format + " terminated")
 
             # image_hub.send_reply(b'Ok')
 
@@ -52,7 +52,7 @@ class MainHubNodeProcess(BasicProcess):
 class CameraNodeProcess(BasicProcess):
     def __init__(self, src, name, width, height, *args, **kwargs):
         self._ip = ZERO_MQ_CONF.get("camera1_node")
-        self._sender = imagezmq.ImageSender(connect_to="tcp://127.0.0.1:5555")
+        self._sender = imagezmq.ImageSender(connect_to="tcp://127.0.0.1:5556")
         self._vid_source = OpencvSource(src, name, width, height)
         super(CameraNodeProcess, self).__init__(socket.gethostname() + "_Cam1", *args, **kwargs)
 
@@ -75,9 +75,6 @@ class TensorflowProcess(BasicProcess):
         pass
 
 
-if __name__ == "__main__":
-    cam = CameraNodeProcess(0, "rtsp_camera", 640, 480)
-    hub = MainHubNodeProcess()
+cam = CameraNodeProcess(0, "rtsp_camera", 640, 480)
 
-    cam.run()
-    hub.run()
+cam.run()

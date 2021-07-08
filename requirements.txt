@@ -23,6 +23,8 @@ gdown==3.13.0
 colorama==0.4.4
 psutil==5.8.0
 opencv-contrib-python
-imagezmq
-django
-djangorestframework
+imagezmq==1.1.1
+django==3.2.5
+djangorestframework==3.12.4
+pyzmq==20.0.0
+flask==2.0.1
