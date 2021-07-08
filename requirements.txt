@@ -25,3 +25,4 @@ psutil==5.8.0
 opencv-contrib-python
 imagezmq
 django
+djangorestframework
