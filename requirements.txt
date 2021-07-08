@@ -28,3 +28,4 @@ django==3.2.5
 djangorestframework==3.12.4
 pyzmq==20.0.0
 flask==2.0.1
+flask_socketio
