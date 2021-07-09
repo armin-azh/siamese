@@ -9,9 +9,14 @@
     <script type="text/javascript" charset="utf-8">
         $(document).ready(function () {
             var socket = io.connect("http://127.0.0.1:8080");
-
             socket.on("connect",function(){
                 socket.send("User has been connected")
+            });
+
+            socket.emit("face_event_request","fuck you");
+
+            socket.on("face_event_response",function (data){
+                console.log(data)
             })
         })
     </script>
