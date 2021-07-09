@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Websocket</title>
+
+    <script src="//code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function () {
+            var socket = io.connect("http://127.0.0.1:8080");
+
+            socket.on("connect",function(){
+                socket.send("User has been connected")
+            })
+        })
+    </script>
+</head>
+<body>
+
+</body>
+</html>

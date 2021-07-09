@@ -9,6 +9,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from flask import Response
 from flask import Flask, jsonify
 from flask import render_template
+from flask_socketio import SocketIO
 import threading
 import argparse
 import cv2
@@ -45,6 +46,9 @@ output_frame = None
 lock = threading.Lock()
 
 app = Flask(__name__)
+
+socket = SocketIO(app, async_mode=None)
+socket.init_app(app, cors_allowed_origins="*")
 
 src = OpencvSource(src=0, name="default", width=640, height=480)
 
@@ -130,7 +134,6 @@ def stream_recognition():
                                 boxes.append(bbox)
 
                             faces = np.array(faces)
-                            print(faces.shape)
 
                             if faces.shape[0] > 0:
                                 feed_dic = {phase_train: False, input_plc: faces}
@@ -159,7 +162,7 @@ def stream_recognition():
 
                                     frame_ = cv2.cvtColor(frame_, cv2.COLOR_RGB2BGR)
 
-                        flag, encoded_image = cv2.imencode(".jpg", output_frame)
+                        flag, encoded_image = cv2.imencode(".jpg", frame_)
 
                         if not flag:
                             continue
@@ -203,9 +206,19 @@ def recognition_streamer():
                     mimetype="multipart/x-mixed-replace; boundary=frame")
 
 
+@app.route("/api/test/websocket/")
+def test_websocket_handler():
+    return render_template("test_websocket.html")
+
+
+@socket.on("face_event")
+def test_message(message):
+    print(message)
+
+
 def run(args):
     t = threading.Thread(target=get_stream, args=())
     t.daemon = True
     t.start()
 
-    app.run(host=args.host, port=args.port, debug=True, threaded=True, use_reloader=False)
+    socket.run(app=app, host=args.host, port=args.port, debug=True, use_reloader=False)
