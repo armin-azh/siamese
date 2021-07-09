@@ -47,7 +47,7 @@ lock = threading.Lock()
 
 app = Flask(__name__)
 
-socket = SocketIO(app, async_mode=None)
+socket = SocketIO(app, async_mode=None,logger=True, engineio_logger=True)
 socket.init_app(app, cors_allowed_origins="*")
 
 src = OpencvSource(src=0, name="default", width=640, height=480)

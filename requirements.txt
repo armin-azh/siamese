@@ -28,5 +28,7 @@ django==3.2.5
 djangorestframework==3.12.4
 pyzmq==20.0.0
 flask==2.0.1
-flask_socketio
+Flask-SocketIO==4.3.1
 simple-websocket
+python-engineio==3.13.2
+python-socketio==4.6.0
