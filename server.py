@@ -12,6 +12,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--runserver', help="runserver", action='store_true')
+    parser.add_argument('--rtsp', help="rtsp camera stream", action="store_true")
     parser.add_argument('--port', help="server port", type=int, default="8080")
     parser.add_argument('--host', help="server hostname", type=str, default="127.0.0.1")
 

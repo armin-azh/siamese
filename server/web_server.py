@@ -35,6 +35,7 @@ from settings import MODEL_CONF
 from settings import DETECTOR_CONF
 from settings import CAMERA_MODEL_CONF
 from settings import DEFAULT_CONF
+from settings import SOURCE_CONF
 
 # colors
 from settings import COLOR_DANG
@@ -162,7 +163,7 @@ def stream_recognition():
                                                                             bs_similarity[i]),
                                                          (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
 
-                                    frame_ = cv2.cvtColor(frame_, cv2.COLOR_RGB2BGR)
+                        frame_ = cv2.cvtColor(frame_, cv2.COLOR_RGB2BGR)
 
                         flag, encoded_image = cv2.imencode(".jpg", frame_)
 
@@ -296,6 +297,12 @@ def face_event_handler(data):
 
 
 def run(args):
+    global src, camera_src_name
+
+    if args.rtsp:
+        camera_src_name = "rtsp_camera_1"
+        src = OpencvSource(SOURCE_CONF.get("cam_1"), camera_src_name, 640, 480)
+
     t = threading.Thread(target=get_stream, args=())
     t.daemon = True
     t.start()
