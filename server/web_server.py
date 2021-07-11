@@ -10,6 +10,7 @@ from flask import Response
 from flask import Flask, jsonify
 from flask import render_template
 from flask_socketio import SocketIO, send, emit
+import socketio
 import threading
 import cv2
 from datetime import datetime
@@ -19,6 +20,7 @@ import numpy as np
 import time
 import json
 from uuid import uuid1
+import requests
 
 # module
 from stream.source import OpencvSource
@@ -37,6 +39,7 @@ from settings import DETECTOR_CONF
 from settings import CAMERA_MODEL_CONF
 from settings import DEFAULT_CONF
 from settings import SOURCE_CONF
+from settings import SERVER_CONF
 
 # colors
 from settings import COLOR_DANG
@@ -46,9 +49,12 @@ from settings import COLOR_SUCCESS
 from .serializer import face_serializer
 
 output_frame = None
+output_box_frame = None
 lock = threading.Lock()
 
 app = Flask(__name__)
+
+app.config['SECRET_KEY'] = 'secret!'
 
 socket = SocketIO(app, async_mode=None)
 socket.init_app(app, cors_allowed_origins="*")
@@ -84,12 +90,8 @@ def generate():
                bytearray(encoded_image) + b'\r\n')
 
 
-def stream_recognition():
-    """
-    realtime detection, this generator yield frame
-    :return:
-    """
-    global output_frame, lock
+def recognition():
+    global output_frame, lock, output_box_frame
 
     # database
     database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
@@ -164,14 +166,37 @@ def stream_recognition():
                                                                             bs_similarity[i]),
                                                          (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
 
+                                    now_ = datetime.now()
+                                    serial_ = face_serializer(timestamp=now_.timestamp(),
+                                                              person_id=status[0],
+                                                              camera_id=camera_src_name,
+                                                              image_path="example")
+
                         frame_ = cv2.cvtColor(frame_, cv2.COLOR_RGB2BGR)
 
-                        flag, encoded_image = cv2.imencode(".jpg", frame_)
+                        output_box_frame = frame_.copy()
 
-                        if not flag:
-                            continue
-                        yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' +
-                               bytearray(encoded_image) + b'\r\n')
+
+def stream_recognition():
+    """
+    realtime detection, this generator yield frame
+    :return:
+    """
+    global output_frame, lock, output_box_frame
+
+    while True:
+
+        with lock:
+            if output_box_frame is None:
+                continue
+
+            flag, encoded_image = cv2.imencode(".jpg", output_box_frame)
+
+            if not flag:
+                continue
+
+        yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' +
+               bytearray(encoded_image) + b'\r\n')
 
 
 @app.route("/")
@@ -314,5 +339,9 @@ def run(args):
     t = threading.Thread(target=get_stream, args=())
     t.daemon = True
     t.start()
+
+    t2 = threading.Thread(target=recognition, args=())
+    t2.daemon = True
+    t2.start()
 
     socket.run(app=app, host=args.host, port=args.port, debug=True, use_reloader=False)
