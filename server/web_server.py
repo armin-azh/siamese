@@ -3,11 +3,12 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import pathlib
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from flask import Response
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask import render_template
 from flask_socketio import SocketIO, send, emit
 import socketio
@@ -62,6 +63,10 @@ socket.init_app(app, cors_allowed_origins="*")
 camera_src_name = "default"
 src = OpencvSource(src=0, name=camera_src_name, width=640, height=480)
 
+face_save_path = pathlib.Path(SERVER_CONF.get("face_save_path")).joinpath(SERVER_CONF.get("face_folder"))
+if not face_save_path.exists():
+    face_save_path.mkdir(parents=True)
+
 
 def get_stream():
     global src, lock, output_frame
@@ -91,7 +96,7 @@ def generate():
 
 
 def recognition():
-    global output_frame, lock, output_box_frame
+    global lock, output_box_frame, face_save_path, output_frame
 
     # database
     database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
@@ -141,6 +146,10 @@ def recognition():
 
                             faces = np.array(faces)
 
+                            cvt_frame = cv2.cvtColor(frame_.copy(), cv2.COLOR_RGB2BGR)
+
+                            serial_event = []
+
                             if faces.shape[0] > 0:
                                 feed_dic = {phase_train: False, input_plc: faces}
                                 embedded_array = sess.run(embeddings, feed_dic)
@@ -149,6 +158,9 @@ def recognition():
                                 bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
                                 pred_labels = np.array(labels)[bs_similarity_idx]
                                 for i in range(len(pred_labels)):
+                                    uu_ = uuid1()
+                                    file_name_ = uu_.hex + ".jpg"
+                                    save_path = face_save_path.joinpath(file_name_)
                                     x, y, w, h = boxes[i]
                                     status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
                                                                                                        i] < float(
@@ -168,13 +180,22 @@ def recognition():
 
                                     now_ = datetime.now()
                                     serial_ = face_serializer(timestamp=now_.timestamp(),
-                                                              person_id=status[0],
+                                                              person_id=status[0] if status[
+                                                                                         0] != "unrecognised" else None,
                                                               camera_id=camera_src_name,
-                                                              image_path="example")
+                                                              image_path=str(save_path))
+
+                                    serial_event.append(serial_)
+
+                                    cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
 
                         frame_ = cv2.cvtColor(frame_, cv2.COLOR_RGB2BGR)
 
                         output_box_frame = frame_.copy()
+
+                        if serial_event:
+                            json_obj = json.dumps({"data": serial_event})
+                            requests.post(SERVER_CONF.get("face_event_url"), json=json_obj)
 
 
 def stream_recognition():
@@ -245,6 +266,15 @@ def recognition_streamer():
 @app.route("/api/test/websocket/")
 def test_websocket_handler():
     return render_template("test_websocket.html")
+
+
+@app.route("/face/app/faceevent/", methods=["POST"])
+def test_face_event_handler():
+    req = request.json
+
+    print(req)
+
+    return "ok"
 
 
 @socket.on("face_event_request")
