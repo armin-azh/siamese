@@ -29,8 +29,9 @@ TRACKER_CONF = conf["Tracker"]
 SOURCE_CONF = conf["Source"]
 CAMERA_MODEL_CONF = conf["CameraModel"]
 ZERO_MQ_CONF = conf["ZeroMQ"]
+SERVER_CONF = conf["Server"]
 
-SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion", "Source", "ZeroMQ"]
+SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion", "Source", "ZeroMQ","Server"]
 
 COLOR_SUCCESS = (0, 255, 0)
 COLOR_DANG = (243, 32, 19)

@@ -18,6 +18,7 @@ import tensorflow as tf
 import numpy as np
 import time
 import json
+from uuid import uuid1
 
 # module
 from stream.source import OpencvSource
@@ -179,6 +180,13 @@ def index():
     data = {"project": "Face Recognition",
             "time": t_.timestamp()}
     return jsonify(data)
+
+
+@app.route("/api/createUUID/")
+def create_uuid_handler():
+    u_id = uuid1()
+
+    return jsonify(uuid=u_id.hex)
 
 
 @app.route("/api/stream/demo/")
