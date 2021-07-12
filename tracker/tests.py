@@ -51,19 +51,26 @@ class TrackerTestCase(unittest.TestCase):
 
         tm = tk(name="armin")
 
-        self.assertEqual(tm, Policy.STATUS_NOT_CONF)
+        self.assertEqual(tm.status, Policy.STATUS_NOT_CONF)
 
         for _ in range(5):
             tk("armin")
 
         tm = tk("armin")
-        self.assertEqual(tm, Policy.STATUS_CONF)
+        self.assertEqual(tm.status, Policy.STATUS_CONF)
 
         time.sleep(4)
 
         tm = tk("armin")
 
-        self.assertEqual(tm, Policy.STATUS_NOT_CONF)
+        self.assertEqual(tm.status, Policy.STATUS_NOT_CONF)
+        self.assertFalse(tm.mark)
+
+        tm.mark = True
+
+        tm = tk("armin")
+
+        self.assertTrue(tm.mark)
 
     def test_timer(self):
         threshold = 3.0

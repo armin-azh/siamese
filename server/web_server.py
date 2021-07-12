@@ -31,6 +31,7 @@ from recognition.distance import bulk_cosine_similarity
 from recognition.preprocessing import normalize_input, cvt_to_gray
 from recognition.utils import load_model
 from database.component import ImageDatabase
+from tracker.policy import Policy,PolicyTracker
 
 # settings
 from settings import GALLERY_CONF
@@ -41,6 +42,7 @@ from settings import CAMERA_MODEL_CONF
 from settings import DEFAULT_CONF
 from settings import SOURCE_CONF
 from settings import SERVER_CONF
+from settings import TRACKER_CONF
 
 # colors
 from settings import COLOR_DANG
@@ -109,6 +111,9 @@ def recognition():
     physical_devices = tf.config.list_physical_devices('GPU')
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
+    tracker = PolicyTracker(max_life_time=float(TRACKER_CONF.get("max_modify_time")),
+                            max_conf=int(TRACKER_CONF.get("max_frame_conf")))
+
     # computation graph
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
@@ -171,23 +176,26 @@ def recognition():
                                     else:
                                         color = COLOR_SUCCESS
 
+                                    tk_ = tracker(name=status[0])
+
+                                    if tk_.status == Policy.STATUS_CONF and not tk_.mark:
+                                        tk_.mark = True
+                                        now_ = datetime.now()
+                                        serial_ = face_serializer(timestamp=now_.timestamp(),
+                                                                  person_id=status[0] if status[
+                                                                                             0] != "unrecognised" else None,
+                                                                  camera_id=camera_src_name,
+                                                                  image_path=str(save_path))
+
+                                        serial_event.append(serial_)
+                                        cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+
                                     frame_ = draw_face(frame_, (x, y), (x + w, y + h), 5, 10, color, 1)
 
                                     frame_ = cv2.putText(frame_,
                                                          "{} {:.2f}".format(status[0],
                                                                             bs_similarity[i]),
                                                          (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-
-                                    now_ = datetime.now()
-                                    serial_ = face_serializer(timestamp=now_.timestamp(),
-                                                              person_id=status[0] if status[
-                                                                                         0] != "unrecognised" else None,
-                                                              camera_id=camera_src_name,
-                                                              image_path=str(save_path))
-
-                                    serial_event.append(serial_)
-
-                                    cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
 
                         frame_ = cv2.cvtColor(frame_, cv2.COLOR_RGB2BGR)
 
