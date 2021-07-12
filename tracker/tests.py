@@ -2,7 +2,7 @@ import unittest
 import time
 from .timer import Timer
 from .tk import IdentityTracker, TrackerList
-from .policy import Policy
+from .policy import Policy, PolicyTracker
 
 
 class TrackerTestCase(unittest.TestCase):
@@ -32,7 +32,38 @@ class TrackerTestCase(unittest.TestCase):
 
         a()
 
-        self.assertEqual(a.status,Policy.STATUS_EXPIRED)
+        self.assertEqual(a.status, Policy.STATUS_EXPIRED)
+
+        self.assertEqual(a.mark, False)
+
+        a.mark = True
+
+        self.assertEqual(a.mark, True)
+
+    def test_policy_tracker(self):
+        tk = PolicyTracker(max_life_time=3., max_conf=5)
+
+        self.assertEqual(len(tk), 0)
+
+        tk(name="armin")
+
+        self.assertEqual(len(tk), 1)
+
+        tm = tk(name="armin")
+
+        self.assertEqual(tm, Policy.STATUS_NOT_CONF)
+
+        for _ in range(5):
+            tk("armin")
+
+        tm = tk("armin")
+        self.assertEqual(tm, Policy.STATUS_CONF)
+
+        time.sleep(4)
+
+        tm = tk("armin")
+
+        self.assertEqual(tm, Policy.STATUS_NOT_CONF)
 
     def test_timer(self):
         threshold = 3.0
