@@ -2,9 +2,37 @@ import unittest
 import time
 from .timer import Timer
 from .tk import IdentityTracker, TrackerList
+from .policy import Policy
 
 
 class TrackerTestCase(unittest.TestCase):
+
+    def test_policy(self):
+        name = "armin"
+        max_life_time = 3.0
+        max_conf = 5
+        a = Policy(name, max_life_time, max_conf)
+
+        for i in range(3):
+            a()
+            self.assertEqual(a.status, Policy.STATUS_NOT_CONF)
+
+        time.sleep(2)
+
+        a()
+        self.assertEqual(a.status, Policy.STATUS_NOT_CONF)
+
+        a()
+        self.assertEqual(a.status, Policy.STATUS_CONF)
+
+        time.sleep(4)
+
+        a()
+        self.assertEqual(a.status, Policy.STATUS_EXPIRED)
+
+        a()
+
+        self.assertEqual(a.status,Policy.STATUS_EXPIRED)
 
     def test_timer(self):
         threshold = 3.0
