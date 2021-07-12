@@ -136,12 +136,14 @@ def recognition():
                     if delta_time > 1. / float(DETECTOR_CONF['fps']):
                         prev = cur
 
+                        serial_event = []
+
                         with lock:
 
                             if output_frame is None:
                                 continue
 
-                            frame_ = cv2.cvtColor(output_frame, cv2.COLOR_BGR2RGB)
+                            frame_ = cv2.cvtColor(output_frame.copy(), cv2.COLOR_BGR2RGB)
                             gray_frame = cvt_to_gray(frame_)
 
                             boxes = []
@@ -154,8 +156,6 @@ def recognition():
                             faces = np.array(faces)
 
                             cvt_frame = cv2.cvtColor(frame_.copy(), cv2.COLOR_RGB2BGR)
-
-                            serial_event = []
 
                             if faces.shape[0] > 0:
                                 feed_dic = {phase_train: False, input_plc: faces}
@@ -199,19 +199,23 @@ def recognition():
                                         if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                             tk_.mark = True
                                             now_ = datetime.now()
-                                            # serial_ = face_serializer(timestamp=now_.timestamp(),
-                                            #                           person_id=status[0] if status[
-                                            #                                                      0] != "unrecognised" else None,
-                                            #                           camera_id=camera_src_name,
-                                            #                           image_path=str(save_path))
-
                                             serial_ = face_serializer(timestamp=now_.timestamp(),
-                                                                      person_id=None,
-                                                                      camera_id=None,
+                                                                      person_id=status[0] if status[
+                                                                                                 0] != "unrecognised" else None,
+                                                                      camera_id=camera_src_name,
                                                                       image_path=str(save_path))
 
+                                            # serial_ = face_serializer(timestamp=now_.timestamp(),
+                                            #                           person_id=None,
+                                            #                           camera_id=None,
+                                            #                           image_path=str(save_path))
+
                                             serial_event.append(serial_)
-                                            cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+
+                                            try:
+                                                cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+                                            except:
+                                                pass
 
                                     frame_ = draw_face(frame_, (x, y), (x + w, y + h), 5, 10, color, 1)
 
@@ -220,9 +224,9 @@ def recognition():
                                                                             bs_similarity[i]),
                                                          (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
 
-                        frame_ = cv2.cvtColor(frame_, cv2.COLOR_RGB2BGR)
+                            frame_ = cv2.cvtColor(frame_, cv2.COLOR_RGB2BGR)
 
-                        output_box_frame = frame_.copy()
+                            output_box_frame = frame_.copy()
 
                         if serial_event:
                             json_obj = json.dumps({"data": serial_event})
