@@ -229,8 +229,8 @@ def recognition():
                             output_box_frame = frame_.copy()
 
                         if serial_event:
-                            json_obj = json.dumps({"data": serial_event})
-                            requests.post(SERVER_CONF.get("face_event_url"), json=json_obj)
+                            header = {'Content-type': 'application/json'}
+                            requests.post(SERVER_CONF.get("face_event_url"), json={"data": serial_event},headers=header)
                             print("request posted!")
 
 
@@ -308,6 +308,7 @@ def test_websocket_handler():
 def test_face_event_handler():
     req = request.json
 
+    print(request.content_type)
     print(req)
 
     return "ok"
