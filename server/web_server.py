@@ -183,7 +183,10 @@ def recognition():
                                                                       image_path=str(save_path))
 
                                             serial_event.append(serial_)
-                                            cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+                                            try:
+                                                cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+                                            except:
+                                                pass
                                             global_unrecognized_cnt = 0
                                         else:
                                             global_unrecognized_cnt += 1
@@ -224,6 +227,7 @@ def recognition():
                         if serial_event:
                             json_obj = json.dumps({"data": serial_event})
                             requests.post(SERVER_CONF.get("face_event_url"), json=json_obj)
+                            print("request posted!")
 
 
 def stream_recognition():
