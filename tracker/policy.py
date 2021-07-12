@@ -15,6 +15,15 @@ class Policy:
         self._max_conf = max_conf
         self._last_modified = time.time()
         self._status = self.STATUS_NOT_CONF
+        self._mark = False
+
+    @property
+    def mark(self) -> bool:
+        return self._mark
+
+    @mark.setter
+    def mark(self, mk: bool):
+        self._mark = mk
 
     @property
     def status(self):
@@ -56,3 +65,42 @@ class Policy:
 
     def __call__(self):
         self._modify()
+
+
+class PolicyTracker:
+    def __init__(self, max_life_time: float, max_conf: int):
+        self._policy_list = []
+        self._max_life_time = max_life_time
+        self._max_conf = max_conf
+
+    def __len__(self):
+        return len(self._policy_list)
+
+    def _search(self, name: str):
+        res = None
+        for idx, pol in enumerate(self._policy_list):
+            if pol.name == name:
+                res = (idx, pol)
+                break
+        return res
+
+    def modify(self):
+
+        for pol in self._policy_list:
+            pol()
+            if pol.status == Policy.STATUS_EXPIRED:
+                self._policy_list.remove(pol)
+
+    def __call__(self, name: str):
+
+        self.modify()
+
+        res = self._search(name)
+
+        if res is None:
+            n_pol = Policy(name, self._max_life_time, self._max_conf)
+            self._policy_list.append(n_pol)
+            return n_pol.status
+        else:
+            _, pol = res
+            return pol.status
