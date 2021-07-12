@@ -178,9 +178,8 @@ def recognition():
                                         if global_unrecognized_cnt == int(TRACKER_CONF.get("unrecognized_counter")):
                                             now_ = datetime.now()
                                             serial_ = face_serializer(timestamp=now_.timestamp(),
-                                                                      person_id=status[0] if status[
-                                                                                                 0] != "unrecognised" else None,
-                                                                      camera_id=camera_src_name,
+                                                                      person_id=None,
+                                                                      camera_id=None,
                                                                       image_path=str(save_path))
 
                                             serial_event.append(serial_)
@@ -197,10 +196,15 @@ def recognition():
                                         if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                             tk_.mark = True
                                             now_ = datetime.now()
+                                            # serial_ = face_serializer(timestamp=now_.timestamp(),
+                                            #                           person_id=status[0] if status[
+                                            #                                                      0] != "unrecognised" else None,
+                                            #                           camera_id=camera_src_name,
+                                            #                           image_path=str(save_path))
+
                                             serial_ = face_serializer(timestamp=now_.timestamp(),
-                                                                      person_id=status[0] if status[
-                                                                                                 0] != "unrecognised" else None,
-                                                                      camera_id=camera_src_name,
+                                                                      person_id=None,
+                                                                      camera_id=None,
                                                                       image_path=str(save_path))
 
                                             serial_event.append(serial_)
