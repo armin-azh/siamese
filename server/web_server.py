@@ -31,7 +31,7 @@ from recognition.distance import bulk_cosine_similarity
 from recognition.preprocessing import normalize_input, cvt_to_gray
 from recognition.utils import load_model
 from database.component import ImageDatabase
-from tracker.policy import Policy,PolicyTracker
+from tracker.policy import Policy, PolicyTracker
 
 # settings
 from settings import GALLERY_CONF
@@ -114,6 +114,8 @@ def recognition():
     tracker = PolicyTracker(max_life_time=float(TRACKER_CONF.get("max_modify_time")),
                             max_conf=int(TRACKER_CONF.get("max_frame_conf")))
 
+    global_unrecognized_cnt = 0
+
     # computation graph
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
@@ -173,22 +175,36 @@ def recognition():
 
                                     if status[0] == "unrecognised":
                                         color = COLOR_DANG
+                                        if global_unrecognized_cnt == int(TRACKER_CONF.get("unrecognized_counter")):
+                                            now_ = datetime.now()
+                                            serial_ = face_serializer(timestamp=now_.timestamp(),
+                                                                      person_id=status[0] if status[
+                                                                                                 0] != "unrecognised" else None,
+                                                                      camera_id=camera_src_name,
+                                                                      image_path=str(save_path))
+
+                                            serial_event.append(serial_)
+                                            cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+                                            global_unrecognized_cnt = 0
+                                        else:
+                                            global_unrecognized_cnt += 1
+
                                     else:
                                         color = COLOR_SUCCESS
 
-                                    tk_ = tracker(name=status[0])
+                                        tk_ = tracker(name=status[0])
 
-                                    if tk_.status == Policy.STATUS_CONF and not tk_.mark:
-                                        tk_.mark = True
-                                        now_ = datetime.now()
-                                        serial_ = face_serializer(timestamp=now_.timestamp(),
-                                                                  person_id=status[0] if status[
-                                                                                             0] != "unrecognised" else None,
-                                                                  camera_id=camera_src_name,
-                                                                  image_path=str(save_path))
+                                        if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
+                                            tk_.mark = True
+                                            now_ = datetime.now()
+                                            serial_ = face_serializer(timestamp=now_.timestamp(),
+                                                                      person_id=status[0] if status[
+                                                                                                 0] != "unrecognised" else None,
+                                                                      camera_id=camera_src_name,
+                                                                      image_path=str(save_path))
 
-                                        serial_event.append(serial_)
-                                        cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+                                            serial_event.append(serial_)
+                                            cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
 
                                     frame_ = draw_face(frame_, (x, y), (x + w, y + h), 5, 10, color, 1)
 
