@@ -17,6 +17,16 @@ def parse_person_id(file_name) -> dict:
     return persons.get("data")
 
 
+def parse_person_id_dictionary()->dict:
+    root_ = GALLERY_ROOT.parent.parent.joinpath("database_index")
+    root_.mkdir(parents=True, exist_ok=True)
+
+    person_id_path = root_.joinpath("identity_id.json")
+
+    return parse_person_id(person_id_path)
+
+
+
 def generate_id(args):
     database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
 
