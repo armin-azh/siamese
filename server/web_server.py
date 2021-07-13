@@ -32,6 +32,7 @@ from recognition.preprocessing import normalize_input, cvt_to_gray
 from recognition.utils import load_model
 from database.component import ImageDatabase
 from tracker.policy import Policy, PolicyTracker
+from database.sync import parse_person_id_dictionary
 
 # settings
 from settings import GALLERY_CONF
@@ -106,6 +107,7 @@ def recognition():
     encoded_labels = preprocessing.LabelEncoder()
     encoded_labels.fit(list(set(labels)))
     labels = encoded_labels.transform(labels)
+    person_ids = parse_person_id_dictionary()
 
     # memory growth
     physical_devices = tf.config.list_physical_devices('GPU')
@@ -177,7 +179,7 @@ def recognition():
                                         color = COLOR_DANG
                                         if global_unrecognized_cnt == int(TRACKER_CONF.get("unrecognized_counter")):
                                             now_ = datetime.now()
-                                            serial_ = face_serializer(timestamp=now_.timestamp(),
+                                            serial_ = face_serializer(timestamp=int(now_.timestamp())*1000,
                                                                       person_id=None,
                                                                       camera_id=None,
                                                                       image_path=str(save_path))
@@ -199,23 +201,25 @@ def recognition():
                                         if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                             tk_.mark = True
                                             now_ = datetime.now()
-                                            serial_ = face_serializer(timestamp=now_.timestamp(),
-                                                                      person_id=status[0] if status[
-                                                                                                 0] != "unrecognised" else None,
-                                                                      camera_id=camera_src_name,
-                                                                      image_path=str(save_path))
+                                            id_ = person_ids.get(status[0])
 
-                                            # serial_ = face_serializer(timestamp=now_.timestamp(),
-                                            #                           person_id=None,
-                                            #                           camera_id=None,
-                                            #                           image_path=str(save_path))
+                                            if id_ is not None:
+                                                serial_ = face_serializer(timestamp=int(now_.timestamp()*1000),
+                                                                          person_id=id_,
+                                                                          camera_id=None,
+                                                                          image_path=str(save_path))
 
-                                            serial_event.append(serial_)
+                                                # serial_ = face_serializer(timestamp=now_.timestamp(),
+                                                #                           person_id=None,
+                                                #                           camera_id=None,
+                                                #                           image_path=str(save_path))
 
-                                            try:
-                                                cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
-                                            except:
-                                                pass
+                                                serial_event.append(serial_)
+
+                                                try:
+                                                    cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+                                                except:
+                                                    pass
 
                                     frame_ = draw_face(frame_, (x, y), (x + w, y + h), 5, 10, color, 1)
 
