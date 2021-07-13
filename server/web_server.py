@@ -179,10 +179,10 @@ def recognition():
                                         color = COLOR_DANG
                                         if global_unrecognized_cnt == int(TRACKER_CONF.get("unrecognized_counter")):
                                             now_ = datetime.now()
-                                            serial_ = face_serializer(timestamp=int(now_.timestamp())*1000,
+                                            serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
                                                                       person_id=None,
                                                                       camera_id=None,
-                                                                      image_path=str(save_path))
+                                                                      image_path=file_name_)
 
                                             serial_event.append(serial_)
                                             try:
@@ -204,10 +204,10 @@ def recognition():
                                             id_ = person_ids.get(status[0])
 
                                             if id_ is not None:
-                                                serial_ = face_serializer(timestamp=int(now_.timestamp()*1000),
+                                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
                                                                           person_id=id_,
                                                                           camera_id=None,
-                                                                          image_path=str(save_path))
+                                                                          image_path=file_name_)
 
                                                 # serial_ = face_serializer(timestamp=now_.timestamp(),
                                                 #                           person_id=None,
@@ -234,9 +234,9 @@ def recognition():
 
                         if serial_event:
                             header = {'Content-type': 'application/json'}
-                            requests.post(SERVER_CONF.get("face_event_url"), json={"data": serial_event},
-                                          headers=header)
-                            print("request posted!")
+                            res = requests.post(SERVER_CONF.get("face_event_url"), json={"data": serial_event},
+                                                headers=header)
+                            print(f"request posted! {res.status_code}")
 
 
 def stream_recognition():
