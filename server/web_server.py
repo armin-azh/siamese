@@ -230,7 +230,8 @@ def recognition():
 
                         if serial_event:
                             header = {'Content-type': 'application/json'}
-                            requests.post(SERVER_CONF.get("face_event_url"), json={"data": serial_event},headers=header)
+                            requests.post(SERVER_CONF.get("face_event_url"), json={"data": serial_event},
+                                          headers=header)
                             print("request posted!")
 
 
@@ -306,6 +307,16 @@ def test_websocket_handler():
 
 @app.route("/face/app/faceevent/", methods=["POST"])
 def test_face_event_handler():
+    req = request.json
+
+    print(request.content_type)
+    print(req)
+
+    return "ok"
+
+
+@app.route("/face/app/addperson", methods=["POST"])
+def test_add_person_handler():
     req = request.json
 
     print(request.content_type)

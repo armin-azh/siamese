@@ -6,6 +6,7 @@ from recognition.recognition import face_recognition, face_recognition_on_keras,
 from recognition.recognition import face_recognition_kalman
 from recognition.utils import convert_computation_graph_to_keras_model
 from database.component import inference_db
+from database.sync import generate_id
 from tools.system import system_status
 from tools.download import download_models
 from gui.main import *
@@ -69,6 +70,10 @@ def main(args):
         download_models()
 
 
+    elif args.generate_id:
+        generate_id(args)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--realtime', help="realtime recognition flag", action='store_true')
@@ -108,6 +113,7 @@ if __name__ == "__main__":
     parser.add_argument('--sys', help="check system status and information", action="store_true")
     parser.add_argument("--download_models", help="download model and save on local storage", action='store_true')
     parser.add_argument("--scene", help="scenario detail", type=str, default='')
+    parser.add_argument("--generate_id", help="generate id", action="store_true")
 
     args = parser.parse_args()
 

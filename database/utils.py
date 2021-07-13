@@ -7,6 +7,7 @@ import os
 import ntpath
 import logging
 from tabulate import tabulate
+from uuid import uuid1
 
 
 def write_json(data: dict, filename: str) -> None:
@@ -70,3 +71,7 @@ def tabulate_print(database_dic):
 def load_images(images):
     for im in images:
         yield im.read_image_file()
+
+
+def generate_new_id():
+    return uuid1().hex
