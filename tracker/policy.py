@@ -107,12 +107,13 @@ class PolicyTracker:
             if pol.status == Policy.STATUS_EXPIRED:
                 self._policy_list.remove(pol)
 
-    def __call__(self, name: str) -> Policy:
+    def __call__(self, name: str, alias_name: str) -> Policy:
 
         res = self._search(name)
 
         if res is None:
             n_pol = Policy(name, self._max_life_time, self._max_conf)
+            n_pol.alias_name = alias_name
             self._policy_list.append(n_pol)
             return n_pol
         else:
@@ -122,6 +123,7 @@ class PolicyTracker:
             if pol.status == Policy.STATUS_EXPIRED:
                 self._policy_list.remove(pol)
                 pol = Policy(name, self._max_life_time, self._max_conf)
+                pol.alias_name = alias_name
                 self._policy_list.append(pol)
 
             return pol

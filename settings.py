@@ -30,6 +30,7 @@ SOURCE_CONF = conf["Source"]
 CAMERA_MODEL_CONF = conf["CameraModel"]
 ZERO_MQ_CONF = conf["ZeroMQ"]
 SERVER_CONF = conf["Server"]
+IMAGE_CONF = conf["Image"]
 
 SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion", "Source", "ZeroMQ","Server"]
 

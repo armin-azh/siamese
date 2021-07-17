@@ -11,6 +11,7 @@ import re
 import numpy as np
 import string
 import random
+from PIL import Image
 from .model import *
 
 
@@ -227,3 +228,11 @@ def create_random_name(max_length: int) -> str:
     return res
 
 
+def reshape_image(im: np.ndarray, bbox: np.ndarray, size: tuple) -> np.ndarray:
+    x0, y0, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
+    x1, y1 = abs(x0), abs(y0)
+    x2, y2 = x1 + w, y1 + h
+    im = im[y1:y2, x1:x2]
+    im = Image.fromarray(im)
+    im = im.resize(size)
+    return im

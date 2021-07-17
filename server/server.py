@@ -13,7 +13,7 @@ import time
 import configparser
 import cv2
 import numpy as np
-from recognition.utils import load_model, parse_status,Timer
+from recognition.utils import load_model, parse_status, Timer
 from recognition.preprocessing import normalize_input, cvt_to_gray
 from recognition.distance import bulk_cosine_similarity
 
@@ -29,11 +29,12 @@ from tracker import TrackerList, MATCHED
 from tracker.tracklet.component import TrackLet
 from face_detection.mtcnn import detect_face
 from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, CAMERA_MODEL_CONF, DETECTOR_CONF, \
-    SERVER_CONF
+    SERVER_CONF, IMAGE_CONF
 from sklearn import preprocessing
 from datetime import datetime
 from tools.logger import Logger
 from stream.source import OpencvSource
+from recognition.utils import reshape_image
 import socket
 from settings import (COLOR_WARN,
                       COLOR_DANG,
@@ -318,6 +319,8 @@ def recognition_serv_2(args):
 
 
 def recognition_track_let_serv(args):
+    output_size = (int(IMAGE_CONF.get('width')), int(IMAGE_CONF.get('height')))
+
     # database
     database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
     embeds, labels = database.bulk_embeddings()
@@ -393,86 +396,114 @@ def recognition_track_let_serv(args):
                         faces, points = detect_face.detect_face(frame_, minsize, pnet, rnet, onet, threshold,
                                                                 factor)
 
-                        frame_size = frame.shape
+                        if faces.shape[0] > 0:
 
-                        tracks = track_let.detect(faces, frame, points, frame_size)
-                        tracks = tracks.astype(np.int32)
+                            frame_size = frame.shape
 
-                        print(tracks)
+                            tracks = track_let.detect(faces, frame, points, frame_size)
+                            tracks = tracks.astype(np.int32)
 
-                        final_bounding_box = []
-                        final_status = []
+                            final_bounding_box = []
+                            final_status = []
 
+                            tracks_bounding_box_to = []
+                            tracks_face_to = []
+                            tracks_status_to = []
 
+                            for tk in tracks:
+                                bounding_box = tk[0:4]
+                                id_ = str(tk[4])
 
-                        # boxes = []
-                        # faces = []
-                        #
-                        # faces = np.array(faces)
-                        #
-                        # cvt_frame = cv2.cvtColor(frame_.copy(), cv2.COLOR_RGB2BGR)
-                        #
-                        # if faces.shape[0] > 0:
-                        #     feed_dic = {phase_train: False, input_plc: faces}
-                        #     embedded_array = sess.run(embeddings, feed_dic)
-                        #     dists = bulk_cosine_similarity(embedded_array, embeds)
-                        #     bs_similarity_idx = np.argmin(dists, axis=1)
-                        #     bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
-                        #     pred_labels = np.array(labels)[bs_similarity_idx]
-                        #     for i in range(len(pred_labels)):
-                        #         uu_ = uuid1()
-                        #         file_name_ = uu_.hex + ".jpg"
-                        #         save_path = face_save_path.joinpath(file_name_)
-                        #         x, y, w, h = boxes[i]
-                        #         status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
-                        #                                                                            i] < float(
-                        #             DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
-                        #
-                        #         print(status[0])
-                        #
-                        #         try:
-                        #
-                        #             if status[0] == "unrecognised":
-                        #                 if global_unrecognized_cnt == int(TRACKER_CONF.get("unrecognized_counter")):
-                        #                     now_ = datetime.now()
-                        #                     serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
-                        #                                               person_id=None,
-                        #                                               camera_id=None,
-                        #                                               image_path=file_name_)
-                        #
-                        #                     serial_event.append(serial_)
-                        #                     cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
-                        #                     global_unrecognized_cnt = 0
-                        #                 else:
-                        #                     global_unrecognized_cnt += 1
-                        #
-                        #             else:
-                        #                 tk_ = tracker(name=status[0])
-                        #
-                        #                 if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
-                        #                     tk_.mark = True
-                        #                     now_ = datetime.now()
-                        #                     id_ = person_ids.get(status[0])
-                        #
-                        #                     if id_ is not None:
-                        #                         serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                        #                                                   person_id=id_,
-                        #                                                   camera_id=None,
-                        #                                                   image_path=file_name_)
-                        #
-                        #                         # serial_ = face_serializer(timestamp=now_.timestamp(),
-                        #                         #                           person_id=None,
-                        #                         #                           camera_id=None,
-                        #                         #                           image_path=str(save_path))
-                        #
-                        #                         serial_event.append(serial_)
-                        #
-                        #                         cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
-                        #
-                        #         except:
-                        #             print("Record Drop")
-                        #
-                        # if serial_event:
-                        #     json_obj = json.dumps({"data": serial_event})
-                        #     sock.sendto(json_obj.encode(), address)
-                        #     print(json_obj + " Send to " + f"{address[0]}:{address[1]}")
+                                res = tracker.search_alias_name(id_)
+
+                                if res is not None:
+                                    if res[1].status == Policy.STATUS_CONF:
+                                        final_bounding_box.append(bounding_box)
+                                        final_status.append(res[1].name)
+                                    else:
+                                        tracks_bounding_box_to.append(bounding_box)
+                                        tracks_status_to.append(id_)
+                                        tracks_face_to.append(
+                                            normalize_input(reshape_image(gray_frame, bounding_box, output_size)))
+                                else:
+                                    tracks_bounding_box_to.append(bounding_box)
+                                    tracks_status_to.append(id_)
+
+                                    tracks_face_to.append(
+                                        normalize_input(reshape_image(gray_frame, bounding_box, output_size)))
+
+                            tracks_bounding_box_to = np.array(tracks_bounding_box_to)
+                            tracks_face_to = np.array(tracks_face_to)
+                            tracks_status_to = np.array(tracks_status_to)
+
+                            print(tracks_face_to.shape)
+
+                            cvt_frame = cv2.cvtColor(frame_.copy(), cv2.COLOR_RGB2BGR)
+
+                            if tracks_face_to.shape[0] > 0:
+                                feed_dic = {phase_train: False, input_plc: tracks_face_to}
+                                embedded_array = sess.run(embeddings, feed_dic)
+                                dists = bulk_cosine_similarity(embedded_array, embeds)
+                                bs_similarity_idx = np.argmin(dists, axis=1)
+                                bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
+                                pred_labels = np.array(labels)[bs_similarity_idx]
+                                for i in range(len(pred_labels)):
+                                    uu_ = uuid1()
+                                    file_name_ = uu_.hex + ".jpg"
+                                    save_path = face_save_path.joinpath(file_name_)
+                                    x, y, w, h = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
+                                                 tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
+
+                                    status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
+                                                                                                       i] < float(
+                                        DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
+                                    tk_status = tracks_status_to[i]
+
+                                    print(status[0])
+
+                                    try:
+
+                                        if status[0] == "unrecognised":
+                                            if global_unrecognized_cnt == int(TRACKER_CONF.get("unrecognized_counter")):
+                                                now_ = datetime.now()
+                                                serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
+                                                                          person_id=None,
+                                                                          camera_id=None,
+                                                                          image_path=file_name_)
+
+                                                serial_event.append(serial_)
+                                                cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+                                                global_unrecognized_cnt = 0
+                                            else:
+                                                global_unrecognized_cnt += 1
+
+                                        else:
+                                            tk_ = tracker(name=status[0], alias_name=tk_status)
+
+                                            if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
+                                                tk_.mark = True
+                                                now_ = datetime.now()
+                                                id_ = person_ids.get(status[0])
+
+                                                if id_ is not None:
+                                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                              person_id=id_,
+                                                                              camera_id=None,
+                                                                              image_path=file_name_)
+
+                                                    # serial_ = face_serializer(timestamp=now_.timestamp(),
+                                                    #                           person_id=None,
+                                                    #                           camera_id=None,
+                                                    #                           image_path=str(save_path))
+
+                                                    serial_event.append(serial_)
+
+                                                    cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+
+                                    except:
+                                        print("Record Drop")
+
+                            # if serial_event:
+                            #     json_obj = json.dumps({"data": serial_event})
+                            #     sock.sendto(json_obj.encode(), address)
+                            #     print(json_obj + " Send to " + f"{address[0]}:{address[1]}")
