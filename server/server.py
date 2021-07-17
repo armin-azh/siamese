@@ -13,28 +13,26 @@ import time
 import configparser
 import cv2
 import numpy as np
-from recognition.utils import load_model, parse_status, FPS, Timer
+from recognition.utils import load_model, parse_status,Timer
 from recognition.preprocessing import normalize_input, cvt_to_gray
-from recognition.cluster import k_mean_clustering
-from recognition.distance import bulk_cosine_similarity, bulk_cosine_similarity_v2
-from settings import BASE_DIR
+from recognition.distance import bulk_cosine_similarity
+
 from face_detection.detector import FaceDetector
 from tracker.policy import Policy, PolicyTracker
 from database.sync import parse_person_id_dictionary
 import tensorflow as tf
-from tensorflow.keras.models import load_model as h5_load
-from database.component import ImageDatabase, parse_test_dir
-from database.component import inference_db
+from database.component import ImageDatabase
+
 from motion_detection.component import BSMotionDetection
-from face_detection.tracker import Tracker, KalmanFaceTracker
-from face_detection.utils import draw_face
-from tracker import TrackerList, MATCHED, UN_MATCHED
-from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, GALLERY_ROOT, CAMERA_MODEL_CONF, DETECTOR_CONF, \
+
+from tracker import TrackerList, MATCHED
+from tracker.tracklet.component import TrackLet
+from face_detection.mtcnn import detect_face
+from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, CAMERA_MODEL_CONF, DETECTOR_CONF, \
     SERVER_CONF
 from sklearn import preprocessing
 from datetime import datetime
 from tools.logger import Logger
-from tools.logger.logger import ExeLogger
 from stream.source import OpencvSource
 import socket
 from settings import (COLOR_WARN,
@@ -317,3 +315,164 @@ def recognition_serv_2(args):
                             json_obj = json.dumps({"data": serial_event})
                             sock.sendto(json_obj.encode(), address)
                             print(json_obj + " Send to " + f"{address[0]}:{address[1]}")
+
+
+def recognition_track_let_serv(args):
+    # database
+    database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
+    embeds, labels = database.bulk_embeddings()
+    encoded_labels = preprocessing.LabelEncoder()
+    encoded_labels.fit(list(set(labels)))
+    labels = encoded_labels.transform(labels)
+    person_ids = parse_person_id_dictionary()
+
+    # memory growth
+    physical_devices = tf.config.list_physical_devices('GPU')
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+    tracker = PolicyTracker(max_life_time=float(TRACKER_CONF.get("max_modify_time")),
+                            max_conf=int(TRACKER_CONF.get("max_frame_conf")))
+
+    global_unrecognized_cnt = 0
+
+    address = (SERVER_CONF.get("UDP_HOST"), int(SERVER_CONF.get("UDP_PORT")))
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    face_save_path = pathlib.Path(SERVER_CONF.get("face_save_path")).joinpath(SERVER_CONF.get("face_folder"))
+    if not face_save_path.exists():
+        face_save_path.mkdir(parents=True)
+
+    track_let = TrackLet(0.9, 1)
+
+    # computation graph
+    with tf.device('/device:gpu:0'):
+        with tf.Graph().as_default():
+            with tf.compat.v1.Session() as sess:
+                load_model(os.path.join(BASE_DIR, MODEL_CONF.get('facenet')))
+                input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
+                embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
+                phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
+
+                pnet, rnet, onet = detect_face.create_mtcnn(sess)
+
+                minsize = int(DETECTOR_CONF.get("min_face_size"))
+                threshold = [
+                    float(DETECTOR_CONF.get("step1_threshold")),
+                    float(DETECTOR_CONF.get("step2_threshold")),
+                    float(DETECTOR_CONF.get("step3_threshold"))]
+                factor = float(DETECTOR_CONF.get("scale_factor"))
+
+                _source = 0
+                _source_name = ""
+                if args.realtime and args.proto == "rtsp":
+                    _source = SOURCE_CONF.get("cam_1")
+                    _source_name = "rtsp_video_cam_1"
+
+                cap = OpencvSource(src=_source, name=_source_name, width=int(CAMERA_MODEL_CONF.get("width")),
+                                   height=int(CAMERA_MODEL_CONF.get("height")))
+
+                prev = 1
+                while cap.isOpened():
+                    cur = time.time()
+                    delta_time = cur - prev
+
+                    ret, frame = cap.read()
+
+                    if not ret:
+                        break
+
+                    if delta_time > 1. / float(DETECTOR_CONF['fps']):
+                        prev = cur
+
+                        serial_event = []
+
+                        frame_ = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        gray_frame = cvt_to_gray(frame_)
+
+                        faces, points = detect_face.detect_face(frame_, minsize, pnet, rnet, onet, threshold,
+                                                                factor)
+
+                        frame_size = frame.shape
+
+                        tracks = track_let.detect(faces, frame, points, frame_size)
+                        tracks = tracks.astype(np.int32)
+
+                        print(tracks)
+
+                        final_bounding_box = []
+                        final_status = []
+
+
+
+                        # boxes = []
+                        # faces = []
+                        #
+                        # faces = np.array(faces)
+                        #
+                        # cvt_frame = cv2.cvtColor(frame_.copy(), cv2.COLOR_RGB2BGR)
+                        #
+                        # if faces.shape[0] > 0:
+                        #     feed_dic = {phase_train: False, input_plc: faces}
+                        #     embedded_array = sess.run(embeddings, feed_dic)
+                        #     dists = bulk_cosine_similarity(embedded_array, embeds)
+                        #     bs_similarity_idx = np.argmin(dists, axis=1)
+                        #     bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
+                        #     pred_labels = np.array(labels)[bs_similarity_idx]
+                        #     for i in range(len(pred_labels)):
+                        #         uu_ = uuid1()
+                        #         file_name_ = uu_.hex + ".jpg"
+                        #         save_path = face_save_path.joinpath(file_name_)
+                        #         x, y, w, h = boxes[i]
+                        #         status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
+                        #                                                                            i] < float(
+                        #             DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
+                        #
+                        #         print(status[0])
+                        #
+                        #         try:
+                        #
+                        #             if status[0] == "unrecognised":
+                        #                 if global_unrecognized_cnt == int(TRACKER_CONF.get("unrecognized_counter")):
+                        #                     now_ = datetime.now()
+                        #                     serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
+                        #                                               person_id=None,
+                        #                                               camera_id=None,
+                        #                                               image_path=file_name_)
+                        #
+                        #                     serial_event.append(serial_)
+                        #                     cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+                        #                     global_unrecognized_cnt = 0
+                        #                 else:
+                        #                     global_unrecognized_cnt += 1
+                        #
+                        #             else:
+                        #                 tk_ = tracker(name=status[0])
+                        #
+                        #                 if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
+                        #                     tk_.mark = True
+                        #                     now_ = datetime.now()
+                        #                     id_ = person_ids.get(status[0])
+                        #
+                        #                     if id_ is not None:
+                        #                         serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                        #                                                   person_id=id_,
+                        #                                                   camera_id=None,
+                        #                                                   image_path=file_name_)
+                        #
+                        #                         # serial_ = face_serializer(timestamp=now_.timestamp(),
+                        #                         #                           person_id=None,
+                        #                         #                           camera_id=None,
+                        #                         #                           image_path=str(save_path))
+                        #
+                        #                         serial_event.append(serial_)
+                        #
+                        #                         cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+                        #
+                        #         except:
+                        #             print("Record Drop")
+                        #
+                        # if serial_event:
+                        #     json_obj = json.dumps({"data": serial_event})
+                        #     sock.sendto(json_obj.encode(), address)
+                        #     print(json_obj + " Send to " + f"{address[0]}:{address[1]}")

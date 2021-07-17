@@ -16,6 +16,7 @@ class Policy:
         self._last_modified = time.time()
         self._status = self.STATUS_NOT_CONF
         self._mark = False
+        self._alias_name = None
 
     @property
     def mark(self) -> bool:
@@ -32,6 +33,14 @@ class Policy:
     @property
     def name(self):
         return self._name
+
+    @property
+    def alias_name(self):
+        return self._alias_name
+
+    @alias_name.setter
+    def alias_name(self, n):
+        self._alias_name = n
 
     def _modify(self):
         self._counter.next()
@@ -76,6 +85,14 @@ class PolicyTracker:
     def __len__(self):
         return len(self._policy_list)
 
+    def search_alias_name(self, name: str):
+        res = None
+        for idx, pol in enumerate(self._policy_list):
+            if pol.alias_name == name:
+                res = (idx, pol)
+                break
+        return res
+
     def _search(self, name: str):
         res = None
         for idx, pol in enumerate(self._policy_list):
@@ -90,7 +107,7 @@ class PolicyTracker:
             if pol.status == Policy.STATUS_EXPIRED:
                 self._policy_list.remove(pol)
 
-    def __call__(self, name: str)->Policy:
+    def __call__(self, name: str) -> Policy:
 
         res = self._search(name)
 
@@ -104,7 +121,7 @@ class PolicyTracker:
 
             if pol.status == Policy.STATUS_EXPIRED:
                 self._policy_list.remove(pol)
-                pol = Policy(name,self._max_life_time,self._max_conf)
+                pol = Policy(name, self._max_life_time, self._max_conf)
                 self._policy_list.append(pol)
 
             return pol

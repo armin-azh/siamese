@@ -5,7 +5,7 @@ import sys
 from recognition.recognition import face_recognition, face_recognition_on_keras, test_recognition, cluster_faces
 from recognition.recognition import face_recognition_kalman
 from recognition.utils import convert_computation_graph_to_keras_model
-from server.server import recognition_serv_2
+from server.server import recognition_serv_2,recognition_track_let_serv
 from database.component import inference_db
 from database.sync import generate_id
 from tools.system import system_status
@@ -18,7 +18,7 @@ from settings import BASE_DIR
 
 def main(args):
     if (args.realtime or args.video) and args.server:
-        recognition_serv_2(args)
+        recognition_track_let_serv(args)
     elif (args.realtime or args.video) and args.kalman_tracker:
         face_recognition_kalman(args)
 
