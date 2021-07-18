@@ -1,6 +1,10 @@
 from .counter import Counter
 import time
 import copy
+from uuid import uuid1
+import cv2
+import numpy as np
+from pathlib import Path
 
 
 class Policy:
@@ -18,6 +22,15 @@ class Policy:
         self._status = self.STATUS_NOT_CONF
         self._mark = False
         self._alias_name = None
+        self._filename = uuid1().hex + ".jpg"
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @property
+    def max_life_time(self):
+        return self._max_life_time
 
     @property
     def counter(self) -> int:
@@ -42,6 +55,10 @@ class Policy:
     @property
     def alias_name(self):
         return self._alias_name
+
+    @property
+    def last_modified(self):
+        return self._last_modified
 
     @alias_name.setter
     def alias_name(self, n):
@@ -70,15 +87,24 @@ class Policy:
                 return False
 
             else:
-                if self._counter() > self._max_conf:
+                if self._counter() >= self._max_conf:
                     self._status = self.STATUS_CONF
                     return True
                 else:
                     self._status = self.STATUS_NOT_CONF
                     return False
 
+    def validation(self):
+        return self._validate()
+
     def __call__(self):
         self._modify()
+
+    def save_image(self, im: np.ndarray, save_path: Path):
+        try:
+            cv2.imwrite(str(save_path.joinpath(self._filename)), im)
+        except:
+            pass
 
 
 class PolicyTracker:
@@ -112,6 +138,15 @@ class PolicyTracker:
                 tm = copy.deepcopy(pol)
                 self._policy_list.remove(pol)
                 yield tm
+
+    def get_expires(self):
+        delta = time.time()
+        for pol in self._policy_list:
+            print(pol.status, pol.alias_name, pol.name, pol.counter, sep=" ")
+            if delta - pol.last_modified > pol.max_life_time:
+                tm_ = copy.deepcopy(pol)
+                self._policy_list.remove(pol)
+                yield tm_
 
     def __call__(self, name: str, alias_name: str):
 

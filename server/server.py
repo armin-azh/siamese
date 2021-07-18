@@ -397,6 +397,21 @@ def recognition_track_let_serv(args):
                         faces, points = detect_face.detect_face(frame_, minsize, pnet, rnet, onet, threshold,
                                                                 factor)
 
+                        # expiration
+                        for ex_tk in tracker.get_expires():
+                            if not ex_tk.mark:
+                                now_ = datetime.now()
+                                id_ = person_ids.get(ex_tk.name)
+                                score = float(ex_tk.counter / int(
+                                    TRACKER_CONF.get("recognized_max_frame_conf")))
+
+                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                          person_id=id_,
+                                                          camera_id=None,
+                                                          image_path=ex_tk.filename,
+                                                          confidence=round(score * 100, 2))
+                                serial_event.append(serial_)
+
                         if faces.shape[0] > 0:
 
                             frame_size = frame.shape
@@ -419,6 +434,7 @@ def recognition_track_let_serv(args):
 
                                 if res is not None:
                                     if res[1].status == Policy.STATUS_CONF:
+                                        res[1]()
                                         final_bounding_box.append(bounding_box)
                                         final_status.append(res[1].name)
                                         print("Result", res[1].name, sep=" ")
@@ -479,28 +495,11 @@ def recognition_track_let_serv(args):
                                                 serial_event.append(serial_)
                                                 cv2.imwrite(str(save_path), cvt_frame[y1:y2, x1:x2])
 
-
                                         else:
-                                            tk_, expire = tracker(name=status[0], alias_name=tk_status)
+                                            tk_, _ = tracker(name=status[0], alias_name=tk_status)
                                             print(f"Recognized with id {tk_status}")
 
-                                            if expire is not None and expire.counter < int(
-                                                    TRACKER_CONF.get("recognized_max_frame_conf")):
-                                                uu__ = uuid1()
-                                                file_name__ = uu__.hex + ".jpg"
-                                                save_path__ = face_save_path.joinpath(file_name__)
-                                                now_ = datetime.now()
-                                                id_ = person_ids.get(status[0])
-                                                score = float(expire.counter / int(
-                                                    TRACKER_CONF.get("recognized_max_frame_conf")))
-
-                                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                                          person_id=id_,
-                                                                          camera_id=None,
-                                                                          image_path=file_name_,
-                                                                          confidence=round(score * 100, 2))
-                                                serial_event.append(serial_)
-                                                cv2.imwrite(str(save_path__), cvt_frame[y1:y2, x1:x2])
+                                            tk_.save_image(cvt_frame[y1:y2, x1:x2], face_save_path)
 
                                             if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                                 tk_.mark = True
@@ -521,7 +520,7 @@ def recognition_track_let_serv(args):
                                     except:
                                         print("Record Drop")
 
-                            if serial_event:
-                                json_obj = json.dumps({"data": serial_event})
-                                sock.sendto(json_obj.encode(), address)
-                                print(json_obj + " Send to " + f"{address[0]}:{address[1]}")
+                        if serial_event:
+                            json_obj = json.dumps({"data": serial_event})
+                            sock.sendto(json_obj.encode(), address)
+                            print(json_obj + " Send to " + f"{address[0]}:{address[1]}")
