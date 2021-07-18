@@ -333,10 +333,11 @@ def recognition_track_let_serv(args):
     physical_devices = tf.config.list_physical_devices('GPU')
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    tracker = PolicyTracker(max_life_time=float(TRACKER_CONF.get("max_modify_time")),
-                            max_conf=int(TRACKER_CONF.get("max_frame_conf")))
+    tracker = PolicyTracker(max_life_time=float(TRACKER_CONF.get("recognized_max_modify_time")),
+                            max_conf=int(TRACKER_CONF.get("recognized_max_frame_conf")))
 
-    global_unrecognized_cnt = 0
+    unrecognized_tracker = PolicyTracker(max_life_time=float(TRACKER_CONF.get("unrecognized_max_modify_time")),
+                                         max_conf=int(TRACKER_CONF.get("unrecognized_max_frame_conf")))
 
     address = (SERVER_CONF.get("UDP_HOST"), int(SERVER_CONF.get("UDP_PORT")))
 
@@ -436,7 +437,7 @@ def recognition_track_let_serv(args):
                             tracks_face_to = np.array(tracks_face_to)
                             tracks_status_to = np.array(tracks_status_to)
 
-                            print(tracks_face_to.shape)
+                            print(len(final_bounding_box))
 
                             cvt_frame = cv2.cvtColor(frame_.copy(), cv2.COLOR_RGB2BGR)
 
@@ -451,20 +452,24 @@ def recognition_track_let_serv(args):
                                     uu_ = uuid1()
                                     file_name_ = uu_.hex + ".jpg"
                                     save_path = face_save_path.joinpath(file_name_)
-                                    x, y, w, h = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
-                                                 tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
+                                    x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
+                                                     tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
 
                                     status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
                                                                                                        i] < float(
                                         DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
                                     tk_status = tracks_status_to[i]
 
-                                    print(status[0])
+                                    print("Result", status[0], bs_similarity, sep=" ")
 
                                     try:
 
                                         if status[0] == "unrecognised":
-                                            if global_unrecognized_cnt == int(TRACKER_CONF.get("unrecognized_counter")):
+                                            tk_ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
+
+                                            if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
+                                                print(f"=> Unrecognized with id {tk_status}")
+                                                tk_.mark = True
                                                 now_ = datetime.now()
                                                 serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
                                                                           person_id=None,
@@ -472,13 +477,12 @@ def recognition_track_let_serv(args):
                                                                           image_path=file_name_)
 
                                                 serial_event.append(serial_)
-                                                cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
-                                                global_unrecognized_cnt = 0
-                                            else:
-                                                global_unrecognized_cnt += 1
+                                                cv2.imwrite(str(save_path), cvt_frame[y1:y2, x1:x2])
+
 
                                         else:
                                             tk_ = tracker(name=status[0], alias_name=tk_status)
+                                            print(f"Recognized with id {tk_status}")
 
                                             if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                                 tk_.mark = True
@@ -491,19 +495,14 @@ def recognition_track_let_serv(args):
                                                                               camera_id=None,
                                                                               image_path=file_name_)
 
-                                                    # serial_ = face_serializer(timestamp=now_.timestamp(),
-                                                    #                           person_id=None,
-                                                    #                           camera_id=None,
-                                                    #                           image_path=str(save_path))
-
                                                     serial_event.append(serial_)
 
-                                                    cv2.imwrite(str(save_path), cvt_frame[y:y + h, x:x + w])
+                                                    cv2.imwrite(str(save_path), cvt_frame[y1:y2, x1:x2])
 
                                     except:
                                         print("Record Drop")
 
-                            # if serial_event:
-                            #     json_obj = json.dumps({"data": serial_event})
-                            #     sock.sendto(json_obj.encode(), address)
-                            #     print(json_obj + " Send to " + f"{address[0]}:{address[1]}")
+                            if serial_event:
+                                json_obj = json.dumps({"data": serial_event})
+                                sock.sendto(json_obj.encode(), address)
+                                print(json_obj + " Send to " + f"{address[0]}:{address[1]}")
