@@ -421,6 +421,7 @@ def recognition_track_let_serv(args):
                                     if res[1].status == Policy.STATUS_CONF:
                                         final_bounding_box.append(bounding_box)
                                         final_status.append(res[1].name)
+                                        print("Result", res[1].name, sep=" ")
                                     else:
                                         tracks_bounding_box_to.append(bounding_box)
                                         tracks_status_to.append(id_)
@@ -437,7 +438,6 @@ def recognition_track_let_serv(args):
                             tracks_face_to = np.array(tracks_face_to)
                             tracks_status_to = np.array(tracks_status_to)
 
-                            print(len(final_bounding_box))
 
                             cvt_frame = cv2.cvtColor(frame_.copy(), cv2.COLOR_RGB2BGR)
 
@@ -460,29 +460,52 @@ def recognition_track_let_serv(args):
                                         DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
                                     tk_status = tracks_status_to[i]
 
-                                    print("Result", status[0], bs_similarity, sep=" ")
+                                    print("Result", status[0], bs_similarity[i], sep=" ")
 
                                     try:
 
                                         if status[0] == "unrecognised":
-                                            tk_ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
+                                            tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
 
                                             if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
-                                                print(f"=> Unrecognized with id {tk_status}")
+                                                print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
                                                 tk_.mark = True
                                                 now_ = datetime.now()
                                                 serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
                                                                           person_id=None,
                                                                           camera_id=None,
-                                                                          image_path=file_name_)
+                                                                          image_path=file_name_,
+                                                                          confidence=None)
 
                                                 serial_event.append(serial_)
                                                 cv2.imwrite(str(save_path), cvt_frame[y1:y2, x1:x2])
 
 
                                         else:
-                                            tk_ = tracker(name=status[0], alias_name=tk_status)
+                                            tk_, expire = tracker(name=status[0], alias_name=tk_status)
                                             print(f"Recognized with id {tk_status}")
+
+                                            if expire is not None:
+                                                uu__ = uuid1()
+                                                file_name__ = uu__.hex + ".jpg"
+                                                save_path__ = face_save_path.joinpath(file_name__)
+                                                now_ = datetime.now()
+                                                id_ = person_ids.get(status[0])
+                                                score = expire.counter % int(
+                                                    TRACKER_CONF.get("recognized_max_frame_conf"))
+                                                if score == 0:
+                                                    score = 1
+
+                                                else:
+                                                    score = float(
+                                                        score / int(TRACKER_CONF.get("recognized_max_frame_conf")))
+                                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                          person_id=id_,
+                                                                          camera_id=None,
+                                                                          image_path=file_name_,
+                                                                          confidence=round(score * 100, 2))
+                                                serial_event.append(serial_)
+                                                cv2.imwrite(str(save_path__), cvt_frame[y1:y2, x1:x2])
 
                                             if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                                 tk_.mark = True
@@ -493,7 +516,8 @@ def recognition_track_let_serv(args):
                                                     serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
                                                                               person_id=id_,
                                                                               camera_id=None,
-                                                                              image_path=file_name_)
+                                                                              image_path=file_name_,
+                                                                              confidence=100.)
 
                                                     serial_event.append(serial_)
 

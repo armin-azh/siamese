@@ -1,5 +1,6 @@
 from .counter import Counter
 import time
+import copy
 
 
 class Policy:
@@ -17,6 +18,10 @@ class Policy:
         self._status = self.STATUS_NOT_CONF
         self._mark = False
         self._alias_name = None
+
+    @property
+    def counter(self) -> int:
+        return self._counter()
 
     @property
     def mark(self) -> bool:
@@ -102,12 +107,13 @@ class PolicyTracker:
         return res
 
     def modify(self):
-
         for pol in self._policy_list:
             if pol.status == Policy.STATUS_EXPIRED:
+                tm = copy.deepcopy(pol)
                 self._policy_list.remove(pol)
+                yield tm
 
-    def __call__(self, name: str, alias_name: str) -> Policy:
+    def __call__(self, name: str, alias_name: str):
 
         res = self._search(name)
 
@@ -115,15 +121,16 @@ class PolicyTracker:
             n_pol = Policy(name, self._max_life_time, self._max_conf)
             n_pol.alias_name = alias_name
             self._policy_list.append(n_pol)
-            return n_pol
+            return n_pol, None
         else:
             _, pol = res
             pol()
-
+            expired = None
             if pol.status == Policy.STATUS_EXPIRED:
+                expired = copy.deepcopy(pol)
                 self._policy_list.remove(pol)
                 pol = Policy(name, self._max_life_time, self._max_conf)
                 pol.alias_name = alias_name
                 self._policy_list.append(pol)
 
-            return pol
+            return pol, expired
