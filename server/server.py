@@ -438,7 +438,6 @@ def recognition_track_let_serv(args):
                             tracks_face_to = np.array(tracks_face_to)
                             tracks_status_to = np.array(tracks_status_to)
 
-
                             cvt_frame = cv2.cvtColor(frame_.copy(), cv2.COLOR_RGB2BGR)
 
                             if tracks_face_to.shape[0] > 0:
@@ -485,20 +484,16 @@ def recognition_track_let_serv(args):
                                             tk_, expire = tracker(name=status[0], alias_name=tk_status)
                                             print(f"Recognized with id {tk_status}")
 
-                                            if expire is not None:
+                                            if expire is not None and expire.counter < int(
+                                                    TRACKER_CONF.get("recognized_max_frame_conf")):
                                                 uu__ = uuid1()
                                                 file_name__ = uu__.hex + ".jpg"
                                                 save_path__ = face_save_path.joinpath(file_name__)
                                                 now_ = datetime.now()
                                                 id_ = person_ids.get(status[0])
-                                                score = expire.counter % int(
-                                                    TRACKER_CONF.get("recognized_max_frame_conf"))
-                                                if score == 0:
-                                                    score = 1
+                                                score = float(expire.counter / int(
+                                                    TRACKER_CONF.get("recognized_max_frame_conf")))
 
-                                                else:
-                                                    score = float(
-                                                        score / int(TRACKER_CONF.get("recognized_max_frame_conf")))
                                                 serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
                                                                           person_id=id_,
                                                                           camera_id=None,
