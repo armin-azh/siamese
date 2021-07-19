@@ -57,10 +57,10 @@ class OpencvSource(Source):
             y_s = self._origin_size[0] / self._size[1]
             return x_s, y_s
 
-    def convert_coordinate(self, b_box):
+    def convert_coordinate(self, b_box, margin=(0, 0)):
         x_s, y_s = self.scale_factor
         x1, y1, x2, y2 = b_box[0], b_box[1], b_box[2], b_box[3]
-        return int(x1 * x_s), int(y1 * y_s), int(x2 * x_s), int(y2 * y_s)
+        return self.margin([int(x1 * x_s), int(y1 * y_s), int(x2 * x_s), int(y2 * y_s)], margin[0], margin[0])
 
     @property
     def original_frame(self) -> np.ndarray:
@@ -69,6 +69,22 @@ class OpencvSource(Source):
     @property
     def name(self) -> str:
         return self._name
+
+    def margin(self, b_box, x_margin, y_margin):
+
+        x1, y1, x2, y2 = b_box[0], b_box[1], b_box[2], b_box[3]
+
+        x1 = x1 - x_margin
+        y1 = y1 - y_margin
+        x2 = x2 + x_margin
+        y2 = y2 + y_margin
+
+        x1_ = np.maximum(x1, 0)
+        y1_ = np.maximum(y1, 0)
+        x2_ = np.minimum(x2, self._origin_size[1])
+        y2_ = np.minimum(y2, self._origin_size[0])
+
+        return x1_, y1_, x2_, y2_
 
 
 class RtspSource(Source):

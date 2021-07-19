@@ -367,6 +367,9 @@ def recognition_track_let_serv(args):
                     float(DETECTOR_CONF.get("step3_threshold"))]
                 factor = float(DETECTOR_CONF.get("scale_factor"))
 
+                x_margin = int(DETECTOR_CONF.get("x_margin"))
+                y_margin = int(DETECTOR_CONF.get("y_margin"))
+
                 _source = 0
                 _source_name = ""
                 if args.realtime and args.proto == "rtsp":
@@ -384,6 +387,7 @@ def recognition_track_let_serv(args):
                     ret, frame = cap.read()
 
                     if not ret:
+                        print("Frame is not retrieved from source camera")
                         break
 
                     if delta_time > 1. / float(DETECTOR_CONF['fps']):
@@ -454,8 +458,6 @@ def recognition_track_let_serv(args):
                             tracks_face_to = np.array(tracks_face_to)
                             tracks_status_to = np.array(tracks_status_to)
 
-                            cvt_frame = cv2.cvtColor(frame_.copy(), cv2.COLOR_RGB2BGR)
-
                             if tracks_face_to.shape[0] > 0:
                                 feed_dic = {phase_train: False, input_plc: tracks_face_to}
                                 embedded_array = sess.run(embeddings, feed_dic)
@@ -470,7 +472,8 @@ def recognition_track_let_serv(args):
                                     x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
                                                      tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
 
-                                    x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2])
+                                    x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2],
+                                                                            margin=(x_margin, y_margin))
 
                                     status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
                                                                                                        i] < float(
