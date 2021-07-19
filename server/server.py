@@ -470,6 +470,8 @@ def recognition_track_let_serv(args):
                                     x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
                                                      tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
 
+                                    x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2])
+
                                     status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
                                                                                                        i] < float(
                                         DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
@@ -493,13 +495,13 @@ def recognition_track_let_serv(args):
                                                                           confidence=None)
 
                                                 serial_event.append(serial_)
-                                                cv2.imwrite(str(save_path), cvt_frame[y1:y2, x1:x2])
+                                                cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
 
                                         else:
                                             tk_, _ = tracker(name=status[0], alias_name=tk_status)
                                             print(f"Recognized with id {tk_status}")
 
-                                            tk_.save_image(cvt_frame[y1:y2, x1:x2], face_save_path)
+                                            tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
 
                                             if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                                 tk_.mark = True
@@ -515,7 +517,7 @@ def recognition_track_let_serv(args):
 
                                                     serial_event.append(serial_)
 
-                                                    cv2.imwrite(str(save_path), cvt_frame[y1:y2, x1:x2])
+                                                    cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
 
                                     except:
                                         print("Record Drop")

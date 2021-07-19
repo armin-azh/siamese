@@ -24,12 +24,16 @@ class OpencvSource(Source):
         self._name = name
         self._src = src
         self._size = (width, height)
+        self._origin_frame = None
+        self._origin_size = None
         self._source = cv2.VideoCapture(self._src)
         super(OpencvSource, self).__init__(*args, **kwargs)
 
     def read(self):
         ret, frame = self._source.read()
         # print(frame.dtype)
+        self._origin_frame = frame.copy() if frame is not None else None
+        self._origin_size = frame.shape[:2] if frame is not None else None
         frame = cv2.resize(frame, self._size).astype(np.uint8) if frame is not None else frame
 
         return ret, frame
@@ -42,6 +46,25 @@ class OpencvSource(Source):
 
     def get(self, att):
         return self._source.get(att)
+
+    @property
+    def scale_factor(self):
+        if self._origin_size is None:
+            return None, None
+
+        else:
+            x_s = self._origin_size[1] / self._size[0]
+            y_s = self._origin_size[0] / self._size[1]
+            return x_s, y_s
+
+    def convert_coordinate(self, b_box):
+        x_s, y_s = self.scale_factor
+        x1, y1, x2, y2 = b_box[0], b_box[1], b_box[2], b_box[3]
+        return int(x1 * x_s), int(y1 * y_s), int(x2 * x_s), int(y2 * y_s)
+
+    @property
+    def original_frame(self) -> np.ndarray:
+        return self._origin_frame
 
     @property
     def name(self) -> str:
