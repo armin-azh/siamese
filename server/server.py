@@ -462,21 +462,6 @@ def recognition_track_let_serv(args):
                                                               confidence=round(score * 100, 2))
                                     serial_event.append(serial_)
 
-                        # if ex_lists:
-                        #     for ex_tk in tracker.get_expires():
-                        #         if not ex_tk.mark:
-                        #             now_ = datetime.now()
-                        #             id_ = person_ids.get(ex_tk.name)
-                        #             score = float(ex_tk.counter / int(
-                        #                 TRACKER_CONF.get("recognized_max_frame_conf")))
-                        #
-                        #             serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                        #                                       person_id=id_,
-                        #                                       camera_id=None,
-                        #                                       image_path=ex_tk.filename,
-                        #                                       confidence=round(score * 100, 2))
-                        #             serial_event.append(serial_)
-
                         if faces.shape[0] > 0:
 
                             frame_size = frame.shape
@@ -502,7 +487,7 @@ def recognition_track_let_serv(args):
                                         res[1]()
                                         final_bounding_box.append(bounding_box)
                                         final_status.append(res[1].name)
-                                        logger.info(f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name{res[1].name} IN {round(res[1].confidence,3)}")
+                                        logger.info(f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name{res[1].name} IN {round(res[1].confidence,3)}: {res[1].counter}")
                                         # print("Result", res[1].name, sep=" ")
                                     else:
                                         tracks_bounding_box_to.append(bounding_box)
@@ -549,7 +534,7 @@ def recognition_track_let_serv(args):
 
                                             if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                                 logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
-                                                            f"Unknown IN {round(bs_similarity[i],3)}")
+                                                            f"Unknown IN {round(bs_similarity[i],3)}: {tk_.counter}")
                                                 # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
                                                 tk_.mark = True
                                                 now_ = datetime.now()
@@ -565,7 +550,7 @@ def recognition_track_let_serv(args):
                                         else:
                                             tk_, _ = tracker(name=status[0], alias_name=tk_status)
                                             tk_.confidence = bs_similarity[i]
-                                            logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name} IN {round(bs_similarity[i],3)}")
+                                            logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name} IN {round(bs_similarity[i],3)}: {tk_.counter}")
 
                                             tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
 
