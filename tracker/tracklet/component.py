@@ -78,8 +78,23 @@ class TrackLet:
         self._face_threshold = face_threshold
         self._detect_interval = detect_interval
 
-    def face_side_score(self,facial_landmarks: np.ndarray):
-        return self._judge_side_face(facial_landmarks)
+    def face_side_score(self, points: np.ndarray, faces: np.ndarray):
+        landmark_scores = []
+        for i, item in enumerate(faces):
+            score = round(faces[i, 4], 6)
+            if score > self._face_threshold:
+
+                squeeze_points = np.squeeze(points[:, i])
+                tolist = squeeze_points.tolist()
+                facial_landmarks = []
+
+                for j in range(5):
+                    item = [tolist[j], tolist[(j + 5)]]
+                    facial_landmarks.append(item)
+
+                dist_rate, high_ratio_variance, width_rate = self._judge_side_face(np.array(facial_landmarks))
+                landmark_scores.append([dist_rate, high_ratio_variance, width_rate])
+        return faces, points, np.array(landmark_scores)
 
     def _judge_side_face(self, facial_landmarks: np.ndarray):
         wide_dist = np.linalg.norm(facial_landmarks[0] - facial_landmarks[1])
@@ -140,7 +155,7 @@ class TrackLet:
                 item_list = [cropped, score, dist_rate, high_ratio_variance, width_rate]
                 attribute_list.append(item_list)
 
-        final_faces = np.array(face_list)
+        final_faces = np.array(face_list) if len(faces)>0 else []
 
         trackers = self._tracker.update(final_faces, frame_size, attribute_list, self._detect_interval)
 
