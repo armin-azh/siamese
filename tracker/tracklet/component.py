@@ -78,6 +78,9 @@ class TrackLet:
         self._face_threshold = face_threshold
         self._detect_interval = detect_interval
 
+    def face_side_score(self,facial_landmarks: np.ndarray):
+        return self._judge_side_face(facial_landmarks)
+
     def _judge_side_face(self, facial_landmarks: np.ndarray):
         wide_dist = np.linalg.norm(facial_landmarks[0] - facial_landmarks[1])
         high_dist = np.linalg.norm(facial_landmarks[0] - facial_landmarks[3])
