@@ -36,7 +36,7 @@ def main(args):
 
     elif args.cnv_to_keras:
         conf = configparser.ConfigParser()
-        conf.read(os.path.join(BASE_DIR, "conf.ini"))
+        conf.read(os.path.join(BASE_DIR, "configuration/conf.ini"))
         model_conf = conf["Model"]
         m_path = pathlib.Path(os.path.join(BASE_DIR, model_conf.get('facenet')))
         convert_computation_graph_to_keras_model(model_dir=m_path.parent, save_dir=m_path.parent.parent,

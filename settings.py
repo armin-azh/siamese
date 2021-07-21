@@ -5,11 +5,14 @@ from __future__ import division
 import os
 import configparser
 import pathlib
+import os
 
 conf = configparser.ConfigParser()
 
+face_env = os.environ.get("FACE_RECOG", default="dev")
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-conf.read(os.path.join(BASE_DIR, "conf.ini"))
+conf.read(os.path.join(BASE_DIR, "configuration/dep.ini" if face_env == "dep" else "configuration/dev.ini"))
 
 GALLERY_LOG_DIR = os.path.join(conf["Log"].get("gallery"), 'gallery') if conf["Log"].get(
     "gallery") is None else os.path.join(
@@ -32,7 +35,7 @@ ZERO_MQ_CONF = conf["ZeroMQ"]
 SERVER_CONF = conf["Server"]
 IMAGE_CONF = conf["Image"]
 
-SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion", "Source", "ZeroMQ","Server"]
+SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion", "Source", "ZeroMQ", "Server"]
 
 COLOR_SUCCESS = (0, 255, 0)
 COLOR_DANG = (243, 32, 19)

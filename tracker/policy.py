@@ -24,6 +24,7 @@ class Policy:
         self._mark = False
         self._alias_name = None
         self._filename = uuid1().hex + ".jpg"
+        self._conf_list = []
 
     @property
     def filename(self):
@@ -56,6 +57,15 @@ class Policy:
     @property
     def alias_name(self):
         return self._alias_name
+
+    @property
+    def confidence(self):
+        tm_conf = np.array(self._conf_list)
+        return tm_conf.mean()
+
+    @confidence.setter
+    def confidence(self, m: float):
+        self._conf_list.append(m)
 
     @property
     def last_modified(self):

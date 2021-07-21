@@ -13,6 +13,7 @@ import time
 import configparser
 import cv2
 import numpy as np
+
 from recognition.utils import load_model, parse_status, Timer
 from recognition.preprocessing import normalize_input, cvt_to_gray
 from recognition.distance import bulk_cosine_similarity
@@ -321,6 +322,12 @@ def recognition_serv_2(args):
 def recognition_track_let_serv(args):
     output_size = (int(IMAGE_CONF.get('width')), int(IMAGE_CONF.get('height')))
 
+    # logger
+    log_subdir = SUMMARY_LOG_DIR.joinpath(datetime.strftime(datetime.now(), '%Y-%m-%d(%H-%M-%S)'))
+    logger = Logger(log_dir=log_subdir)
+    if not log_subdir.exists():
+        log_subdir.mkdir(parents=True)
+
     # database
     database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
     embeds, labels = database.bulk_embeddings()
@@ -380,6 +387,8 @@ def recognition_track_let_serv(args):
                                    height=int(CAMERA_MODEL_CONF.get("height")))
 
                 prev = 1
+
+                logger.info("[OK] Ready to start")
                 while cap.isOpened():
                     cur = time.time()
                     delta_time = cur - prev
@@ -387,7 +396,7 @@ def recognition_track_let_serv(args):
                     ret, frame = cap.read()
 
                     if not ret:
-                        print("Frame is not retrieved from source camera")
+                        logger.dang("[Failure] Frame is not retrieved from source camera")
                         break
 
                     if delta_time > 1. / float(DETECTOR_CONF['fps']):
@@ -401,12 +410,10 @@ def recognition_track_let_serv(args):
                         faces, points = detect_face.detect_face(frame_, minsize, pnet, rnet, onet, threshold,
                                                                 factor)
 
-                        # expiration
+                        # expiration deletion
                         ex_lists = list(tracker.get_expires())
 
                         get_aliases = tracker.get_aliases(ex_lists)
-
-                        print(get_aliases)
 
                         for exp_cont in get_aliases:
                             exp_cont.sort(key=lambda pol: pol.counter, reverse=True)
@@ -438,9 +445,10 @@ def recognition_track_let_serv(args):
                                                               confidence=round(score * 100, 2))
                                     serial_event.append(serial_)
 
-
-                            elif 0 < len(exp_cont) < 1:
-                                ex_tk = ex_tk[0]
+                            elif 0 < len(exp_cont) <= 1:
+                                ex_tk = exp_cont[0]
+                                print("-----> Single Tracker Container", ex_tk.counter, ex_tk.name, ex_tk.alias_name,
+                                      sep=" ")
                                 if not ex_tk.mark:
                                     now_ = datetime.now()
                                     id_ = person_ids.get(ex_tk.name)
@@ -494,7 +502,8 @@ def recognition_track_let_serv(args):
                                         res[1]()
                                         final_bounding_box.append(bounding_box)
                                         final_status.append(res[1].name)
-                                        print("Result", res[1].name, sep=" ")
+                                        logger.info(f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name{res[1].name} IN {round(res[1].confidence,3)}")
+                                        # print("Result", res[1].name, sep=" ")
                                     else:
                                         tracks_bounding_box_to.append(bounding_box)
                                         tracks_status_to.append(id_)
@@ -533,15 +542,15 @@ def recognition_track_let_serv(args):
                                         DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
                                     tk_status = tracks_status_to[i]
 
-                                    print("Result", status[0], bs_similarity[i], sep=" ")
-
                                     try:
 
                                         if status[0] == "unrecognised":
                                             tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
 
                                             if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
-                                                print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
+                                                logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
+                                                            f"Unknown IN {round(bs_similarity[i],3)}")
+                                                # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
                                                 tk_.mark = True
                                                 now_ = datetime.now()
                                                 serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
@@ -555,7 +564,8 @@ def recognition_track_let_serv(args):
 
                                         else:
                                             tk_, _ = tracker(name=status[0], alias_name=tk_status)
-                                            print(f"Recognized with id {tk_status}")
+                                            tk_.confidence = bs_similarity[i]
+                                            logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name} IN {round(bs_similarity[i],3)}")
 
                                             tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
 
@@ -576,9 +586,9 @@ def recognition_track_let_serv(args):
                                                     cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
 
                                     except:
-                                        print("Record Drop")
+                                        logger.warn("Record Drop")
 
                         if serial_event:
                             json_obj = json.dumps({"data": serial_event})
                             sock.sendto(json_obj.encode(), address)
-                            print(json_obj + " Send to " + f"{address[0]}:{address[1]}")
+                            logger.warn("[SEND] "+f"{address[0]}:{address[1]} "+json_obj)
