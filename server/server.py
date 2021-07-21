@@ -399,7 +399,7 @@ def recognition_track_let_serv(args):
                         logger.dang("[Failure] Frame is not retrieved from source camera")
                         break
 
-                    if delta_time > 1. / float(DETECTOR_CONF['fps']):
+                    if delta_time > 1. / float(DETECTOR_CONF['fps']) or not bool(int(DETECTOR_CONF["fps_controller"])):
                         prev = cur
 
                         serial_event = []
@@ -418,6 +418,9 @@ def recognition_track_let_serv(args):
                         for exp_cont in get_aliases:
                             exp_cont.sort(key=lambda pol: pol.counter, reverse=True)
                             if len(exp_cont) > 1:
+                                names = [c.name for c in exp_cont]
+                                logger.warn(
+                                    f"[EXPIRE] Tracker With ID {exp_cont[0].alias_name} With Name/Names {names}")
                                 first_gt_pol = exp_cont[0]
                                 sec_gt_pol = exp_cont[1]
 
@@ -432,6 +435,8 @@ def recognition_track_let_serv(args):
 
                                     serial_event.append(serial_)
 
+                                    logger.warn(f"----> Choose Unknown")
+
                                 elif not first_gt_pol.mark:
                                     now_ = datetime.now()
                                     id_ = person_ids.get(first_gt_pol.name)
@@ -444,11 +449,12 @@ def recognition_track_let_serv(args):
                                                               image_path=first_gt_pol.filename,
                                                               confidence=round(score * 100, 2))
                                     serial_event.append(serial_)
+                                    logger.warn(
+                                        f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} Confidence: {first_gt_pol.confidence} Sent: No")
 
                             elif 0 < len(exp_cont) <= 1:
                                 ex_tk = exp_cont[0]
-                                print("-----> Single Tracker Container", ex_tk.counter, ex_tk.name, ex_tk.alias_name,
-                                      sep=" ")
+
                                 if not ex_tk.mark:
                                     now_ = datetime.now()
                                     id_ = person_ids.get(ex_tk.name)
@@ -461,6 +467,12 @@ def recognition_track_let_serv(args):
                                                               image_path=ex_tk.filename,
                                                               confidence=round(score * 100, 2))
                                     serial_event.append(serial_)
+                                    logger.warn(
+                                        f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: No")
+
+                                else:
+                                    logger.warn(
+                                        f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: Yes")
 
                         if faces.shape[0] > 0:
 
@@ -487,7 +499,8 @@ def recognition_track_let_serv(args):
                                         res[1]()
                                         final_bounding_box.append(bounding_box)
                                         final_status.append(res[1].name)
-                                        logger.info(f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name{res[1].name} IN {round(res[1].confidence,3)}: {res[1].counter}")
+                                        logger.info(
+                                            f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name{res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence}")
                                         # print("Result", res[1].name, sep=" ")
                                     else:
                                         tracks_bounding_box_to.append(bounding_box)
@@ -534,7 +547,7 @@ def recognition_track_let_serv(args):
 
                                             if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                                 logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
-                                                            f"Unknown IN {round(bs_similarity[i],3)}: {tk_.counter}")
+                                                            f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence}")
                                                 # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
                                                 tk_.mark = True
                                                 now_ = datetime.now()
@@ -550,7 +563,8 @@ def recognition_track_let_serv(args):
                                         else:
                                             tk_, _ = tracker(name=status[0], alias_name=tk_status)
                                             tk_.confidence = bs_similarity[i]
-                                            logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name} IN {round(bs_similarity[i],3)}: {tk_.counter}")
+                                            logger.info(
+                                                f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence}")
 
                                             tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
 
@@ -576,4 +590,4 @@ def recognition_track_let_serv(args):
                         if serial_event:
                             json_obj = json.dumps({"data": serial_event})
                             sock.sendto(json_obj.encode(), address)
-                            logger.warn("[SEND] "+f"{address[0]}:{address[1]} "+json_obj)
+                            logger.warn("[SEND] " + f"{address[0]}:{address[1]} " + json_obj)

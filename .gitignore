@@ -4,6 +4,6 @@ __pycache__
 data
 examples
 gui/temp/*.avi
-test.py
-test2.py
-test3.py
+examples/test.py
+examples/test2.py
+examples/test3.py
