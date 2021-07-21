@@ -7,11 +7,13 @@ echo System name : %ComputerName%
 echo User name : %USERNAME%
 echo ----------------------------
 setlocal enabledelayedexpansion
+SETLOCAL
 SET username=%USERNAME%
 set envname=activate.bat
 SET posturl=\anaconda3\Scripts\
 SET preurl=C:\Users\
 SET url= %preurl%%username%%posturl%%envname%
-start %url%
 
+start %url%
+ENDLOCAL
 pause
