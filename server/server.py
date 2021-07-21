@@ -402,19 +402,22 @@ def recognition_track_let_serv(args):
                                                                 factor)
 
                         # expiration
-                        for ex_tk in tracker.get_expires():
-                            if not ex_tk.mark:
-                                now_ = datetime.now()
-                                id_ = person_ids.get(ex_tk.name)
-                                score = float(ex_tk.counter / int(
-                                    TRACKER_CONF.get("recognized_max_frame_conf")))
+                        ex_lists = tracker.get_expires()
 
-                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                          person_id=id_,
-                                                          camera_id=None,
-                                                          image_path=ex_tk.filename,
-                                                          confidence=round(score * 100, 2))
-                                serial_event.append(serial_)
+                        if ex_lists:
+                            for ex_tk in tracker.get_expires():
+                                if not ex_tk.mark:
+                                    now_ = datetime.now()
+                                    id_ = person_ids.get(ex_tk.name)
+                                    score = float(ex_tk.counter / int(
+                                        TRACKER_CONF.get("recognized_max_frame_conf")))
+
+                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                              person_id=id_,
+                                                              camera_id=None,
+                                                              image_path=ex_tk.filename,
+                                                              confidence=round(score * 100, 2))
+                                    serial_event.append(serial_)
 
                         if faces.shape[0] > 0:
 

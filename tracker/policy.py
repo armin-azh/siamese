@@ -5,6 +5,7 @@ from uuid import uuid1
 import cv2
 import numpy as np
 from pathlib import Path
+from typing import List
 
 
 class Policy:
@@ -142,11 +143,38 @@ class PolicyTracker:
     def get_expires(self):
         delta = time.time()
         for pol in self._policy_list:
-            print(pol.status, pol.alias_name, pol.name, pol.counter, sep=" ")
             if delta - pol.last_modified > pol.max_life_time:
                 tm_ = copy.deepcopy(pol)
                 self._policy_list.remove(pol)
                 yield tm_
+
+    def get_aliases(self, ls: List[Policy]) -> List[List[Policy]]:
+        final_list = []
+        lookup_indexes = []
+
+        temp_final_list = []
+
+        ls_size = len(ls)
+        for idx in range(ls_size):
+            if idx not in lookup_indexes:
+                lookup_indexes.append(idx)
+                temp_list = [copy.deepcopy(ls[idx])]
+                for idy in range(idx, ls_size):
+                    if ls[idx].alias_name == ls[idy].alias_name:
+                        lookup_indexes.append(idy)
+                        temp_list.append(copy.deepcopy(idy))
+                temp_final_list.append(temp_list)
+
+        for tk_cont in self._policy_list:
+            samp_tk_cont = tk_cont[0]
+            for pol in self._policy_list:
+                if samp_tk_cont.alias_name == pol.alias_name:
+                    tm_ = copy.deepcopy(pol)
+                    self._policy_list.remove(pol)
+                    samp_tk_cont.append(tm_)
+            final_list.append(tk_cont)
+
+        return final_list
 
     def __call__(self, name: str, alias_name: str):
 
