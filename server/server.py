@@ -408,8 +408,39 @@ def recognition_track_let_serv(args):
 
                         print(get_aliases)
 
-                        if ex_lists:
-                            for ex_tk in tracker.get_expires():
+                        for exp_cont in get_aliases:
+                            exp_cont.sort(key=lambda pol: pol.counter, reverse=True)
+                            if len(exp_cont) > 1:
+                                first_gt_pol = exp_cont[0]
+                                sec_gt_pol = exp_cont[1]
+
+                                if first_gt_pol.counter == sec_gt_pol.counter:
+                                    now_ = datetime.now()
+
+                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                              person_id=None,
+                                                              camera_id=None,
+                                                              image_path=first_gt_pol.filename,
+                                                              confidence=None)
+
+                                    serial_event.append(serial_)
+
+                                elif not first_gt_pol.mark:
+                                    now_ = datetime.now()
+                                    id_ = person_ids.get(first_gt_pol.name)
+                                    score = float(first_gt_pol.counter / int(
+                                        TRACKER_CONF.get("recognized_max_frame_conf")))
+
+                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                              person_id=id_,
+                                                              camera_id=None,
+                                                              image_path=first_gt_pol.filename,
+                                                              confidence=round(score * 100, 2))
+                                    serial_event.append(serial_)
+
+
+                            elif 0 < len(exp_cont) < 1:
+                                ex_tk = ex_tk[0]
                                 if not ex_tk.mark:
                                     now_ = datetime.now()
                                     id_ = person_ids.get(ex_tk.name)
@@ -422,6 +453,21 @@ def recognition_track_let_serv(args):
                                                               image_path=ex_tk.filename,
                                                               confidence=round(score * 100, 2))
                                     serial_event.append(serial_)
+
+                        # if ex_lists:
+                        #     for ex_tk in tracker.get_expires():
+                        #         if not ex_tk.mark:
+                        #             now_ = datetime.now()
+                        #             id_ = person_ids.get(ex_tk.name)
+                        #             score = float(ex_tk.counter / int(
+                        #                 TRACKER_CONF.get("recognized_max_frame_conf")))
+                        #
+                        #             serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                        #                                       person_id=id_,
+                        #                                       camera_id=None,
+                        #                                       image_path=ex_tk.filename,
+                        #                                       confidence=round(score * 100, 2))
+                        #             serial_event.append(serial_)
 
                         if faces.shape[0] > 0:
 
