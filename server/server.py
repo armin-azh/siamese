@@ -402,7 +402,11 @@ def recognition_track_let_serv(args):
                                                                 factor)
 
                         # expiration
-                        ex_lists = tracker.get_expires()
+                        ex_lists = list(tracker.get_expires())
+
+                        get_aliases = tracker.get_aliases(ex_lists)
+
+                        print(get_aliases)
 
                         if ex_lists:
                             for ex_tk in tracker.get_expires():

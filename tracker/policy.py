@@ -140,7 +140,7 @@ class PolicyTracker:
                 self._policy_list.remove(pol)
                 yield tm
 
-    def get_expires(self):
+    def get_expires(self)->List[Policy]:
         delta = time.time()
         for pol in self._policy_list:
             if delta - pol.last_modified > pol.max_life_time:
@@ -159,19 +159,20 @@ class PolicyTracker:
             if idx not in lookup_indexes:
                 lookup_indexes.append(idx)
                 temp_list = [copy.deepcopy(ls[idx])]
-                for idy in range(idx, ls_size):
+                for idy in range(idx+1, ls_size):
                     if ls[idx].alias_name == ls[idy].alias_name:
                         lookup_indexes.append(idy)
-                        temp_list.append(copy.deepcopy(idy))
+                        temp_list.append(copy.deepcopy(ls[idy]))
                 temp_final_list.append(temp_list)
 
-        for tk_cont in self._policy_list:
+        for tk_cont in temp_final_list:
             samp_tk_cont = tk_cont[0]
+            print(tk_cont)
             for pol in self._policy_list:
                 if samp_tk_cont.alias_name == pol.alias_name:
                     tm_ = copy.deepcopy(pol)
                     self._policy_list.remove(pol)
-                    samp_tk_cont.append(tm_)
+                    tk_cont.append(tm_)
             final_list.append(tk_cont)
 
         return final_list
