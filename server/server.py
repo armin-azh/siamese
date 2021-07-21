@@ -500,7 +500,7 @@ def recognition_track_let_serv(args):
                                         final_bounding_box.append(bounding_box)
                                         final_status.append(res[1].name)
                                         logger.info(
-                                            f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name{res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence}")
+                                            f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence}")
                                         # print("Result", res[1].name, sep=" ")
                                     else:
                                         tracks_bounding_box_to.append(bounding_box)
