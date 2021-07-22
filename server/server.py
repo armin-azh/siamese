@@ -588,6 +588,8 @@ def recognition_track_let_serv(args):
 
                                             cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
 
+                                        unrecognized_tracker.drop_with_alias_name(tk_.alias_name)
+
                             except:
                                 logger.warn("Record Drop")
 
