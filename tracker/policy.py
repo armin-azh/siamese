@@ -161,11 +161,23 @@ class PolicyTracker:
     def drop_with_alias_name(self, tk_id: str):
         """
         drop tracker with certain tracker is
-        :param tk_id: 
+        :param tk_id:
         :return:
         """
         for pol in self._policy_list:
             if tk_id == pol.alias_name:
+                self._policy_list.remove(pol)
+
+    def drop_exe_name_with_alias(self, name: str, tk_id):
+        """
+        drop element with tracker id from tracker list except name
+        :param name:
+        :param tk_id:
+        :return:
+        """
+
+        for pol in self._policy_list:
+            if pol.alias_name == tk_id and pol.name != name:
                 self._policy_list.remove(pol)
 
     def get_aliases(self, ls: List[Policy]) -> List[List[Policy]]:

@@ -503,7 +503,8 @@ def recognition_track_let_serv(args):
                                 final_bounding_box.append(bounding_box)
                                 final_status.append(res[1].name)
                                 logger.info(
-                                    f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence}",white=True)
+                                    f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence}",
+                                    white=True)
                                 # print("Result", res[1].name, sep=" ")
                             else:
                                 tracks_bounding_box_to.append(bounding_box)
@@ -568,7 +569,8 @@ def recognition_track_let_serv(args):
                                     tk_, _ = tracker(name=status[0], alias_name=tk_status)
                                     tk_.confidence = bs_similarity[i]
                                     logger.info(
-                                        f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence}",white=True)
+                                        f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence}",
+                                        white=True)
 
                                     tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
 
@@ -589,6 +591,7 @@ def recognition_track_let_serv(args):
                                             cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
 
                                         unrecognized_tracker.drop_with_alias_name(tk_.alias_name)
+                                        tracker.drop_exe_name_with_alias(name=status[0], tk_id=tk_.alias_name)
 
                             except:
                                 logger.warn("Record Drop")
