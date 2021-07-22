@@ -12,12 +12,17 @@ class Logger:
     def _now_time(self):
         return datetime.strftime(datetime.now(), self._time_format)
 
-    def info(self, message, timestamp=True):
+    def info(self, message, timestamp=True,white = False):
         time = ""
         if timestamp:
             time = self._now_time()
 
-        status = Fore.LIGHTBLUE_EX + time + Fore.BLUE + message
+        if white:
+            status = Fore.WHITE + time + Fore.WHITE + message
+
+        else:
+            status = Fore.LIGHTBLUE_EX + time + Fore.BLUE + message
+
         print(status)
 
     def warn(self, message, timestamp=True):

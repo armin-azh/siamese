@@ -503,7 +503,7 @@ def recognition_track_let_serv(args):
                                 final_bounding_box.append(bounding_box)
                                 final_status.append(res[1].name)
                                 logger.info(
-                                    f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence}")
+                                    f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence}",white=True)
                                 # print("Result", res[1].name, sep=" ")
                             else:
                                 tracks_bounding_box_to.append(bounding_box)
@@ -547,10 +547,11 @@ def recognition_track_let_serv(args):
 
                                 if status[0] == "unrecognised":
                                     tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
+                                    logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
+                                                f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence}",
+                                                white=True)
 
                                     if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
-                                        logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
-                                                    f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence}")
                                         # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
                                         tk_.mark = True
                                         now_ = datetime.now()
@@ -567,7 +568,7 @@ def recognition_track_let_serv(args):
                                     tk_, _ = tracker(name=status[0], alias_name=tk_status)
                                     tk_.confidence = bs_similarity[i]
                                     logger.info(
-                                        f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence}")
+                                        f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence}",white=True)
 
                                     tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
 

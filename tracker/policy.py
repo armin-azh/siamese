@@ -158,6 +158,16 @@ class PolicyTracker:
                 self._policy_list.remove(pol)
                 yield tm_
 
+    def drop_with_alias_name(self, tk_id: str):
+        """
+        drop tracker with certain tracker is
+        :param tk_id: 
+        :return:
+        """
+        for pol in self._policy_list:
+            if tk_id == pol.alias_name:
+                self._policy_list.remove(pol)
+
     def get_aliases(self, ls: List[Policy]) -> List[List[Policy]]:
         final_list = []
         lookup_indexes = []
