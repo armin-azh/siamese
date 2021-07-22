@@ -5,7 +5,7 @@ from PIL import Image
 import tensorflow as tf
 import cv2
 import numpy as np
-from settings import BASE_DIR
+from settings import BASE_DIR,IMAGE_CONF,DETECTOR_CONF,MODEL_CONF,DEFAULT_CONF
 
 
 class FaceDetector:
@@ -15,13 +15,12 @@ class FaceDetector:
     def __init__(self, sess, o_size: tuple = None):
         conf = configparser.ConfigParser()
         conf.read(os.path.join(BASE_DIR, "conf.ini"))
-        image_conf = conf['Image']
-        self._default = conf["Default"]
-        self._detector_conf = conf['Detector']
-        self._image_conf = conf["Image"]
-        self._model_conf = conf['Model']
+        self._default = DEFAULT_CONF
+        self._detector_conf = DETECTOR_CONF
+        self._image_conf = IMAGE_CONF
+        self._model_conf = MODEL_CONF
         self._model_type = self._detector_conf['type']
-        self._o_shape = o_size if o_size is not None else (int(image_conf.get('width')), int(image_conf.get('height')))
+        self._o_shape = o_size if o_size is not None else (int(IMAGE_CONF.get('width')), int(IMAGE_CONF.get('height')))
         if self._model_type == self.DT_MTCNN:
             thresholds = [float(self._detector_conf.get('step1_threshold')),
                           float(self._detector_conf.get('step2_threshold')),
