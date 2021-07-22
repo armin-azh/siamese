@@ -357,6 +357,7 @@ def recognition_track_let_serv(args):
     interval = int(DETECTOR_CONF.get("mtcnn_per_frame"))
 
     track_let = TrackLet(0.9, interval)
+    tracker_min_conf = int(TRACKER_CONF.get("min_conf_frame"))
 
     cnt = 0
 
@@ -444,42 +445,72 @@ def recognition_track_let_serv(args):
                                 if first_gt_pol.alias_name in watch_list:
                                     watch_list.remove(first_gt_pol.alias_name)
                                 else:
-                                    now_ = datetime.now()
-                                    id_ = person_ids.get(first_gt_pol.name)
-                                    score = float(first_gt_pol.counter / int(
-                                        TRACKER_CONF.get("recognized_max_frame_conf")))
+                                    if first_gt_pol.counter > tracker_min_conf:
+                                        now_ = datetime.now()
+                                        id_ = person_ids.get(first_gt_pol.name)
+                                        score = float(first_gt_pol.counter / int(
+                                            TRACKER_CONF.get("recognized_max_frame_conf")))
 
-                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                              person_id=id_,
-                                                              camera_id=None,
-                                                              image_path=first_gt_pol.filename,
-                                                              confidence=round(score * 100, 2))
-                                    serial_event.append(serial_)
-                                    logger.warn(
-                                        f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} Confidence: {first_gt_pol.confidence} Sent: No")
+                                        serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                  person_id=id_,
+                                                                  camera_id=None,
+                                                                  image_path=first_gt_pol.filename,
+                                                                  confidence=round(score * 100, 2))
+                                        serial_event.append(serial_)
+                                        logger.warn(
+                                            f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} Confidence: {first_gt_pol.confidence} Sent: No")
+                                    else:
+                                        now_ = datetime.now()
 
+                                        serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                  person_id=None,
+                                                                  camera_id=None,
+                                                                  image_path=first_gt_pol.filename,
+                                                                  confidence=None)
+
+                                        serial_event.append(serial_)
+
+                                        logger.warn(f"----> Choose Unknown")
+
+                            unrecognized_tracker.drop_with_alias_name(first_gt_pol.alias_name)
 
                         elif 0 < len(exp_cont) <= 1:
                             ex_tk = exp_cont[0]
 
                             if not ex_tk.mark:
-                                now_ = datetime.now()
-                                id_ = person_ids.get(ex_tk.name)
-                                score = float(ex_tk.counter / int(
-                                    TRACKER_CONF.get("recognized_max_frame_conf")))
+                                if ex_tk.counter > tracker_min_conf:
+                                    now_ = datetime.now()
+                                    id_ = person_ids.get(ex_tk.name)
+                                    score = float(ex_tk.counter / int(
+                                        TRACKER_CONF.get("recognized_max_frame_conf")))
 
-                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                          person_id=id_,
-                                                          camera_id=None,
-                                                          image_path=ex_tk.filename,
-                                                          confidence=round(score * 100, 2))
-                                serial_event.append(serial_)
-                                logger.warn(
-                                    f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: No")
+                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                              person_id=id_,
+                                                              camera_id=None,
+                                                              image_path=ex_tk.filename,
+                                                              confidence=round(score * 100, 2))
+                                    serial_event.append(serial_)
+                                    logger.warn(
+                                        f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: No")
+                                else:
+                                    now_ = datetime.now()
+
+                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                              person_id=None,
+                                                              camera_id=None,
+                                                              image_path=ex_tk.filename,
+                                                              confidence=None)
+
+                                    serial_event.append(serial_)
+
+                                    logger.warn(f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names "
+                                                f"unknown-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} ")
 
                             else:
                                 logger.warn(
                                     f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: Yes")
+
+                            unrecognized_tracker.drop_with_alias_name(ex_tk.alias_name)
 
                     frame_size = frame.shape
 
