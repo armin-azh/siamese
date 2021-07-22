@@ -390,7 +390,7 @@ def recognition_track_let_serv(args):
                 cap = OpencvSource(src=_source, name=_source_name, width=int(CAMERA_MODEL_CONF.get("width")),
                                    height=int(CAMERA_MODEL_CONF.get("height")))
 
-                prev = 1
+                watch_list = []
 
                 logger.info("[OK] Ready to start")
                 while cap.isOpened():
@@ -440,20 +440,24 @@ def recognition_track_let_serv(args):
 
                                 logger.warn(f"----> Choose Unknown")
 
-                            elif not first_gt_pol.mark:
-                                now_ = datetime.now()
-                                id_ = person_ids.get(first_gt_pol.name)
-                                score = float(first_gt_pol.counter / int(
-                                    TRACKER_CONF.get("recognized_max_frame_conf")))
+                            elif not first_gt_pol.mark and first_gt_pol.alias_name:
+                                if first_gt_pol.alias_name in watch_list:
+                                    watch_list.remove(first_gt_pol.alias_name)
+                                else:
+                                    now_ = datetime.now()
+                                    id_ = person_ids.get(first_gt_pol.name)
+                                    score = float(first_gt_pol.counter / int(
+                                        TRACKER_CONF.get("recognized_max_frame_conf")))
 
-                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                          person_id=id_,
-                                                          camera_id=None,
-                                                          image_path=first_gt_pol.filename,
-                                                          confidence=round(score * 100, 2))
-                                serial_event.append(serial_)
-                                logger.warn(
-                                    f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} Confidence: {first_gt_pol.confidence} Sent: No")
+                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                              person_id=id_,
+                                                              camera_id=None,
+                                                              image_path=first_gt_pol.filename,
+                                                              confidence=round(score * 100, 2))
+                                    serial_event.append(serial_)
+                                    logger.warn(
+                                        f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} Confidence: {first_gt_pol.confidence} Sent: No")
+
 
                         elif 0 < len(exp_cont) <= 1:
                             ex_tk = exp_cont[0]
@@ -592,6 +596,7 @@ def recognition_track_let_serv(args):
 
                                         unrecognized_tracker.drop_with_alias_name(tk_.alias_name)
                                         tracker.drop_exe_name_with_alias(name=status[0], tk_id=tk_.alias_name)
+                                        watch_list.append(tk_.alias_name)
 
                             except:
                                 logger.warn("Record Drop")
