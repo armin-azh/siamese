@@ -34,8 +34,9 @@ CAMERA_MODEL_CONF = conf["CameraModel"]
 ZERO_MQ_CONF = conf["ZeroMQ"]
 SERVER_CONF = conf["Server"]
 IMAGE_CONF = conf["Image"]
+HPE_CONF = conf["HPE"]
 
-SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion", "Source", "ZeroMQ", "Server"]
+SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion", "Source", "ZeroMQ", "Server","HPE"]
 
 COLOR_SUCCESS = (0, 255, 0)
 COLOR_DANG = (243, 32, 19)
