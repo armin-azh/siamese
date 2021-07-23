@@ -14,12 +14,28 @@ class HPE:
         self._rescale = rescale
         self._input_size = 64
 
+    def reshape_and_convert(self, img: np.ndarray) -> np.ndarray:
+        """
+
+        :param img: tensor in shape (m,width,height,channel)
+        :return: tensor in shape (m,64,64,1)
+        """
+        pro_img = np.empty((img.shape[0], self._input_size, self._input_size, 1))
+
+        for idx, tm_tm in enumerate(img):
+            pro_img[idx, :, :, :] = np.reshape(cv2.resize(cv2.cvtColor(img[idx, :, :, :], cv2.COLOR_BGR2GRAY),
+                                                          (self._input_size, self._input_size)),
+                                               (self._input_size, self._input_size, 1))
+
+        return pro_img
+
     def normalize_images(self, img: np.ndarray) -> np.ndarray:
         """
         get position of the input images
         :param img: images in shape (m,64,64,1)
-        :return:
+        :return: tensor ins shape (m,64,64,1)
         """
+
         img_norm = ((img / 255.) - self._img_norm[0]) / self._img_norm[1]
 
         return img_norm
@@ -46,6 +62,8 @@ class HPE:
         :param img: tensor in shape (m,64,64,1)
         :return: tensor in shape (m,2)
         """
+
+        img = self.reshape_and_convert(img)
 
         img_norm = self.normalize_images(img)
 
