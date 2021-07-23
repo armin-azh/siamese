@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.python.framework.ops import Tensor
 import cv2
 import numpy as np
 from typing import Tuple
@@ -35,9 +36,12 @@ class HPE:
 
         return poses
 
-    def predict(self, sess: tf.compat.v1.Session, img: np.ndarray) -> np.ndarray:
+    def predict(self, sess: tf.compat.v1.Session, img: np.ndarray, input_tensor: Tensor,
+                output_tensor: Tensor) -> np.ndarray:
         """
         predict the tilt and pan
+        :param input_tensor:
+        :param output_tensor:
         :param sess: tensorflow session
         :param img: tensor in shape (m,64,64,1)
         :return: tensor in shape (m,2)
@@ -45,4 +49,8 @@ class HPE:
 
         img_norm = self.normalize_images(img)
 
-        pred = sess.run()
+        feed_dic = {input_tensor: img_norm}
+
+        poses = sess.run(output_tensor, feed_dict=feed_dic)
+
+        return self.normalize_pose(poses)
