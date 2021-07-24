@@ -189,3 +189,16 @@ class HPE:
         if tilt > self._tilt_left or tilt < self._tilt_right or pan > self._pan_up or pan < self._pan_down:
             return False
         return True
+
+    def validate_angle_bulk(self, po: np.ndarray) -> np.ndarray:
+        """
+        check the valid boundary
+        :param po: matrix in shape (m,2)
+        :return: indices where the condition will satisfy, vector in shape (k,)
+        """
+
+        tilt_log = np.logical_and(po[:, 0] < self._tilt_left, po[:, 0] > self._tilt_right)
+        pan_log = np.logical_and(po[:, 1] < self._pan_up, po[:, 1] > self._pan_down)
+        to_log = np.logical_and(tilt_log, pan_log)
+        ans = np.where(to_log)
+        return ans[0]

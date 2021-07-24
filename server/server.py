@@ -42,6 +42,9 @@ from tracker import TrackerList, MATCHED
 from tracker.tracklet.component import TrackLet
 from tracker.tracklet.component import TrackerContainer
 
+# HPE
+from hpe import HeadPoseEstimation
+
 # tools
 from tools.logger import Logger
 from stream.source import OpencvSource
@@ -51,9 +54,16 @@ from settings import (COLOR_DANG,
                       COLOR_SUCCESS,
                       TRACKER_CONF,
                       SUMMARY_LOG_DIR,
-                      SOURCE_CONF)
-from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, CAMERA_MODEL_CONF, DETECTOR_CONF, \
-    SERVER_CONF, IMAGE_CONF
+                      SOURCE_CONF,
+                      HPE_CONF)
+from settings import (BASE_DIR,
+                      GALLERY_CONF,
+                      DEFAULT_CONF,
+                      MODEL_CONF,
+                      CAMERA_MODEL_CONF,
+                      DETECTOR_CONF,
+                      SERVER_CONF,
+                      IMAGE_CONF)
 
 # serializer
 from .serializer import face_serializer
@@ -370,18 +380,43 @@ def recognition_track_let_serv(args):
     tracker_min_conf = int(TRACKER_CONF.get("min_conf_frame"))
     tracker_container = TrackerContainer(max_track_id=int(TRACKER_CONF.get("min_tracked_id")))
 
+    hpe_conf = (
+        float(HPE_CONF.get("pan_left")),
+        float(HPE_CONF.get("pan_right")),
+        float(HPE_CONF.get("tilt_up")),
+        float(HPE_CONF.get("tilt_down"))
+    )
+
+    hpe = HeadPoseEstimation(
+        img_norm=(float(HPE_CONF.get("im_norm_mean")), float(HPE_CONF.get("im_norm_var"))),
+        tilt_norm=(float(HPE_CONF.get("tilt_norm_mean")), float(HPE_CONF.get("tilt_norm_var"))),
+        pan_norm=(float(HPE_CONF.get("pan_norm_mean")), float(HPE_CONF.get("pan_norm_var"))),
+        rescale=float(HPE_CONF.get("rescale")),
+        conf=hpe_conf
+    )
+
     cnt = 0
 
     # computation graph
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
             with tf.compat.v1.Session() as sess:
+
+                # recognition computation graph
                 load_model(os.path.join(BASE_DIR, MODEL_CONF.get('facenet')))
                 input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
                 embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
                 phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
 
                 pnet, rnet, onet = detect_face.create_mtcnn(sess)
+
+                # hpe computation graph
+                load_model(os.path.join(BASE_DIR, HPE_CONF.get("model")))
+
+                hpe_input = tf.compat.v1.get_default_graph().get_tensor_by_name("x:0")
+                hpe_output = tf.compat.v1.get_default_graph().get_tensor_by_name("Identity:0")
+
+                # face detector computation graph
 
                 minsize = int(DETECTOR_CONF.get("min_face_size"))
                 threshold = [
@@ -416,6 +451,7 @@ def recognition_track_let_serv(args):
                     serial_event = []
 
                     frame_ = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    ch1_fr = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                     gray_frame = cvt_to_gray(frame_)
 
                     faces = []
@@ -491,7 +527,8 @@ def recognition_track_let_serv(args):
                             ex_tk = exp_cont[0]
 
                             if not ex_tk.mark:
-                                if ex_tk.counter > tracker_min_conf and tracker_container.validate(n_id=ex_tk.alias_name):
+                                if ex_tk.counter > tracker_min_conf and tracker_container.validate(
+                                        n_id=ex_tk.alias_name):
                                     now_ = datetime.now()
                                     id_ = person_ids.get(ex_tk.name)
                                     score = float(ex_tk.counter / int(
@@ -507,7 +544,6 @@ def recognition_track_let_serv(args):
                                         f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: No")
                                 else:
                                     if tracker_container.validate(n_id=ex_tk.alias_name):
-
                                         now_ = datetime.now()
 
                                         serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
@@ -573,7 +609,16 @@ def recognition_track_let_serv(args):
                     tracks_face_to = np.array(tracks_face_to)
                     tracks_status_to = np.array(tracks_status_to)
 
-                    if tracks_face_to.shape[0] > 0:
+                    # HPE
+
+                    cropped_images = hpe.get_cropped_pics(ch1_fr, tracks_bounding_box_to, 0, "large")
+                    poses = hpe.predict(sess, cropped_images, hpe_input, hpe_output)
+                    right_pose_idx = hpe.validate_angle_bulk(po=poses)
+
+                    if tracks_face_to.shape[0] > 0 and right_pose_idx.shape[0] > 0:
+                        tracks_bounding_box_to = tracks_bounding_box_to[right_pose_idx, :]
+                        tracks_face_to = tracks_face_to[right_pose_idx, :, :, :]
+                        tracks_status_to = tracks_status_to[right_pose_idx]
                         feed_dic = {phase_train: False, input_plc: tracks_face_to}
                         embedded_array = sess.run(embeddings, feed_dic)
                         dists = bulk_cosine_similarity(embedded_array, embeds)
