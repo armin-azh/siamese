@@ -26,7 +26,7 @@ from motion_detection.component import BSMotionDetection
 from face_detection.tracker import Tracker, KalmanFaceTracker
 from face_detection.utils import draw_face
 from tracker import TrackerList, MATCHED, UN_MATCHED
-from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, GALLERY_ROOT, CAMERA_MODEL_CONF
+from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, GALLERY_ROOT, CAMERA_MODEL_CONF,DETECTOR_CONF
 from PIL import Image
 from sklearn import preprocessing
 from datetime import datetime
@@ -61,14 +61,7 @@ def face_recognition(args):
 
     logger.info(f"$ {parse_status(args)} recognition mode ...")
 
-    conf = configparser.ConfigParser()
-    conf.read(os.path.join(BASE_DIR, "conf.ini"))
-    model_conf = conf['Model']
-    detector_conf = conf['Detector']
-    gallery_conf = conf['Gallery']
-    default_conf = conf['Default']
-
-    database = ImageDatabase(db_path=gallery_conf.get("database_path"))
+    database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
 
     # check cluster name existence
     if args.cluster:
@@ -91,15 +84,15 @@ def face_recognition(args):
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
             with tf.compat.v1.Session() as sess:
-                logger.info(f"$ Initializing computation graph with {model_conf.get('facenet')} pretrained model.")
-                load_model(os.path.join(BASE_DIR, model_conf.get('facenet')))
+                logger.info(f"$ Initializing computation graph with {MODEL_CONF.get('facenet')} pretrained model.")
+                load_model(os.path.join(BASE_DIR, MODEL_CONF.get('facenet')))
                 logger.info("$ Model has been loaded.")
                 input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
                 embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
                 phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
 
                 detector = FaceDetector(sess=sess)
-                detector_type = detector_conf.get("type")
+                detector_type = DETECTOR_CONF.get("type")
                 logger.info(f"$ {detector_type} face detector has been loaded.")
 
                 _source = 0
@@ -125,7 +118,7 @@ def face_recognition(args):
                 frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
                 if args.save:
-                    filename = os.path.join(BASE_DIR, default_conf.get("save_video"),
+                    filename = os.path.join(BASE_DIR, DEFAULT_CONF.get("save_video"),
                                             datetime.strftime(datetime.now(), '%Y%m%d'))
 
                     if not os.path.exists(filename):
@@ -153,7 +146,7 @@ def face_recognition(args):
 
                     if not args.cluster:
                         fps.update()
-                    if (delta_time > 1. / float(detector_conf['fps'])) and (
+                    if (delta_time > 1. / float(DETECTOR_CONF['fps'])) and (
                             motion_detection.has_motion(frame) is not None or args.cluster):
 
                         prev = cur
@@ -186,7 +179,7 @@ def face_recognition(args):
                                     x, y, w, h = boxes[i]
                                     status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
                                                                                                        i] < float(
-                                        default_conf.get("similarity_threshold")) else ['unrecognised']
+                                        DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
                                     if status[0] == "unrecognised":
                                         color = COLOR_DANG
                                     else:
@@ -239,7 +232,7 @@ def face_recognition(args):
                         feed_dic = {phase_train: False, input_plc: faces}
                         embedded_array = sess.run(embeddings, feed_dic)
                         clusters = k_mean_clustering(embeddings=embedded_array,
-                                                     n_cluster=int(gallery_conf['n_clusters']))
+                                                     n_cluster=int(GALLERY_CONF['n_clusters']))
                         database.save_clusters(clusters, faces_, args.cluster_name)
 
                 if not args.cluster:
@@ -275,7 +268,7 @@ def face_recognition_on_keras(args):
     gallery_conf = conf['Gallery']
     default_conf = conf['Default']
 
-    database = ImageDatabase(db_path=gallery_conf.get("database_path"))
+    database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
 
     # check cluster name existence
     if args.cluster:
@@ -289,7 +282,7 @@ def face_recognition_on_keras(args):
         encoded_labels.fit(list(set(labels)))
         labels = encoded_labels.transform(labels)
 
-    model = h5_load(model_conf.get("facenet_keras"))
+    model = h5_load(MODEL_CONF.get("facenet_keras"))
 
     detector = FaceDetector(sess=None)
     print("$ MTCNN face detector has been loaded.")
@@ -305,7 +298,7 @@ def face_recognition_on_keras(args):
     frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     if args.save:
-        filename = os.path.join(BASE_DIR, default_conf.get("save_video"),
+        filename = os.path.join(BASE_DIR, DEFAULT_CONF.get("save_video"),
                                 datetime.strftime(datetime.now(), '%Y%m%d'))
 
         if not os.path.exists(filename):
@@ -324,7 +317,7 @@ def face_recognition_on_keras(args):
         if not ret:
             break
 
-        if delta_time > 1. / float(detector_conf['fps']):
+        if delta_time > 1. / float(DETECTOR_CONF['fps']):
             fps.update()
             prev = time.time() - prev
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -354,7 +347,7 @@ def face_recognition_on_keras(args):
                         x, y, w, h = boxes[i]
                         status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
                                                                                            i] < float(
-                            default_conf.get("similarity_threshold")) else 'unrecognised'
+                            DEFAULT_CONF.get("similarity_threshold")) else 'unrecognised'
                         color = (243, 32, 19) if status == 'unrecognised' else (0, 255, 0)
                         frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
 
@@ -380,7 +373,7 @@ def face_recognition_on_keras(args):
         if faces.shape[0] > 0:
             embedded_array = model.predict(faces)
             clusters = k_mean_clustering(embeddings=embedded_array,
-                                         n_cluster=int(gallery_conf['n_clusters']))
+                                         n_cluster=int(GALLERY_CONF['n_clusters']))
             database.save_clusters(clusters, faces_, args.cluster_name)
 
     print("$ fps: {:.2f}".format(fps.fps()))
@@ -419,7 +412,7 @@ def test_recognition(args):
 
     print("$ loading embeddings ...")
 
-    database = ImageDatabase(db_path=gallery_conf.get("database_path"))
+    database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
     gallery_embeds, gallery_labels = database.bulk_embeddings()
     encoded_labels = preprocessing.LabelEncoder()
     encoded_labels.fit(list(set(gallery_labels)))
@@ -436,8 +429,8 @@ def test_recognition(args):
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
             with tf.compat.v1.Session() as sess:
-                print(f"$ Initializing computation graph with {model_conf.get('facenet')} pretrained model.")
-                load_model(os.path.join(BASE_DIR, model_conf.get('facenet')))
+                print(f"$ Initializing computation graph with {MODEL_CONF.get('facenet')} pretrained model.")
+                load_model(os.path.join(BASE_DIR, MODEL_CONF.get('facenet')))
                 print("$ Model has been loaded.")
 
                 input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
@@ -559,7 +552,7 @@ def face_recognition_kalman(args):
     gallery_conf = conf['Gallery']
     default_conf = conf['Default']
 
-    database = ImageDatabase(db_path=gallery_conf.get("database_path"))
+    database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
 
     if (args.realtime or args.video) and args.eval_method == "cosine":
         print("$ loading embeddings ...")
@@ -572,15 +565,15 @@ def face_recognition_kalman(args):
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
             with tf.compat.v1.Session() as sess:
-                print(f"$ Initializing computation graph with {model_conf.get('facenet')} pretrained model.")
-                load_model(os.path.join(BASE_DIR, model_conf.get('facenet')))
+                print(f"$ Initializing computation graph with {MODEL_CONF.get('facenet')} pretrained model.")
+                load_model(os.path.join(BASE_DIR, MODEL_CONF.get('facenet')))
                 print("$ Model has been loaded.")
                 input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
                 embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
                 phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
 
                 detector = FaceDetector(sess=sess)
-                detector_type = detector_conf.get("type")
+                detector_type = DETECTOR_CONF.get("type")
                 print(f"$ {detector_type} face detector has been loaded.")
 
                 cap = cv2.VideoCapture(0 if args.realtime else args.video_file)
@@ -604,7 +597,7 @@ def face_recognition_kalman(args):
                         break
 
                     fps.update()
-                    if (delta_time > 1. / float(detector_conf['fps'])) and (
+                    if (delta_time > 1. / float(DETECTOR_CONF['fps'])) and (
                             motion_detection.has_motion(frame) is not None):
 
                         prev = cur
@@ -651,7 +644,7 @@ def face_recognition_kalman(args):
                                     x, y, w, h = boxes[i]
                                     status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
                                                                                                        i] < float(
-                                        default_conf.get("similarity_threshold")) else 'unrecognised'
+                                        DEFAULT_CONF.get("similarity_threshold")) else 'unrecognised'
 
                                     if status != "unrecognised":
                                         tk = tracker.add_new_tracker(status, np.array(boxes[i]))
