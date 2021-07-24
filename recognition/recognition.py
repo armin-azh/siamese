@@ -575,16 +575,20 @@ def cluster_faces(args) -> None:
                         right_pose_idx = hpe.validate_angle_bulk(po=poses)
 
                     n_faces = np.array(n_faces)
+                    faces_filtered = []
+
+                    for idx in right_pose_idx:
+                        faces_filtered.append(faces[idx])
+
                     if n_faces.shape[0] > 0 and right_pose_idx.shape[0] > 0:
                         # update
                         n_faces = n_faces[right_pose_idx, :, :, :]
-                        faces = faces[right_pose_idx, :, :, :]
 
                         feed_dic = {phase_train: False, input_plc: n_faces}
                         embedded_array = sess.run(embeddings, feed_dic)
                         clusters = k_mean_clustering(embeddings=embedded_array,
                                                      n_cluster=int(GALLERY_CONF.get("n_clusters")))
-                        database.save_clusters(clusters, faces, filename.title())
+                        database.save_clusters(clusters, faces_filtered, filename.title())
                         v_path.rename(v_path.parent.joinpath(v_path.stem + "_done" + v_path.suffix))
 
                     else:
