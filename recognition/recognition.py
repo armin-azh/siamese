@@ -297,13 +297,6 @@ def face_recognition_on_keras(args):
 
     print(f"$ {parse_status(args)} recognition mode ...")
 
-    conf = configparser.ConfigParser()
-    conf.read(os.path.join(BASE_DIR, "conf.ini"))
-    model_conf = conf['Model']
-    detector_conf = conf['Detector']
-    gallery_conf = conf['Gallery']
-    default_conf = conf['Default']
-
     database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
 
     # check cluster name existence
@@ -429,10 +422,6 @@ def test_recognition(args):
     if physical_devices:
         print(f"$ {len(physical_devices)} Devices has been detected.")
 
-    conf = configparser.ConfigParser()
-    conf.read(os.path.join(BASE_DIR, "conf.ini"))
-    model_conf = conf['Model']
-    gallery_conf = conf['Gallery']
     test_dir = args.test_dir
 
     print("$ Test mode ...")
@@ -619,13 +608,6 @@ def face_recognition_kalman(args):
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
     print(f"$ {parse_status(args)} recognition mode ...")
-
-    conf = configparser.ConfigParser()
-    conf.read(os.path.join(BASE_DIR, "conf.ini"))
-    model_conf = conf['Model']
-    detector_conf = conf['Detector']
-    gallery_conf = conf['Gallery']
-    default_conf = conf['Default']
 
     database = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
 
