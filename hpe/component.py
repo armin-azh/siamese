@@ -9,12 +9,14 @@ class HPE:
     INPUT_SHAPE = None
 
     def __init__(self, img_norm: Tuple[float, float], tilt_norm: Tuple[float, float], pan_norm: Tuple[float, float],
-                 rescale: float):
+                 rescale: float, conf: Tuple[float, float, float, float]):
         self._img_norm = img_norm
         self._tilt_norm = tilt_norm
         self._pan_norm = pan_norm
         self._rescale = rescale
         self._input_size = 64
+        self._max_tilt = conf[0:2]
+        self._max_pan = conf[2:]
         self.INPUT_SHAPE = self._input_size
 
     def reshape_and_convert(self, img: np.ndarray) -> np.ndarray:
@@ -174,3 +176,16 @@ class HPE:
         pics = np.array(pics)
         pics = np.expand_dims(pics, axis=-1)
         return pics
+
+    def get_angle(self, tilt: float, pan: float, min_x, min_y, max_x, max_y):
+        """
+        calculate the angle base on the tilt and pan
+        :param tilt:
+        :param pan:
+        :param min_x:
+        :param min_y:
+        :param max_x:
+        :param max_y:
+        :return:
+        """
+        pass
