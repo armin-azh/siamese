@@ -1,6 +1,7 @@
 import numpy as np
 from .data_asoociation import associate_detections_to_trackers
 from .kalman import KalmanBoxTracker
+from tracker.counter import Counter
 
 
 class Sort:
@@ -155,8 +156,40 @@ class TrackLet:
                 item_list = [cropped, score, dist_rate, high_ratio_variance, width_rate]
                 attribute_list.append(item_list)
 
-        final_faces = np.array(face_list) if len(faces)>0 else []
+        final_faces = np.array(face_list) if len(faces) > 0 else []
 
         trackers = self._tracker.update(final_faces, frame_size, attribute_list, self._detect_interval)
 
         return trackers
+
+
+class TrackerContainer:
+    """
+    store track id and increase with their observation
+    """
+    def __init__(self, max_track_id: int):
+        self._max_track_id = max_track_id
+        self._base_dic = dict()
+
+    def __call__(self, n_id: str):
+        """
+        calling by passing track_id to increase the instance
+        :param n_id:
+        :return:
+        """
+        res = self._base_dic.get(n_id)
+        if res is None:
+            self._base_dic[n_id] = Counter()
+
+        self._base_dic[n_id].next()
+
+    def counter(self, n_id: str) -> int:
+        """
+        get track id counter
+        :param n_id:
+        :return:
+        """
+        res = self._base_dic.get(n_id)
+        if res is None:
+            return 0
+        return res()
