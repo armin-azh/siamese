@@ -13,37 +13,47 @@ import time
 import configparser
 import cv2
 import numpy as np
+import socket
+import tensorflow as tf
+from uuid import uuid1
+from datetime import datetime
+from sklearn import preprocessing
 
+# recognition
 from recognition.utils import load_model, parse_status, Timer
 from recognition.preprocessing import normalize_input, cvt_to_gray
 from recognition.distance import bulk_cosine_similarity
+from recognition.utils import reshape_image
 
+# face detection
 from face_detection.detector import FaceDetector
-from tracker.policy import Policy, PolicyTracker
+from face_detection.mtcnn import detect_face
+
+# database
 from database.sync import parse_person_id_dictionary
-import tensorflow as tf
 from database.component import ImageDatabase
 
+# motion
 from motion_detection.component import BSMotionDetection
 
+# tracker
+from tracker.policy import Policy, PolicyTracker
 from tracker import TrackerList, MATCHED
 from tracker.tracklet.component import TrackLet
-from face_detection.mtcnn import detect_face
-from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, CAMERA_MODEL_CONF, DETECTOR_CONF, \
-    SERVER_CONF, IMAGE_CONF
-from sklearn import preprocessing
-from datetime import datetime
+
+
+# tools
 from tools.logger import Logger
 from stream.source import OpencvSource
-from recognition.utils import reshape_image
-import socket
-from settings import (COLOR_WARN,
-                      COLOR_DANG,
+
+# setting
+from settings import (COLOR_DANG,
                       COLOR_SUCCESS,
                       TRACKER_CONF,
                       SUMMARY_LOG_DIR,
                       SOURCE_CONF)
-from uuid import uuid1
+from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, CAMERA_MODEL_CONF, DETECTOR_CONF, \
+    SERVER_CONF, IMAGE_CONF
 
 # serializer
 from .serializer import face_serializer
