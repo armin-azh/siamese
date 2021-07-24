@@ -16,7 +16,8 @@ from .utils import load_model, parse_status, FPS, Timer
 from .preprocessing import normalize_input, cvt_to_gray
 from .cluster import k_mean_clustering
 from .distance import bulk_cosine_similarity, bulk_cosine_similarity_v2
-from settings import BASE_DIR
+from settings import BASE_DIR, HPE_CONF
+from hpe import HeadPoseEstimation
 from face_detection.detector import FaceDetector
 import tensorflow as tf
 from tensorflow.keras.models import load_model as h5_load
@@ -26,7 +27,7 @@ from motion_detection.component import BSMotionDetection
 from face_detection.tracker import Tracker, KalmanFaceTracker
 from face_detection.utils import draw_face
 from tracker import TrackerList, MATCHED, UN_MATCHED
-from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, GALLERY_ROOT, CAMERA_MODEL_CONF,DETECTOR_CONF
+from settings import BASE_DIR, GALLERY_CONF, DEFAULT_CONF, MODEL_CONF, GALLERY_ROOT, CAMERA_MODEL_CONF, DETECTOR_CONF
 from PIL import Image
 from sklearn import preprocessing
 from datetime import datetime
@@ -81,6 +82,21 @@ def face_recognition(args):
         labels = encoded_labels.transform(labels)
     motion_detection = BSMotionDetection()
 
+    hpe_conf = (
+        float(HPE_CONF.get("pan_left")),
+        float(HPE_CONF.get("pan_right")),
+        float(HPE_CONF.get("tilt_up")),
+        float(HPE_CONF.get("tilt_down"))
+    )
+
+    hpe = HeadPoseEstimation(
+        img_norm=(float(HPE_CONF.get("im_norm_mean")), float(HPE_CONF.get("im_norm_var"))),
+        tilt_norm=(float(HPE_CONF.get("tilt_norm_mean")), float(HPE_CONF.get("tilt_norm_var"))),
+        pan_norm=(float(HPE_CONF.get("pan_norm_mean")), float(HPE_CONF.get("pan_norm_var"))),
+        rescale=float(HPE_CONF.get("rescale")),
+        conf=hpe_conf
+    )
+
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
             with tf.compat.v1.Session() as sess:
@@ -90,6 +106,12 @@ def face_recognition(args):
                 input_plc = tf.compat.v1.get_default_graph().get_tensor_by_name("input:0")
                 embeddings = tf.compat.v1.get_default_graph().get_tensor_by_name("embeddings:0")
                 phase_train = tf.compat.v1.get_default_graph().get_tensor_by_name("phase_train:0")
+
+                # hpe computation graph
+                load_model(os.path.join(BASE_DIR, HPE_CONF.get("model")))
+
+                hpe_input = tf.compat.v1.get_default_graph().get_tensor_by_name("x:0")
+                hpe_output = tf.compat.v1.get_default_graph().get_tensor_by_name("Identity:0")
 
                 detector = FaceDetector(sess=sess)
                 detector_type = DETECTOR_CONF.get("type")
@@ -130,8 +152,8 @@ def face_recognition(args):
                 if not args.cluster:
                     fps = FPS()
                     fps.start()
-                    tk = TrackerList(float(TRACKER_CONF.get("max_modify_time")),
-                                     int(TRACKER_CONF.get("max_frame_conf")))
+                    tk = TrackerList(float(TRACKER_CONF.get("recognized_max_modify_time")),
+                                     int(TRACKER_CONF.get("recognized_max_frame_conf")))
                 prev = 1
                 total_proc_time = list()
                 proc_timer = Timer()
@@ -155,6 +177,7 @@ def face_recognition(args):
                             faces = list()
 
                         boxes = []
+                        ch1_fr = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                         gray_frame = cvt_to_gray(frame) if not args.cluster else frame
                         for face, bbox in detector.extract_faces(gray_frame, frame_width, frame_height):
                             faces.append(normalize_input(face))
@@ -163,10 +186,23 @@ def face_recognition(args):
                                 faces_.append(face)
                                 print("#", end="")
 
+                        boxes = np.array(boxes)
+                        if boxes.shape[0] > 0:
+                            boxes_tmp = boxes.copy()
+                            boxes_tmp[:, 2] = boxes_tmp[:, 0] + boxes_tmp[:, 2]
+                            boxes_tmp[:, 3] = boxes_tmp[:, 1] + boxes_tmp[:, 3]
+                            cropped_images = hpe.get_cropped_pics(ch1_fr, boxes_tmp, 0, "large")
+                            poses = hpe.predict(sess, cropped_images, hpe_input, hpe_output)
+                            right_pose_idx = hpe.validate_angle_bulk(po=poses)
+
                         if not args.cluster:
                             faces = np.array(faces)
 
-                        if (args.video or args.realtime) and (faces.shape[0] > 0):
+                        if (args.video or args.realtime) and (faces.shape[0] > 0 and right_pose_idx.shape[0] > 0):
+                            if args.cluster:
+                                faces_ = faces[right_pose_idx, :, :, :]
+                            faces = faces[right_pose_idx, :, :, :]
+                            boxes = boxes[right_pose_idx,:]
                             feed_dic = {phase_train: False, input_plc: faces}
                             embedded_array = sess.run(embeddings, feed_dic)
 
@@ -473,12 +509,33 @@ def cluster_faces(args) -> None:
 
     logger.info(str(ls_video))
 
+    hpe_conf = (
+        float(HPE_CONF.get("pan_left")),
+        float(HPE_CONF.get("pan_right")),
+        float(HPE_CONF.get("tilt_up")),
+        float(HPE_CONF.get("tilt_down"))
+    )
+
+    hpe = HeadPoseEstimation(
+        img_norm=(float(HPE_CONF.get("im_norm_mean")), float(HPE_CONF.get("im_norm_var"))),
+        tilt_norm=(float(HPE_CONF.get("tilt_norm_mean")), float(HPE_CONF.get("tilt_norm_var"))),
+        pan_norm=(float(HPE_CONF.get("pan_norm_mean")), float(HPE_CONF.get("pan_norm_var"))),
+        rescale=float(HPE_CONF.get("rescale")),
+        conf=hpe_conf
+    )
+
     with tf.Graph().as_default():
         with tf.compat.v1.Session() as sess:
 
             logger.info(f"$ Initializing computation graph with {MODEL_CONF.get('facenet')} pretrained model.")
             load_model(os.path.join(BASE_DIR, MODEL_CONF.get('facenet')))
             logger.info("$ Model has been loaded.")
+
+            # hpe computation graph
+            load_model(os.path.join(BASE_DIR, HPE_CONF.get("model")))
+
+            hpe_input = tf.compat.v1.get_default_graph().get_tensor_by_name("x:0")
+            hpe_output = tf.compat.v1.get_default_graph().get_tensor_by_name("Identity:0")
 
             detector = FaceDetector(sess=sess)
 
@@ -502,6 +559,7 @@ def cluster_faces(args) -> None:
 
                     n_faces = list()
                     faces = list()
+                    boxes = []
 
                     cnt = 0
                     while cap.isOpened():
@@ -510,21 +568,38 @@ def cluster_faces(args) -> None:
                             break
 
                         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        for face, _ in detector.extract_faces(frame, f_w, f_h):
+                        ch1_fr = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                        for face, box in detector.extract_faces(frame, f_w, f_h):
                             if cnt % 10 == 0 and cnt > 0:
                                 print("#", end="")
                             n_faces.append(normalize_input(face))
                             faces.append(face)
+                            boxes.append(box)
                     cap.release()
 
+                    boxes = np.array(boxes)
+                    if boxes.shape[0] > 0:
+                        boxes[:, 2] = boxes[:, 0] + boxes[:, 2]
+                        boxes[:, 3] = boxes[:, 1] + boxes[:, 3]
+                        cropped_images = hpe.get_cropped_pics(ch1_fr, boxes, 0, "large")
+                        poses = hpe.predict(sess, cropped_images, hpe_input, hpe_output)
+                        right_pose_idx = hpe.validate_angle_bulk(po=poses)
+
                     n_faces = np.array(n_faces)
-                    if n_faces.shape[0] > 0:
+                    if n_faces.shape[0] > 0 and right_pose_idx.shape[0] > 0:
+                        # update
+                        n_faces = n_faces[right_pose_idx, :, :, :]
+                        faces = faces[right_pose_idx, :, :, :]
+
                         feed_dic = {phase_train: False, input_plc: n_faces}
                         embedded_array = sess.run(embeddings, feed_dic)
                         clusters = k_mean_clustering(embeddings=embedded_array,
                                                      n_cluster=int(GALLERY_CONF.get("n_clusters")))
                         database.save_clusters(clusters, faces, filename.title())
                         v_path.rename(v_path.parent.joinpath(v_path.stem + "_done" + v_path.suffix))
+
+                    else:
+                        logger.dang(f"There is no valid face in video {filename}")
 
                 else:
                     logger.info(f"[INFO] this file is clustered {filename}")

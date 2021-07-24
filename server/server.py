@@ -506,7 +506,8 @@ def recognition_track_let_serv(args):
                                                                   confidence=round(score * 100, 2))
                                         serial_event.append(serial_)
                                         logger.warn(
-                                            f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} Confidence: {first_gt_pol.confidence} Sent: No")
+                                            f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} "
+                                            f"Confidence: {first_gt_pol.confidence} Sent: No")
                                     else:
                                         if tracker_container.validate(n_id=first_gt_pol.alias_name):
                                             now_ = datetime.now()
@@ -541,7 +542,8 @@ def recognition_track_let_serv(args):
                                                               confidence=round(score * 100, 2))
                                     serial_event.append(serial_)
                                     logger.warn(
-                                        f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: No")
+                                        f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> "
+                                        f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: No")
                                 else:
                                     if tracker_container.validate(n_id=ex_tk.alias_name):
                                         now_ = datetime.now()
@@ -555,11 +557,12 @@ def recognition_track_let_serv(args):
                                         serial_event.append(serial_)
 
                                         logger.warn(f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names "
-                                                    f"unknown-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} ")
+                                                    f"unknown-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence}")
 
                             else:
                                 logger.warn(
-                                    f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: Yes")
+                                    f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> "
+                                    f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: Yes")
 
                             unrecognized_tracker.drop_with_alias_name(ex_tk.alias_name)
 
@@ -616,9 +619,11 @@ def recognition_track_let_serv(args):
                     right_pose_idx = hpe.validate_angle_bulk(po=poses)
 
                     if tracks_face_to.shape[0] > 0 and right_pose_idx.shape[0] > 0:
+                        # update
                         tracks_bounding_box_to = tracks_bounding_box_to[right_pose_idx, :]
                         tracks_face_to = tracks_face_to[right_pose_idx, :, :, :]
                         tracks_status_to = tracks_status_to[right_pose_idx]
+
                         feed_dic = {phase_train: False, input_plc: tracks_face_to}
                         embedded_array = sess.run(embeddings, feed_dic)
                         dists = bulk_cosine_similarity(embedded_array, embeds)
