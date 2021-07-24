@@ -15,8 +15,10 @@ class HPE:
         self._pan_norm = pan_norm
         self._rescale = rescale
         self._input_size = 64
-        self._max_tilt = conf[0:2]
-        self._max_pan = conf[2:]
+        self._tilt_left = conf[0]
+        self._tilt_right = conf[1]
+        self._pan_up = conf[2]
+        self._pan_down = conf[3]
         self.INPUT_SHAPE = self._input_size
 
     def reshape_and_convert(self, img: np.ndarray) -> np.ndarray:
@@ -177,15 +179,13 @@ class HPE:
         pics = np.expand_dims(pics, axis=-1)
         return pics
 
-    def get_angle(self, tilt: float, pan: float, min_x, min_y, max_x, max_y):
+    def validate_angle(self, tilt: float, pan: float) -> bool:
         """
         calculate the angle base on the tilt and pan
         :param tilt:
         :param pan:
-        :param min_x:
-        :param min_y:
-        :param max_x:
-        :param max_y:
         :return:
         """
-        pass
+        if tilt > self._tilt_left or tilt < self._tilt_right or pan > self._pan_up or pan < self._pan_down:
+            return False
+        return True
