@@ -40,7 +40,7 @@ from motion_detection.component import BSMotionDetection
 from tracker.policy import Policy, PolicyTracker
 from tracker import TrackerList, MATCHED
 from tracker.tracklet.component import TrackLet
-
+from tracker.tracklet.component import TrackerContainer
 
 # tools
 from tools.logger import Logger
@@ -368,6 +368,7 @@ def recognition_track_let_serv(args):
 
     track_let = TrackLet(0.9, interval)
     tracker_min_conf = int(TRACKER_CONF.get("min_conf_frame"))
+    tracker_container = TrackerContainer(max_track_id=int(TRACKER_CONF.get("min_tracked_id")))
 
     cnt = 0
 
@@ -455,7 +456,8 @@ def recognition_track_let_serv(args):
                                 if first_gt_pol.alias_name in watch_list:
                                     watch_list.remove(first_gt_pol.alias_name)
                                 else:
-                                    if first_gt_pol.counter > tracker_min_conf:
+                                    if first_gt_pol.counter > tracker_min_conf and tracker_container.validate(
+                                            first_gt_pol.alias_name):
                                         now_ = datetime.now()
                                         id_ = person_ids.get(first_gt_pol.name)
                                         score = float(first_gt_pol.counter / int(
@@ -470,17 +472,18 @@ def recognition_track_let_serv(args):
                                         logger.warn(
                                             f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} Confidence: {first_gt_pol.confidence} Sent: No")
                                     else:
-                                        now_ = datetime.now()
+                                        if tracker_container.validate(n_id=first_gt_pol.alias_name):
+                                            now_ = datetime.now()
 
-                                        serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                                  person_id=None,
-                                                                  camera_id=None,
-                                                                  image_path=first_gt_pol.filename,
-                                                                  confidence=None)
+                                            serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                      person_id=None,
+                                                                      camera_id=None,
+                                                                      image_path=first_gt_pol.filename,
+                                                                      confidence=None)
 
-                                        serial_event.append(serial_)
+                                            serial_event.append(serial_)
 
-                                        logger.warn(f"----> Choose Unknown")
+                                            logger.warn(f"----> Choose Unknown")
 
                             unrecognized_tracker.drop_with_alias_name(first_gt_pol.alias_name)
 
@@ -488,7 +491,7 @@ def recognition_track_let_serv(args):
                             ex_tk = exp_cont[0]
 
                             if not ex_tk.mark:
-                                if ex_tk.counter > tracker_min_conf:
+                                if ex_tk.counter > tracker_min_conf and tracker_container.validate(n_id=ex_tk.alias_name):
                                     now_ = datetime.now()
                                     id_ = person_ids.get(ex_tk.name)
                                     score = float(ex_tk.counter / int(
@@ -503,18 +506,20 @@ def recognition_track_let_serv(args):
                                     logger.warn(
                                         f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: No")
                                 else:
-                                    now_ = datetime.now()
+                                    if tracker_container.validate(n_id=ex_tk.alias_name):
 
-                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                              person_id=None,
-                                                              camera_id=None,
-                                                              image_path=ex_tk.filename,
-                                                              confidence=None)
+                                        now_ = datetime.now()
 
-                                    serial_event.append(serial_)
+                                        serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                  person_id=None,
+                                                                  camera_id=None,
+                                                                  image_path=ex_tk.filename,
+                                                                  confidence=None)
 
-                                    logger.warn(f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names "
-                                                f"unknown-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} ")
+                                        serial_event.append(serial_)
+
+                                        logger.warn(f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names "
+                                                    f"unknown-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} ")
 
                             else:
                                 logger.warn(
@@ -545,6 +550,7 @@ def recognition_track_let_serv(args):
                         if res is not None:
                             if res[1].status == Policy.STATUS_CONF:
                                 res[1]()
+                                tracker_container(n_id=res[1].alias_name)
                                 final_bounding_box.append(bounding_box)
                                 final_status.append(res[1].name)
                                 logger.info(
@@ -593,6 +599,7 @@ def recognition_track_let_serv(args):
 
                                 if status[0] == "unrecognised":
                                     tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
+                                    tracker_container(n_id=tk_.alias_name)
                                     logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
                                                 f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence}",
                                                 white=True)
@@ -612,6 +619,7 @@ def recognition_track_let_serv(args):
 
                                 else:
                                     tk_, _ = tracker(name=status[0], alias_name=tk_status)
+                                    tracker_container(n_id=tk_.alias_name)
                                     tk_.confidence = bs_similarity[i]
                                     logger.info(
                                         f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence}",

@@ -167,6 +167,7 @@ class TrackerContainer:
     """
     store track id and increase with their observation
     """
+
     def __init__(self, max_track_id: int):
         self._max_track_id = max_track_id
         self._base_dic = dict()
@@ -193,3 +194,15 @@ class TrackerContainer:
         if res is None:
             return 0
         return res()
+
+    def validate(self, n_id: str) -> bool:
+
+        """
+        validate tracker id observation with max counter
+        :param n_id:
+        :return:
+        """
+        res = self._base_dic.get(n_id)
+        if res is None:
+            return False
+        return True if res() > self._max_track_id else False
