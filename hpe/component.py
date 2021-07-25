@@ -202,3 +202,15 @@ class HPE:
         to_log = np.logical_and(tilt_log, pan_log)
         ans = np.where(to_log)
         return ans[0]
+
+    def validate_angle_bulk_complement(self, po: np.ndarray)->np.ndarray:
+        """
+        check the valid boundary (complement)
+        :param po: matrix in shape (m,2)
+        :return: indices where the condition will satisfy, vector in shape (k,)
+        """
+        tilt_log = np.logical_or(po[:, 0] > self._tilt_up, po[:, 0] < self._tilt_down)
+        pan_log = np.logical_or(po[:, 1] > self._pan_left, po[:, 1] < self._pan_right)
+        to_log = np.logical_or(tilt_log, pan_log)
+        ans = np.where(to_log)
+        return ans[0]

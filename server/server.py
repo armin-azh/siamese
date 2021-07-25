@@ -624,6 +624,12 @@ def recognition_track_let_serv(args):
                     cropped_images = hpe.get_cropped_pics(ch1_fr, tracks_bounding_box_to, 0, "large")
                     poses = hpe.predict(sess, cropped_images, hpe_input, hpe_output)
                     right_pose_idx = hpe.validate_angle_bulk(po=poses)
+                    com_pos_idx = hpe.validate_angle_bulk_complement(po=poses)
+
+                    # Drop
+                    if com_pos_idx.shape[0] > 0:
+                        for c_idx in com_pos_idx:
+                            logger.dang(f"[DROP] Face With Tilt {poses[c_idx, 0]} Pan {poses[c_idx, 1]}")
 
                     if tracks_face_to.shape[0] > 0 and right_pose_idx.shape[0] > 0:
                         # update
