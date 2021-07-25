@@ -482,17 +482,21 @@ def recognition_track_let_serv(args):
                             sec_gt_pol = exp_cont[1]
 
                             if first_gt_pol.counter == sec_gt_pol.counter:
-                                now_ = datetime.now()
+                                if tracker_container.validate(first_gt_pol.alias_name):
+                                    now_ = datetime.now()
 
-                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                          person_id=None,
-                                                          camera_id=None,
-                                                          image_path=first_gt_pol.filename,
-                                                          confidence=None)
+                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                              person_id=None,
+                                                              camera_id=None,
+                                                              image_path=first_gt_pol.filename,
+                                                              confidence=None)
 
-                                serial_event.append(serial_)
+                                    serial_event.append(serial_)
 
-                                logger.warn(f"----> Choose Unknown")
+                                    logger.warn(f"----> Choose Unknown")
+                                else:
+                                    logger.warn(f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach "
+                                                f"the quorum")
 
                             elif not first_gt_pol.mark and first_gt_pol.alias_name:
                                 if first_gt_pol.alias_name in watch_list:
@@ -527,6 +531,11 @@ def recognition_track_let_serv(args):
                                             serial_event.append(serial_)
 
                                             logger.warn(f"----> Choose Unknown")
+
+                                        else:
+                                            logger.warn(
+                                                f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach "
+                                                f"the quorum")
 
                             unrecognized_tracker.drop_with_alias_name(first_gt_pol.alias_name)
 
@@ -563,7 +572,13 @@ def recognition_track_let_serv(args):
                                         serial_event.append(serial_)
 
                                         logger.warn(f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names "
-                                                    f"unknown-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence}")
+                                                    f"unknown-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence}"
+                                                    )
+
+                                    else:
+                                        logger.warn(
+                                            f"[NO REACH] Tracker With ID {ex_tk.alias_name} Can`t reach the "
+                                            f"quorum")
 
                             else:
                                 logger.warn(
@@ -600,7 +615,7 @@ def recognition_track_let_serv(args):
                                 final_status.append(res[1].name)
                                 logger.info(
                                     f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence} "
-                                    f"Tilt {res[1].angle[0]} Pan {res[1].angle[1]}",
+                                    f"Bounding Box {bounding_box}",
                                     white=True)
                                 # print("Result", res[1].name, sep=" ")
                             else:
@@ -651,6 +666,8 @@ def recognition_track_let_serv(args):
                             x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
                                              tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
 
+                            x1_t,y1_t,x2_t,y2_t = x1, y1, x2, y2
+
                             x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2],
                                                                     margin=(x_margin, y_margin))
 
@@ -667,7 +684,7 @@ def recognition_track_let_serv(args):
                                     tracker_container(n_id=tk_.alias_name)
                                     logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
                                                 f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                                f"Tilt {tk_.angle[0]} Pan {tk_.angle[1]}",
+                                                f"Bounding Box {[x1_t,y1_t,x2_t,y2_t]}",
                                                 white=True)
 
                                     if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
@@ -690,7 +707,7 @@ def recognition_track_let_serv(args):
                                     tk_.confidence = bs_similarity[i]
                                     logger.info(
                                         f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                        f"Tilt {tk_.angle[0]} Pan {tk_.angle[1]}",
+                                        f"Bounding Box {[x1_t,y1_t,x2_t,y2_t]}",
                                         white=True)
 
                                     tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
