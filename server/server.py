@@ -340,6 +340,7 @@ def recognition_serv_2(args):
 
 
 def recognition_track_let_serv(args):
+    # image size
     output_size = (int(IMAGE_CONF.get('width')), int(IMAGE_CONF.get('height')))
 
     # logger
@@ -360,25 +361,30 @@ def recognition_track_let_serv(args):
     physical_devices = tf.config.list_physical_devices('GPU')
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
+    # sender
+    address = (SERVER_CONF.get("UDP_HOST"), int(SERVER_CONF.get("UDP_PORT")))
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    # define face saving path
+    face_save_path = pathlib.Path(SERVER_CONF.get("face_save_path")).joinpath(SERVER_CONF.get("face_folder"))
+    if not face_save_path.exists():
+        face_save_path.mkdir(parents=True)
+
+    # trackers
     tracker = PolicyTracker(max_life_time=float(TRACKER_CONF.get("recognized_max_modify_time")),
                             max_conf=int(TRACKER_CONF.get("recognized_max_frame_conf")))
 
     unrecognized_tracker = PolicyTracker(max_life_time=float(TRACKER_CONF.get("unrecognized_max_modify_time")),
                                          max_conf=int(TRACKER_CONF.get("unrecognized_max_frame_conf")))
 
-    address = (SERVER_CONF.get("UDP_HOST"), int(SERVER_CONF.get("UDP_PORT")))
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-    face_save_path = pathlib.Path(SERVER_CONF.get("face_save_path")).joinpath(SERVER_CONF.get("face_folder"))
-    if not face_save_path.exists():
-        face_save_path.mkdir(parents=True)
-
     interval = int(DETECTOR_CONF.get("mtcnn_per_frame"))
 
     track_let = TrackLet(0.9, interval)
     tracker_min_conf = int(TRACKER_CONF.get("min_conf_frame"))
     tracker_container = TrackerContainer(max_track_id=int(TRACKER_CONF.get("min_tracked_id")))
+
+    # HPE
 
     hpe_conf = (
         float(HPE_CONF.get("pan_left")),
@@ -593,7 +599,8 @@ def recognition_track_let_serv(args):
                                 final_bounding_box.append(bounding_box)
                                 final_status.append(res[1].name)
                                 logger.info(
-                                    f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence}",
+                                    f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence} "
+                                    f"Tilt {res[1].angle[0]} Pan {res[1].angle[1]}",
                                     white=True)
                                 # print("Result", res[1].name, sep=" ")
                             else:
@@ -623,6 +630,7 @@ def recognition_track_let_serv(args):
                         tracks_bounding_box_to = tracks_bounding_box_to[right_pose_idx, :]
                         tracks_face_to = tracks_face_to[right_pose_idx, :, :, :]
                         tracks_status_to = tracks_status_to[right_pose_idx]
+                        poses = poses[right_pose_idx, :]
 
                         feed_dic = {phase_train: False, input_plc: tracks_face_to}
                         embedded_array = sess.run(embeddings, feed_dic)
@@ -649,9 +657,11 @@ def recognition_track_let_serv(args):
 
                                 if status[0] == "unrecognised":
                                     tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
+                                    tk_.angle = (poses[i, 0], poses[i, 1])
                                     tracker_container(n_id=tk_.alias_name)
                                     logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
-                                                f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence}",
+                                                f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
+                                                f"Tilt {tk_.angle[0]} Pan {tk_.angle[1]}",
                                                 white=True)
 
                                     if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
@@ -670,9 +680,11 @@ def recognition_track_let_serv(args):
                                 else:
                                     tk_, _ = tracker(name=status[0], alias_name=tk_status)
                                     tracker_container(n_id=tk_.alias_name)
+                                    tk_.angle = (poses[i, 0], poses[i, 1])
                                     tk_.confidence = bs_similarity[i]
                                     logger.info(
-                                        f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence}",
+                                        f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence} "
+                                        f"Tilt {tk_.angle[0]} Pan {tk_.angle[1]}",
                                         white=True)
 
                                     tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)

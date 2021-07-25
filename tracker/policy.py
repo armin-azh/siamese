@@ -5,7 +5,7 @@ from uuid import uuid1
 import cv2
 import numpy as np
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 
 class Policy:
@@ -16,6 +16,7 @@ class Policy:
     def __init__(self, name: str, max_life_time: float, max_conf: int):
         self._counter = Counter()
         self._counter.next()
+        self._angle = None
         self._name = name
         self._max_life_time = max_life_time
         self._max_conf = max_conf
@@ -66,6 +67,14 @@ class Policy:
     @confidence.setter
     def confidence(self, m: float):
         self._conf_list.append(m)
+
+    @property
+    def angle(self) -> Tuple[float, float]:
+        return self._angle
+
+    @angle.setter
+    def angle(self, til_pan: Tuple[float, float]):
+        self._angle = til_pan
 
     @property
     def last_modified(self):
