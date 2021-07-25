@@ -15,10 +15,10 @@ class HPE:
         self._pan_norm = pan_norm
         self._rescale = rescale
         self._input_size = 64
-        self._tilt_left = conf[0]
-        self._tilt_right = conf[1]
-        self._pan_up = conf[2]
-        self._pan_down = conf[3]
+        self._tilt_up = conf[2]
+        self._tilt_down = conf[3]
+        self._pan_right = conf[1]
+        self._pan_left = conf[0]
         self.INPUT_SHAPE = self._input_size
 
     def reshape_and_convert(self, img: np.ndarray) -> np.ndarray:
@@ -186,7 +186,7 @@ class HPE:
         :param pan:
         :return:
         """
-        if tilt > self._tilt_left or tilt < self._tilt_right or pan > self._pan_up or pan < self._pan_down:
+        if tilt > self._tilt_up or tilt < self._tilt_down or pan > self._pan_left or pan < self._pan_right:
             return False
         return True
 
@@ -197,8 +197,8 @@ class HPE:
         :return: indices where the condition will satisfy, vector in shape (k,)
         """
 
-        tilt_log = np.logical_and(po[:, 0] < self._tilt_left, po[:, 0] > self._tilt_right)
-        pan_log = np.logical_and(po[:, 1] < self._pan_up, po[:, 1] > self._pan_down)
+        tilt_log = np.logical_and(po[:, 0] < self._tilt_up, po[:, 0] > self._tilt_down)
+        pan_log = np.logical_and(po[:, 1] < self._pan_left, po[:, 1] > self._pan_right)
         to_log = np.logical_and(tilt_log, pan_log)
         ans = np.where(to_log)
         return ans[0]
