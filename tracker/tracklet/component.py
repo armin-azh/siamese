@@ -6,7 +6,7 @@ from tracker.counter import Counter
 
 class Sort:
 
-    def __init__(self, max_age=1, min_hits=3):
+    def __init__(self, max_age=1, min_hits=3, iou_threshold=0.25):
         """
         Sets key parameters for SORT
         """
@@ -14,16 +14,10 @@ class Sort:
         self.min_hits = min_hits
         self.trackers = []
         self.frame_count = 0
+        self._iou_threshold = iou_threshold
 
     def update(self, dets, img_size, addtional_attribute_list, predict_num):
-        """
-        Params:
-          dets - a numpy array of detections in the format [[x,y,w,h,score],[x,y,w,h,score],...]
-        Requires: this method must be called once for each frame even with empty detections.
-        Returns the a similar array, where the last column is the object ID.
 
-        NOTE:as in practical realtime MOT, the detector doesn't run on every single frame
-        """
         self.frame_count += 1
         # get predicted locations from existing trackers.
         trks = np.zeros((len(self.trackers), 5))
@@ -38,7 +32,8 @@ class Sort:
         for t in reversed(to_del):
             self.trackers.pop(t)
         if dets != []:
-            matched, unmatched_dets, unmatched_trks = associate_detections_to_trackers(dets, trks)
+            matched, unmatched_dets, unmatched_trks = associate_detections_to_trackers(dets, trks,
+                                                                                       iou_threshold=self._iou_threshold)
 
             # update matched trackers with assigned detections
             for t, trk in enumerate(self.trackers):
@@ -74,8 +69,9 @@ class Sort:
 
 
 class TrackLet:
-    def __init__(self, face_threshold: float, detect_interval: int):
-        self._tracker = Sort()
+    def __init__(self, face_threshold: float, detect_interval: int, iou_threshold: float = 0.25, max_age: int = 1,
+                 min_hints: int = 1):
+        self._tracker = Sort(max_age=max_age, min_hits=min_hints, iou_threshold=iou_threshold)
         self._face_threshold = face_threshold
         self._detect_interval = detect_interval
 

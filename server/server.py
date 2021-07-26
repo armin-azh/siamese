@@ -380,7 +380,11 @@ def recognition_track_let_serv(args):
 
     interval = int(DETECTOR_CONF.get("mtcnn_per_frame"))
 
-    track_let = TrackLet(0.9, interval)
+    track_let = TrackLet(0.9, interval,
+                         iou_threshold=float(TRACKER_CONF.get("iou_threshold")),
+                         max_age=int(TRACKER_CONF.get("max_age")),
+                         min_hints=int(TRACKER_CONF.get("min_hints")))
+
     tracker_min_conf = int(TRACKER_CONF.get("min_conf_frame"))
     tracker_container = TrackerContainer(max_track_id=int(TRACKER_CONF.get("min_tracked_id")))
 
@@ -666,7 +670,7 @@ def recognition_track_let_serv(args):
                             x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
                                              tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
 
-                            x1_t,y1_t,x2_t,y2_t = x1, y1, x2, y2
+                            x1_t, y1_t, x2_t, y2_t = x1, y1, x2, y2
 
                             x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2],
                                                                     margin=(x_margin, y_margin))
@@ -684,7 +688,7 @@ def recognition_track_let_serv(args):
                                     tracker_container(n_id=tk_.alias_name)
                                     logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
                                                 f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                                f"Bounding Box {[x1_t,y1_t,x2_t,y2_t]}",
+                                                f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
                                                 white=True)
 
                                     if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
@@ -707,7 +711,7 @@ def recognition_track_let_serv(args):
                                     tk_.confidence = bs_similarity[i]
                                     logger.info(
                                         f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                        f"Bounding Box {[x1_t,y1_t,x2_t,y2_t]}",
+                                        f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
                                         white=True)
 
                                     tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
