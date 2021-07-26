@@ -7,3 +7,5 @@ gui/temp/*.avi
 examples/test.py
 examples/test2.py
 examples/test3.py
+src
+pkg
