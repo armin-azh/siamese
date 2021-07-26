@@ -383,7 +383,7 @@ def recognition_track_let_serv(args):
     track_let = TrackLet(0.9, interval,
                          iou_threshold=float(TRACKER_CONF.get("iou_threshold")),
                          max_age=int(TRACKER_CONF.get("max_age")),
-                         min_hints=int(TRACKER_CONF.get("min_hints")))
+                         min_hints=int(TRACKER_CONF.get("min_hits")))
 
     tracker_min_conf = int(TRACKER_CONF.get("min_conf_frame"))
     tracker_container = TrackerContainer(max_track_id=int(TRACKER_CONF.get("min_tracked_id")))
