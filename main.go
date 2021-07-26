@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"./controller/compressor"
 )
 
 func main(){
-	arguments:=os.Args
 
-	fmt.Println(arguments)
+	var filename = "armin.zip"
+	var target = "/tmp/armin"
+	var outputPath = "./data/temp"
+    compressor.Zip(filename,outputPath,target)
 }

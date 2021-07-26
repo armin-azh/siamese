@@ -3,6 +3,7 @@ package compressor
 import (
 	log "../logging"
 	"os"
+	"path/filepath"
 )
 
 var (
@@ -27,6 +28,17 @@ func Zip(filename string,outputPath string, targetPath string){
 			log.Println(log.SUCCESS,"$ Create folder path")
 		}
 	}
+
+	fullFilePath := filepath.Join(outputPath,filename)
+
+	log.Println(log.SUCCESS,fullFilePath)
+
+	//r,err := zip.OpenReader(targetPath)
+	//if err!=nil{
+	//	log.Println(log.DANG,"$ Problem in reading source")
+	//}
+	//
+	//defer r.Close()
 
 
 
