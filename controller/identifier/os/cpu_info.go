@@ -15,4 +15,12 @@ func (cp *CPU)Info() string {
 	return cp.cpuBrand+"_"+cp.cpuVendor
 }
 
+func (cp *CPU)Vendor()string{
+	return cp.cpuVendor
+}
+
+func (cp *CPU)Brand()string{
+	return cp.cpuBrand
+}
+
 
