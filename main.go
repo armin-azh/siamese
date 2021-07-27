@@ -2,9 +2,11 @@ package main
 
 import (
 	"./controller"
+	 "./controller/identifier/os/windows"
 	"fmt"
-	"github.com/shirou/gopsutil/cpu"
 	_ "github.com/shirou/gopsutil/cpu"
+	"github.com/yumaojun03/dmidecode"
+	_ "github.com/yumaojun03/dmidecode"
 	"os"
 )
 
@@ -19,11 +21,15 @@ func main(){
     //fmt.Println(filenames)
     fmt.Println(os.Getpagesize())
 
-    cpuList,err:=cpu.Info()
-    if err!=nil{
-    	panic(err)
-	}
+    dmi,_:= dmidecode.New()
 
-	fmt.Println(cpuList)
+	infos,_:=dmi.Processor()
+	fmt.Println(infos)
+
+	a, _ :=windows.CpuInfo()
+	b,_:=windows.DmiInfo()
+
+	fmt.Println(a)
+	fmt.Println(b)
 
 }
