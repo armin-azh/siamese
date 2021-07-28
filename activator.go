@@ -21,7 +21,7 @@ func main(){
 	mp:=make(map[string]string)
 	mp["activation_code"] = device.ProtectMachineID()
 	mp["created"] = time.Now().String()
-	if len(args)<3 || len(args)>=3 || args[1]!="-o"{
+	if len(args)<3 || (len(args)>=3 && args[1]!="-o"){
 		outputPath = yamlFilename
 		err=controller.WriteYamlFile(outputPath,mp)
 		if err!=nil{
@@ -35,11 +35,13 @@ func main(){
 			if err!=nil{
 				panic(err)
 			}
+		}else{
+			fullFilePath:=filepath.Join(outputPath,yamlFilename)
+			err=controller.WriteYamlFile(fullFilePath,mp)
+			if err!=nil{
+				panic(err)
+			}
 		}
-		fullFilePath:=filepath.Join(outputPath,yamlFilename)
-		err=controller.WriteYamlFile(fullFilePath,mp)
-		if err!=nil{
-			panic(err)
-		}
+
 	}
 }
