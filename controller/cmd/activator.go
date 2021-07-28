@@ -1,8 +1,8 @@
 package main
 
 import (
-	"./controller"
-	"./controller/identifier"
+	".."
+	"../identifier"
 	"os"
 	"path/filepath"
 	"time"

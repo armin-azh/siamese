@@ -1,8 +1,8 @@
 package main
 
 import (
-	"./controller/identifier"
-	"./controller/logging"
+	"../identifier"
+	"../logging"
 	"fmt"
 	"os"
 	"time"
