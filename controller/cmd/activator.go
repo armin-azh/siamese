@@ -3,6 +3,7 @@ package main
 import (
 	".."
 	"../identifier"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -19,6 +20,7 @@ func main(){
 	var outputPath string
 	yamlFilename:="activation.yaml"
 	mp:=make(map[string]string)
+	fmt.Println(device.MachineID())
 	mp["activation_code"] = device.ProtectMachineID()
 	mp["created"] = time.Now().String()
 	if len(args)<3 || (len(args)>=3 && args[1]!="-o"){

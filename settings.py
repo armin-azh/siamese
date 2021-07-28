@@ -35,8 +35,19 @@ ZERO_MQ_CONF = conf["ZeroMQ"]
 SERVER_CONF = conf["Server"]
 IMAGE_CONF = conf["Image"]
 HPE_CONF = conf["HPE"]
+PROJECT_CONF = conf["Project"]
 
-SETTINGS_HEADER = ["Default", "Image", "Gallery", "Detector", "Log", "Motion", "Source", "ZeroMQ", "Server","HPE"]
+SETTINGS_HEADER = ["Default",
+                   "Image",
+                   "Gallery",
+                   "Detector",
+                   "Log",
+                   "Motion",
+                   "Source",
+                   "ZeroMQ",
+                   "Server",
+                   "HPE",
+                   "Project"]
 
 COLOR_SUCCESS = (0, 255, 0)
 COLOR_DANG = (243, 32, 19)
