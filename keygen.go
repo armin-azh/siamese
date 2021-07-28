@@ -1,35 +1,36 @@
 package main
 
 import (
-	"./controller"
-	 "./controller/identifier/os/windows"
+	"./controller/identifier"
+	"./controller/logging"
 	"fmt"
-	_ "github.com/shirou/gopsutil/cpu"
-	"github.com/yumaojun03/dmidecode"
-	_ "github.com/yumaojun03/dmidecode"
 	"os"
+	"time"
 )
 
 func main(){
+	args :=os.Args
+	var outputPath string
+	if len(args)<2{
+		outputPath = "data/keys"
+	}else if args[1]=="-o"{
+		if len(args)<3{
+			logging.Println(logging.WARNING,"No value for -o option")
+			outputPath="data/keys"
+		}
+		outputPath=args[2]
+	}
+	cipher,err:=identifier.CreateNewCipher(identifier.RSA,"")
+	if err!=nil{
+		fmt.Println(err)
+	}
+	logging.Println(logging.INFO,"[Create] rsa key...")
+	keys,err:=cipher.GenerateKey(outputPath)
+	if err!=nil{
+		fmt.Println(err)
+	}
+	logging.Println(logging.SUCCESS,"[Private Key] save at "+keys["Private"])
+	logging.Println(logging.SUCCESS,"[Public Key] save at "+keys["Public"])
 
-	//var filename = "armin.zip"
-	//var target = "data/armin.zip"
-	//var outputPath = "data/temp"
-    //filenames,err:=compressor.Unzip(target,outputPath)
-	//controller.GetCurrentPath()
-    fmt.Println(controller.GetCurrentPath())
-    //fmt.Println(filenames)
-    fmt.Println(os.Getpagesize())
-
-    dmi,_:= dmidecode.New()
-
-	infos,_:=dmi.Processor()
-	fmt.Println(infos)
-
-	a, _ :=windows.CpuInfo()
-	b,_:=windows.DmiInfo()
-
-	fmt.Println(a)
-	fmt.Println(b)
-
+	time.Sleep(2000*time.Millisecond)
 }

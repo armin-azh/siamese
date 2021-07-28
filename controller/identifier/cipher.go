@@ -46,7 +46,7 @@ func (cp *Cipher)GenerateKey(output string)(map[string]string,error){
 	var keys map[string]string
 	_,err := os.Stat(output)
 	if os.IsNotExist(err){
-		err = os.Mkdir(output,0755)
+		err = os.MkdirAll(output,0755)
 		if err!=nil{
 			return keys,err
 		}
