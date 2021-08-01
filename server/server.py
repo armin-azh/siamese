@@ -514,7 +514,7 @@ def recognition_track_let_serv(args):
                                             TRACKER_CONF.get("recognized_max_frame_conf")))
 
                                         serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                                  person_id=id_,
+                                                                  person_id=first_gt_pol.name,
                                                                   camera_id=None,
                                                                   image_path=first_gt_pol.filename,
                                                                   confidence=round(score * 100, 2))
@@ -555,7 +555,7 @@ def recognition_track_let_serv(args):
                                         TRACKER_CONF.get("recognized_max_frame_conf")))
 
                                     serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                              person_id=id_,
+                                                              person_id=ex_tk.name,
                                                               camera_id=None,
                                                               image_path=ex_tk.filename,
                                                               confidence=round(score * 100, 2))
@@ -723,7 +723,7 @@ def recognition_track_let_serv(args):
 
                                         if id_ is not None:
                                             serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                                      person_id=id_,
+                                                                      person_id=status[0],
                                                                       camera_id=None,
                                                                       image_path=file_name_,
                                                                       confidence=100.)
