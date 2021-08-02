@@ -16,7 +16,7 @@ from .utils import extract_filename, tabulate_print
 from recognition.utils import create_random_name
 from .npy_builder import builder
 from PIL import ImageOps
-from settings import IMAGE_CONF,GALLERY_CONF
+from settings import IMAGE_CONF, GALLERY_CONF
 
 DT_SIZE = Tuple[int, int]
 conf = configparser.ConfigParser()
@@ -243,7 +243,11 @@ class ImageDatabase:
         for a in self._load_npy():
             embeds.append(a[1])
             labels += [a[0]] * a[1].shape[0]
-        return np.concatenate(embeds, axis=0), labels
+        try:
+            _ans = np.concatenate(embeds, axis=0)
+            return _ans, labels
+        except ValueError:
+            return np.empty((0, 512)),labels
 
     def _gen_json_filename(self):
         base = pathlib.Path(self._db_path)
@@ -361,7 +365,6 @@ class ImageDatabase:
 
 
 def inference_db(args):
-
     db = ImageDatabase(db_path=GALLERY_CONF.get("database_path"))
     if args.db_check:
         print(f"$ Database had been {db.check()}")

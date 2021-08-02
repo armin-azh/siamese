@@ -407,6 +407,13 @@ def recognition_track_let_serv(args):
 
     cnt = 0
 
+    if database.is_db_stable():
+        logger.warn("[Stable] Database is stable")
+        stable_mode = True
+    else:
+        logger.dang("[Not Stable] Database is not stable, build npy or register someone!")
+        stable_mode = False
+
     # computation graph
     with tf.device('/device:gpu:0'):
         with tf.Graph().as_default():
@@ -652,92 +659,131 @@ def recognition_track_let_serv(args):
 
                     if tracks_face_to.shape[0] > 0 and right_pose_idx.shape[0] > 0:
                         # update
+
                         tracks_bounding_box_to = tracks_bounding_box_to[right_pose_idx, :]
                         tracks_face_to = tracks_face_to[right_pose_idx, :, :, :]
                         tracks_status_to = tracks_status_to[right_pose_idx]
                         poses = poses[right_pose_idx, :]
 
-                        feed_dic = {phase_train: False, input_plc: tracks_face_to}
-                        embedded_array = sess.run(embeddings, feed_dic)
-                        dists = bulk_cosine_similarity(embedded_array, embeds)
-                        bs_similarity_idx = np.argmin(dists, axis=1)
-                        bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
-                        pred_labels = np.array(labels)[bs_similarity_idx]
-                        for i in range(len(pred_labels)):
-                            uu_ = uuid1()
-                            file_name_ = uu_.hex + ".jpg"
-                            save_path = face_save_path.joinpath(file_name_)
-                            x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
-                                             tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
+                        if stable_mode:
+                            feed_dic = {phase_train: False, input_plc: tracks_face_to}
+                            embedded_array = sess.run(embeddings, feed_dic)
+                            dists = bulk_cosine_similarity(embedded_array, embeds)
 
-                            x1_t, y1_t, x2_t, y2_t = x1, y1, x2, y2
+                            bs_similarity_idx = np.argmin(dists, axis=1)
+                            bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
+                            pred_labels = np.array(labels)[bs_similarity_idx]
+                            for i in range(len(pred_labels)):
+                                uu_ = uuid1()
+                                file_name_ = uu_.hex + ".jpg"
+                                save_path = face_save_path.joinpath(file_name_)
+                                x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
+                                                 tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
 
-                            x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2],
-                                                                    margin=(x_margin, y_margin))
+                                x1_t, y1_t, x2_t, y2_t = x1, y1, x2, y2
 
-                            status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
-                                                                                               i] < float(
-                                DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
-                            tk_status = tracks_status_to[i]
+                                x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2],
+                                                                        margin=(x_margin, y_margin))
 
-                            try:
+                                status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
+                                                                                                   i] < float(
+                                    DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
+                                tk_status = tracks_status_to[i]
 
-                                if status[0] == "unrecognised":
-                                    tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
-                                    tk_.angle = (poses[i, 0], poses[i, 1])
-                                    tracker_container(n_id=tk_.alias_name)
-                                    logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
-                                                f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                                f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
-                                                white=True)
+                                try:
 
-                                    if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
-                                        # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
-                                        tk_.mark = True
-                                        now_ = datetime.now()
-                                        serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
-                                                                  person_id=None,
-                                                                  camera_id=None,
-                                                                  image_path=file_name_,
-                                                                  confidence=None)
+                                    if status[0] == "unrecognised":
+                                        tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
+                                        tk_.angle = (poses[i, 0], poses[i, 1])
+                                        tracker_container(n_id=tk_.alias_name)
+                                        logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
+                                                    f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
+                                                    f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
+                                                    white=True)
 
-                                        serial_event.append(serial_)
-                                        cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
-
-                                else:
-                                    tk_, _ = tracker(name=status[0], alias_name=tk_status)
-                                    tracker_container(n_id=tk_.alias_name)
-                                    tk_.angle = (poses[i, 0], poses[i, 1])
-                                    tk_.confidence = bs_similarity[i]
-                                    logger.info(
-                                        f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                        f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
-                                        white=True)
-
-                                    tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
-
-                                    if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
-                                        tk_.mark = True
-                                        now_ = datetime.now()
-                                        id_ = person_ids.get(status[0])
-
-                                        if id_ is not None:
-                                            serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                                      person_id=status[0],
+                                        if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
+                                            # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
+                                            tk_.mark = True
+                                            now_ = datetime.now()
+                                            serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
+                                                                      person_id=None,
                                                                       camera_id=None,
                                                                       image_path=file_name_,
-                                                                      confidence=100.)
+                                                                      confidence=None)
 
                                             serial_event.append(serial_)
-
                                             cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
 
-                                        unrecognized_tracker.drop_with_alias_name(tk_.alias_name)
-                                        tracker.drop_exe_name_with_alias(name=status[0], tk_id=tk_.alias_name)
-                                        watch_list.append(tk_.alias_name)
+                                    else:
+                                        tk_, _ = tracker(name=status[0], alias_name=tk_status)
+                                        tracker_container(n_id=tk_.alias_name)
+                                        tk_.angle = (poses[i, 0], poses[i, 1])
+                                        tk_.confidence = bs_similarity[i]
+                                        logger.info(
+                                            f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence} "
+                                            f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
+                                            white=True)
 
-                            except:
-                                logger.warn("Record Drop")
+                                        tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
+
+                                        if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
+                                            tk_.mark = True
+                                            now_ = datetime.now()
+                                            id_ = person_ids.get(status[0])
+
+                                            if id_ is not None:
+                                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                          person_id=status[0],
+                                                                          camera_id=None,
+                                                                          image_path=file_name_,
+                                                                          confidence=100.)
+
+                                                serial_event.append(serial_)
+
+                                                cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
+
+                                            unrecognized_tracker.drop_with_alias_name(tk_.alias_name)
+                                            tracker.drop_exe_name_with_alias(name=status[0], tk_id=tk_.alias_name)
+                                            watch_list.append(tk_.alias_name)
+
+                                except:
+                                    logger.warn("Record Drop")
+
+                        else:
+                            for i in range(tracks_bounding_box_to.shape[0]):
+                                uu_ = uuid1()
+                                file_name_ = uu_.hex + ".jpg"
+                                save_path = face_save_path.joinpath(file_name_)
+                                x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
+                                                 tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
+
+                                x1_t, y1_t, x2_t, y2_t = x1, y1, x2, y2
+
+                                x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2],
+                                                                        margin=(x_margin, y_margin))
+
+                                status = "unrecognised"
+                                tk_status = tracks_status_to[i]
+                                tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
+                                tk_.angle = (poses[i, 0], poses[i, 1])
+                                tracker_container(n_id=tk_.alias_name)
+                                logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
+                                            f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
+                                            f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
+                                            white=True)
+
+                                if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
+                                    # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
+                                    tk_.mark = True
+                                    now_ = datetime.now()
+                                    serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
+                                                              person_id=None,
+                                                              camera_id=None,
+                                                              image_path=file_name_,
+                                                              confidence=None)
+
+                                    serial_event.append(serial_)
+                                    cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
 
                     if serial_event:
                         json_obj = json.dumps({"data": serial_event})
