@@ -509,6 +509,8 @@ def recognition_track_let_serv(args):
                                     logger.warn(f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach "
                                                 f"the quorum")
 
+                                tracker.drop_with_alias_name(first_gt_pol.alias_name)
+
                             elif not first_gt_pol.mark and first_gt_pol.alias_name:
                                 if first_gt_pol.alias_name in watch_list:
                                     watch_list.remove(first_gt_pol.alias_name)
@@ -516,7 +518,7 @@ def recognition_track_let_serv(args):
                                     if first_gt_pol.counter > tracker_min_conf and tracker_container.validate(
                                             first_gt_pol.alias_name):
                                         now_ = datetime.now()
-                                        id_ = person_ids.get(first_gt_pol.name)
+                                        # id_ = person_ids.get(first_gt_pol.name)
                                         score = float(first_gt_pol.counter / int(
                                             TRACKER_CONF.get("recognized_max_frame_conf")))
 
@@ -729,18 +731,18 @@ def recognition_track_let_serv(args):
                                         if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                             tk_.mark = True
                                             now_ = datetime.now()
-                                            id_ = person_ids.get(status[0])
+                                            # id_ = person_ids.get(status[0])
+                                            #
+                                            # if id_ is not None:
+                                            serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                      person_id=status[0],
+                                                                      camera_id=None,
+                                                                      image_path=file_name_,
+                                                                      confidence=100.)
 
-                                            if id_ is not None:
-                                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                                          person_id=status[0],
-                                                                          camera_id=None,
-                                                                          image_path=file_name_,
-                                                                          confidence=100.)
+                                            serial_event.append(serial_)
 
-                                                serial_event.append(serial_)
-
-                                                cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
+                                            cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
 
                                             unrecognized_tracker.drop_with_alias_name(tk_.alias_name)
                                             tracker.drop_exe_name_with_alias(name=status[0], tk_id=tk_.alias_name)
