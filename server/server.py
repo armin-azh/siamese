@@ -467,361 +467,367 @@ def recognition_track_let_serv(args):
                 logger.success("[OK] Ready to start")
                 while cap.isOpened():
 
-                    ret, frame = cap.read()
+                    try:
+                        ret, frame = cap.read()
 
-                    if not ret:
-                        logger.dang("[Failure] Frame is not retrieved from source camera")
-                        continue
+                        if not ret:
+                            logger.dang("[Failure] Frame is not retrieved from source camera")
+                            continue
 
-                    serial_event = []
+                        serial_event = []
 
-                    frame_ = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    ch1_fr = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    gray_frame = cvt_to_gray(frame_)
+                        frame_ = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        ch1_fr = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                        gray_frame = cvt_to_gray(frame_)
 
-                    faces = []
-                    points = []
+                        faces = []
+                        points = []
 
-                    if cnt % interval == 0:
-                        faces, points = detect_face.detect_face(frame_, minsize, pnet, rnet, onet, threshold,
-                                                                factor)
+                        if cnt % interval == 0:
+                            faces, points = detect_face.detect_face(frame_, minsize, pnet, rnet, onet, threshold,
+                                                                    factor)
 
-                    # expiration deletion ( recognized )
-                    ex_lists = list(tracker.get_expires())
+                        # expiration deletion ( recognized )
+                        ex_lists = list(tracker.get_expires())
 
-                    get_aliases = tracker.get_aliases(ex_lists)
+                        get_aliases = tracker.get_aliases(ex_lists)
 
-                    for exp_cont in get_aliases:
-                        exp_cont.sort(key=lambda pol: pol.counter, reverse=True)
-                        if len(exp_cont) > 1:
-                            names = [c.name for c in exp_cont]
-                            logger.warn(
-                                f"[EXPIRE] Tracker With ID {exp_cont[0].alias_name} With Name/Names {names}")
-                            first_gt_pol = exp_cont[0]
-                            sec_gt_pol = exp_cont[1]
+                        for exp_cont in get_aliases:
+                            exp_cont.sort(key=lambda pol: pol.counter, reverse=True)
+                            if len(exp_cont) > 1:
+                                names = [c.name for c in exp_cont]
+                                logger.warn(
+                                    f"[EXPIRE] Tracker With ID {exp_cont[0].alias_name} With Name/Names {names}")
+                                first_gt_pol = exp_cont[0]
+                                sec_gt_pol = exp_cont[1]
 
-                            if first_gt_pol.counter == sec_gt_pol.counter:
-                                if tracker_container.validate(first_gt_pol.alias_name):
-                                    now_ = datetime.now()
-
-                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                              person_id=None,
-                                                              camera_id=None,
-                                                              image_path=first_gt_pol.filename,
-                                                              confidence=None)
-
-                                    serial_event.append(serial_)
-
-                                    logger.warn(f"----> Choose Unknown")
-                                else:
-                                    logger.warn(f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach "
-                                                f"the quorum")
-
-                            elif not first_gt_pol.mark and first_gt_pol.alias_name:
-                                if first_gt_pol.alias_name in watch_list:
-                                    watch_list.remove(first_gt_pol.alias_name)
-                                else:
-                                    if first_gt_pol.counter > tracker_min_conf and tracker_container.validate(
-                                            first_gt_pol.alias_name):
-                                        now_ = datetime.now()
-                                        # id_ = person_ids.get(first_gt_pol.name)
-                                        score = float(first_gt_pol.counter / int(
-                                            TRACKER_CONF.get("recognized_max_frame_conf")))
-
-                                        serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                                  person_id=first_gt_pol.name,
-                                                                  camera_id=None,
-                                                                  image_path=first_gt_pol.filename,
-                                                                  confidence=round(score * 100, 2))
-                                        serial_event.append(serial_)
-                                        logger.warn(
-                                            f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} "
-                                            f"Confidence: {first_gt_pol.confidence} Sent: No")
-                                    else:
-                                        if tracker_container.validate(n_id=first_gt_pol.alias_name):
-                                            now_ = datetime.now()
-
-                                            serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                                      person_id=None,
-                                                                      camera_id=None,
-                                                                      image_path=first_gt_pol.filename,
-                                                                      confidence=None)
-
-                                            serial_event.append(serial_)
-
-                                            logger.warn(f"----> Choose Unknown")
-
-                                        else:
-                                            logger.warn(
-                                                f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach "
-                                                f"the quorum")
-
-                            unrecognized_tracker.drop_with_alias_name(first_gt_pol.alias_name)
-                            tracker.drop_with_alias_name(first_gt_pol.alias_name)
-
-                        elif 0 < len(exp_cont) <= 1:
-                            ex_tk = exp_cont[0]
-
-                            if not ex_tk.mark:
-                                if ex_tk.counter > tracker_min_conf and tracker_container.validate(
-                                        n_id=ex_tk.alias_name):
-                                    now_ = datetime.now()
-                                    id_ = person_ids.get(ex_tk.name)
-                                    score = float(ex_tk.counter / int(
-                                        TRACKER_CONF.get("recognized_max_frame_conf")))
-
-                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                              person_id=ex_tk.name,
-                                                              camera_id=None,
-                                                              image_path=ex_tk.filename,
-                                                              confidence=round(score * 100, 2))
-                                    serial_event.append(serial_)
-                                    logger.warn(
-                                        f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> "
-                                        f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: No")
-                                else:
-                                    if tracker_container.validate(n_id=ex_tk.alias_name):
+                                if first_gt_pol.counter == sec_gt_pol.counter:
+                                    if tracker_container.validate(first_gt_pol.alias_name):
                                         now_ = datetime.now()
 
                                         serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
                                                                   person_id=None,
                                                                   camera_id=None,
-                                                                  image_path=ex_tk.filename,
+                                                                  image_path=first_gt_pol.filename,
                                                                   confidence=None)
 
                                         serial_event.append(serial_)
 
-                                        logger.warn(f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names "
-                                                    f"unknown-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence}"
-                                                    )
-
+                                        logger.warn(f"----> Choose Unknown")
                                     else:
-                                        logger.warn(
-                                            f"[NO REACH] Tracker With ID {ex_tk.alias_name} Can`t reach the "
-                                            f"quorum")
+                                        logger.warn(f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach "
+                                                    f"the quorum")
 
-                            else:
-                                logger.warn(
-                                    f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> "
-                                    f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: Yes")
-
-                            unrecognized_tracker.drop_with_alias_name(ex_tk.alias_name)
-                            tracker.drop_with_alias_name(ex_tk.alias_name)
-
-                    # expiration deletion (unrecognized)
-                    ex_lists = list(unrecognized_tracker.get_expires())
-                    for exp_ in ex_lists:
-                        if not exp_.mark:
-                            if exp_.counter > tracker_min_conf and tracker_container.validate(exp_.alias_name):
-                                now_ = datetime.now()
-
-                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                          person_id=None,
-                                                          camera_id=None,
-                                                          image_path=exp_.filename,
-                                                          confidence=None)
-
-                                serial_event.append(serial_)
-
-                                logger.warn(f"[EXPIRE] Unrecognized Tracker With ID {exp_.alias_name} With Name/Names "
-                                            f"unknown-> Counter: {exp_.counter} Sent: No")
-                            else:
-                                logger.warn(
-                                    f"[NO REACH] Unrecognized Tracker With ID {exp_.alias_name} Can`t reach the "
-                                    f"quorum")
-                        else:
-                            logger.warn(
-                                f"[EXPIRE] Unrecognized Tracker With ID {exp_.alias_name} -> "
-                                f"Counter: {exp_.counter} Sent: Yes")
-
-                    frame_size = frame.shape
-
-                    tracks = track_let.detect(faces, frame, points, frame_size)
-                    tracks = tracks.astype(np.int32)
-
-                    cnt += 1
-
-                    final_bounding_box = []
-                    final_status = []
-
-                    tracks_bounding_box_to = []
-                    tracks_face_to = []
-                    tracks_status_to = []
-
-                    for tk in tracks:
-                        bounding_box = tk[0:4]
-                        id_ = str(tk[4])
-
-                        res = tracker.search_alias_name(id_)
-
-                        if res is not None:
-                            if res[1].status == Policy.STATUS_CONF:
-                                res[1]()
-                                tracker_container(n_id=res[1].alias_name)
-                                final_bounding_box.append(bounding_box)
-                                final_status.append(res[1].name)
-                                logger.info(
-                                    f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence} "
-                                    f"Bounding Box {bounding_box}",
-                                    white=True)
-                                # print("Result", res[1].name, sep=" ")
-                            else:
-                                tracks_bounding_box_to.append(bounding_box)
-                                tracks_status_to.append(id_)
-                                tracks_face_to.append(
-                                    normalize_input(reshape_image(gray_frame, bounding_box, output_size)))
-                        else:
-                            tracks_bounding_box_to.append(bounding_box)
-                            tracks_status_to.append(id_)
-
-                            tracks_face_to.append(
-                                normalize_input(reshape_image(gray_frame, bounding_box, output_size)))
-
-                    tracks_bounding_box_to = np.array(tracks_bounding_box_to)
-                    tracks_face_to = np.array(tracks_face_to)
-                    tracks_status_to = np.array(tracks_status_to)
-
-                    # HPE
-
-                    cropped_images = hpe.get_cropped_pics(ch1_fr, tracks_bounding_box_to, 0, "large")
-                    poses = hpe.predict(sess, cropped_images, hpe_input, hpe_output)
-                    right_pose_idx = hpe.validate_angle_bulk(po=poses)
-                    com_pos_idx = hpe.validate_angle_bulk_complement(po=poses)
-
-                    # Drop
-                    if com_pos_idx.shape[0] > 0:
-                        for c_idx in com_pos_idx:
-                            logger.dang(f"[DROP] Face With Tilt {poses[c_idx, 0]} Pan {poses[c_idx, 1]}")
-
-                    if tracks_face_to.shape[0] > 0 and right_pose_idx.shape[0] > 0:
-                        # update
-
-                        tracks_bounding_box_to = tracks_bounding_box_to[right_pose_idx, :]
-                        tracks_face_to = tracks_face_to[right_pose_idx, :, :, :]
-                        tracks_status_to = tracks_status_to[right_pose_idx]
-                        poses = poses[right_pose_idx, :]
-
-                        if stable_mode:
-                            feed_dic = {phase_train: False, input_plc: tracks_face_to}
-                            embedded_array = sess.run(embeddings, feed_dic)
-                            dists = bulk_cosine_similarity(embedded_array, embeds)
-
-                            bs_similarity_idx = np.argmin(dists, axis=1)
-                            bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
-                            pred_labels = np.array(labels)[bs_similarity_idx]
-                            for i in range(len(pred_labels)):
-                                uu_ = uuid1()
-                                file_name_ = uu_.hex + ".jpg"
-                                save_path = face_save_path.joinpath(file_name_)
-                                x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
-                                                 tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
-
-                                x1_t, y1_t, x2_t, y2_t = x1, y1, x2, y2
-
-                                x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2],
-                                                                        margin=(x_margin, y_margin))
-
-                                status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
-                                                                                                   i] < float(
-                                    DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
-                                tk_status = tracks_status_to[i]
-
-                                try:
-
-                                    if status[0] == "unrecognised":
-                                        tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
-                                        tk_.angle = (poses[i, 0], poses[i, 1])
-                                        tracker_container(n_id=tk_.alias_name)
-                                        logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
-                                                    f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                                    f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
-                                                    white=True)
-
-                                        if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
-                                            # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
-                                            tk_.mark = True
+                                elif not first_gt_pol.mark and first_gt_pol.alias_name:
+                                    if first_gt_pol.alias_name in watch_list:
+                                        watch_list.remove(first_gt_pol.alias_name)
+                                    else:
+                                        if first_gt_pol.counter > tracker_min_conf and tracker_container.validate(
+                                                first_gt_pol.alias_name):
                                             now_ = datetime.now()
-                                            serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
+                                            # id_ = person_ids.get(first_gt_pol.name)
+                                            score = float(first_gt_pol.counter / int(
+                                                TRACKER_CONF.get("recognized_max_frame_conf")))
+
+                                            serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                      person_id=first_gt_pol.name,
+                                                                      camera_id=None,
+                                                                      image_path=first_gt_pol.filename,
+                                                                      confidence=round(score * 100, 2))
+                                            serial_event.append(serial_)
+                                            logger.warn(
+                                                f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} "
+                                                f"Confidence: {first_gt_pol.confidence} Sent: No")
+                                        else:
+                                            if tracker_container.validate(n_id=first_gt_pol.alias_name):
+                                                now_ = datetime.now()
+
+                                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                          person_id=None,
+                                                                          camera_id=None,
+                                                                          image_path=first_gt_pol.filename,
+                                                                          confidence=None)
+
+                                                serial_event.append(serial_)
+
+                                                logger.warn(f"----> Choose Unknown")
+
+                                            else:
+                                                logger.warn(
+                                                    f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach "
+                                                    f"the quorum")
+
+                                unrecognized_tracker.drop_with_alias_name(first_gt_pol.alias_name)
+                                tracker.drop_with_alias_name(first_gt_pol.alias_name)
+
+                            elif 0 < len(exp_cont) <= 1:
+                                ex_tk = exp_cont[0]
+
+                                if not ex_tk.mark:
+                                    if ex_tk.counter > tracker_min_conf and tracker_container.validate(
+                                            n_id=ex_tk.alias_name):
+                                        now_ = datetime.now()
+                                        id_ = person_ids.get(ex_tk.name)
+                                        score = float(ex_tk.counter / int(
+                                            TRACKER_CONF.get("recognized_max_frame_conf")))
+
+                                        serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                  person_id=ex_tk.name,
+                                                                  camera_id=None,
+                                                                  image_path=ex_tk.filename,
+                                                                  confidence=round(score * 100, 2))
+                                        serial_event.append(serial_)
+                                        logger.warn(
+                                            f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> "
+                                            f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: No")
+                                    else:
+                                        if tracker_container.validate(n_id=ex_tk.alias_name):
+                                            now_ = datetime.now()
+
+                                            serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
                                                                       person_id=None,
                                                                       camera_id=None,
-                                                                      image_path=file_name_,
+                                                                      image_path=ex_tk.filename,
                                                                       confidence=None)
 
                                             serial_event.append(serial_)
-                                            cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
 
-                                    else:
-                                        tk_, _ = tracker(name=status[0], alias_name=tk_status)
-                                        tracker_container(n_id=tk_.alias_name)
-                                        tk_.angle = (poses[i, 0], poses[i, 1])
-                                        tk_.confidence = bs_similarity[i]
-                                        logger.info(
-                                            f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                            f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
-                                            white=True)
+                                            logger.warn(f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names "
+                                                        f"unknown-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence}"
+                                                        )
 
-                                        tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
+                                        else:
+                                            logger.warn(
+                                                f"[NO REACH] Tracker With ID {ex_tk.alias_name} Can`t reach the "
+                                                f"quorum")
 
-                                        if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
-                                            tk_.mark = True
-                                            now_ = datetime.now()
-                                            # id_ = person_ids.get(status[0])
-                                            #
-                                            # if id_ is not None:
-                                            serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
-                                                                      person_id=status[0],
-                                                                      camera_id=None,
-                                                                      image_path=file_name_,
-                                                                      confidence=100.)
+                                else:
+                                    logger.warn(
+                                        f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> "
+                                        f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: Yes")
 
-                                            serial_event.append(serial_)
+                                unrecognized_tracker.drop_with_alias_name(ex_tk.alias_name)
+                                tracker.drop_with_alias_name(ex_tk.alias_name)
 
-                                            cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
-
-                                            unrecognized_tracker.drop_with_alias_name(tk_.alias_name)
-                                            tracker.drop_exe_name_with_alias(name=status[0], tk_id=tk_.alias_name)
-                                            watch_list.append(tk_.alias_name)
-
-                                except:
-                                    logger.warn("Record Drop")
-
-                        else:
-                            for i in range(tracks_bounding_box_to.shape[0]):
-                                uu_ = uuid1()
-                                file_name_ = uu_.hex + ".jpg"
-                                save_path = face_save_path.joinpath(file_name_)
-                                x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
-                                                 tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
-
-                                x1_t, y1_t, x2_t, y2_t = x1, y1, x2, y2
-
-                                x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2],
-                                                                        margin=(x_margin, y_margin))
-
-                                status = "unrecognised"
-                                tk_status = tracks_status_to[i]
-                                tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
-                                tk_.angle = (poses[i, 0], poses[i, 1])
-                                tracker_container(n_id=tk_.alias_name)
-                                logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
-                                            f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                            f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
-                                            white=True)
-
-                                if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
-                                    # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
-                                    tk_.mark = True
+                        # expiration deletion (unrecognized)
+                        ex_lists = list(unrecognized_tracker.get_expires())
+                        for exp_ in ex_lists:
+                            if not exp_.mark:
+                                if exp_.counter > tracker_min_conf and tracker_container.validate(exp_.alias_name):
                                     now_ = datetime.now()
-                                    serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
+
+                                    serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
                                                               person_id=None,
                                                               camera_id=None,
-                                                              image_path=file_name_,
+                                                              image_path=exp_.filename,
                                                               confidence=None)
 
                                     serial_event.append(serial_)
-                                    cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
 
-                    if serial_event:
-                        json_obj = json.dumps({"data": serial_event})
-                        sock.sendto(json_obj.encode(), address)
-                        logger.warn("[SEND] " + f"{address[0]}:{address[1]} " + json_obj)
+                                    logger.warn(
+                                        f"[EXPIRE] Unrecognized Tracker With ID {exp_.alias_name} With Name/Names "
+                                        f"unknown-> Counter: {exp_.counter} Sent: No")
+                                else:
+                                    logger.warn(
+                                        f"[NO REACH] Unrecognized Tracker With ID {exp_.alias_name} Can`t reach the "
+                                        f"quorum")
+                            else:
+                                logger.warn(
+                                    f"[EXPIRE] Unrecognized Tracker With ID {exp_.alias_name} -> "
+                                    f"Counter: {exp_.counter} Sent: Yes")
+
+                        frame_size = frame.shape
+
+                        tracks = track_let.detect(faces, frame, points, frame_size)
+                        tracks = tracks.astype(np.int32)
+
+                        cnt += 1
+
+                        final_bounding_box = []
+                        final_status = []
+
+                        tracks_bounding_box_to = []
+                        tracks_face_to = []
+                        tracks_status_to = []
+
+                        for tk in tracks:
+                            bounding_box = tk[0:4]
+                            id_ = str(tk[4])
+
+                            res = tracker.search_alias_name(id_)
+
+                            if res is not None:
+                                if res[1].status == Policy.STATUS_CONF:
+                                    res[1]()
+                                    tracker_container(n_id=res[1].alias_name)
+                                    final_bounding_box.append(bounding_box)
+                                    final_status.append(res[1].name)
+                                    logger.info(
+                                        f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence} "
+                                        f"Bounding Box {bounding_box}",
+                                        white=True)
+                                    # print("Result", res[1].name, sep=" ")
+                                else:
+                                    tracks_bounding_box_to.append(bounding_box)
+                                    tracks_status_to.append(id_)
+                                    tracks_face_to.append(
+                                        normalize_input(reshape_image(gray_frame, bounding_box, output_size)))
+                            else:
+                                tracks_bounding_box_to.append(bounding_box)
+                                tracks_status_to.append(id_)
+
+                                tracks_face_to.append(
+                                    normalize_input(reshape_image(gray_frame, bounding_box, output_size)))
+
+                        tracks_bounding_box_to = np.array(tracks_bounding_box_to)
+                        tracks_face_to = np.array(tracks_face_to)
+                        tracks_status_to = np.array(tracks_status_to)
+
+                        # HPE
+
+                        cropped_images = hpe.get_cropped_pics(ch1_fr, tracks_bounding_box_to, 0, "large")
+                        poses = hpe.predict(sess, cropped_images, hpe_input, hpe_output)
+                        right_pose_idx = hpe.validate_angle_bulk(po=poses)
+                        com_pos_idx = hpe.validate_angle_bulk_complement(po=poses)
+
+                        # Drop
+                        if com_pos_idx.shape[0] > 0:
+                            for c_idx in com_pos_idx:
+                                logger.dang(f"[DROP] Face With Tilt {poses[c_idx, 0]} Pan {poses[c_idx, 1]}")
+
+                        if tracks_face_to.shape[0] > 0 and right_pose_idx.shape[0] > 0:
+                            # update
+
+                            tracks_bounding_box_to = tracks_bounding_box_to[right_pose_idx, :]
+                            tracks_face_to = tracks_face_to[right_pose_idx, :, :, :]
+                            tracks_status_to = tracks_status_to[right_pose_idx]
+                            poses = poses[right_pose_idx, :]
+
+                            if stable_mode:
+                                feed_dic = {phase_train: False, input_plc: tracks_face_to}
+                                embedded_array = sess.run(embeddings, feed_dic)
+                                dists = bulk_cosine_similarity(embedded_array, embeds)
+
+                                bs_similarity_idx = np.argmin(dists, axis=1)
+                                bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
+                                pred_labels = np.array(labels)[bs_similarity_idx]
+                                for i in range(len(pred_labels)):
+                                    uu_ = uuid1()
+                                    file_name_ = uu_.hex + ".jpg"
+                                    save_path = face_save_path.joinpath(file_name_)
+                                    x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
+                                                     tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
+
+                                    x1_t, y1_t, x2_t, y2_t = x1, y1, x2, y2
+
+                                    x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2],
+                                                                            margin=(x_margin, y_margin))
+
+                                    status = encoded_labels.inverse_transform([pred_labels[i]]) if bs_similarity[
+                                                                                                       i] < float(
+                                        DEFAULT_CONF.get("similarity_threshold")) else ['unrecognised']
+                                    tk_status = tracks_status_to[i]
+
+                                    try:
+
+                                        if status[0] == "unrecognised":
+                                            tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
+                                            tk_.angle = (poses[i, 0], poses[i, 1])
+                                            tracker_container(n_id=tk_.alias_name)
+                                            logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
+                                                        f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
+                                                        f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
+                                                        white=True)
+
+                                            if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
+                                                # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
+                                                tk_.mark = True
+                                                now_ = datetime.now()
+                                                serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
+                                                                          person_id=None,
+                                                                          camera_id=None,
+                                                                          image_path=file_name_,
+                                                                          confidence=None)
+
+                                                serial_event.append(serial_)
+                                                cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
+
+                                        else:
+                                            tk_, _ = tracker(name=status[0], alias_name=tk_status)
+                                            tracker_container(n_id=tk_.alias_name)
+                                            tk_.angle = (poses[i, 0], poses[i, 1])
+                                            tk_.confidence = bs_similarity[i]
+                                            logger.info(
+                                                f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence} "
+                                                f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
+                                                white=True)
+
+                                            tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
+
+                                            if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
+                                                tk_.mark = True
+                                                now_ = datetime.now()
+                                                # id_ = person_ids.get(status[0])
+                                                #
+                                                # if id_ is not None:
+                                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                                          person_id=status[0],
+                                                                          camera_id=None,
+                                                                          image_path=file_name_,
+                                                                          confidence=100.)
+
+                                                serial_event.append(serial_)
+
+                                                cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
+
+                                                unrecognized_tracker.drop_with_alias_name(tk_.alias_name)
+                                                tracker.drop_exe_name_with_alias(name=status[0], tk_id=tk_.alias_name)
+                                                watch_list.append(tk_.alias_name)
+
+                                    except:
+                                        logger.warn("Record Drop")
+
+                            else:
+                                for i in range(tracks_bounding_box_to.shape[0]):
+                                    uu_ = uuid1()
+                                    file_name_ = uu_.hex + ".jpg"
+                                    save_path = face_save_path.joinpath(file_name_)
+                                    x1, y1, x2, y2 = tracks_bounding_box_to[i, 0], tracks_bounding_box_to[i, 1], \
+                                                     tracks_bounding_box_to[i, 2], tracks_bounding_box_to[i, 3]
+
+                                    x1_t, y1_t, x2_t, y2_t = x1, y1, x2, y2
+
+                                    x1, y1, x2, y2 = cap.convert_coordinate([x1, y1, x2, y2],
+                                                                            margin=(x_margin, y_margin))
+
+                                    status = "unrecognised"
+                                    tk_status = tracks_status_to[i]
+                                    tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
+                                    tk_.angle = (poses[i, 0], poses[i, 1])
+                                    tracker_container(n_id=tk_.alias_name)
+                                    logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
+                                                f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
+                                                f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
+                                                white=True)
+
+                                    if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
+                                        # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
+                                        tk_.mark = True
+                                        now_ = datetime.now()
+                                        serial_ = face_serializer(timestamp=int(now_.timestamp()) * 1000,
+                                                                  person_id=None,
+                                                                  camera_id=None,
+                                                                  image_path=file_name_,
+                                                                  confidence=None)
+
+                                        serial_event.append(serial_)
+                                        cv2.imwrite(str(save_path), cap.original_frame[y1:y2, x1:x2])
+
+                        if serial_event:
+                            json_obj = json.dumps({"data": serial_event})
+                            sock.sendto(json_obj.encode(), address)
+                            logger.warn("[SEND] " + f"{address[0]}:{address[1]} " + json_obj)
+
+                    except KeyboardInterrupt:
+                        logger.warn("[Shutdown] Server is Shutting down")
+                        sys.exit(0)
