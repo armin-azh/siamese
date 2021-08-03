@@ -606,7 +606,7 @@ def recognition_track_let_serv(args):
                                     f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: Yes")
 
                             unrecognized_tracker.drop_with_alias_name(ex_tk.alias_name)
-                            tracker.drop_with_alias_name(first_gt_pol.alias_name)
+                            tracker.drop_with_alias_name(ex_tk.alias_name)
 
                     # expiration deletion (unrecognized)
                     ex_lists = list(unrecognized_tracker.get_expires())
