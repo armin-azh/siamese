@@ -12,16 +12,24 @@ class Logger:
     def _now_time(self):
         return datetime.strftime(datetime.now(), self._time_format)
 
-    def info(self, message, timestamp=True,white = False):
+    def success(self,message, timestamp=True):
+        time = ""
+        if timestamp:
+            time = self._now_time()
+
+        status = Fore.LIGHTGREEN_EX + time + Fore.GREEN + message + Fore.RESET
+        print(status)
+
+    def info(self, message, timestamp=True, white=False):
         time = ""
         if timestamp:
             time = self._now_time()
 
         if white:
-            status = Fore.WHITE + time + Fore.WHITE + message
+            status = Fore.WHITE + time + Fore.WHITE + message + Fore.RESET
 
         else:
-            status = Fore.LIGHTBLUE_EX + time + Fore.BLUE + message
+            status = Fore.LIGHTBLUE_EX + time + Fore.BLUE + message + Fore.RESET
 
         print(status)
 
@@ -30,7 +38,7 @@ class Logger:
         if timestamp:
             time = self._now_time()
 
-        status = Fore.LIGHTYELLOW_EX + time + Fore.YELLOW + message
+        status = Fore.LIGHTYELLOW_EX + time + Fore.YELLOW + message + Fore.RESET
         print(status)
 
     def dang(self, message, timestamp=True):
@@ -38,7 +46,7 @@ class Logger:
         if timestamp:
             time = self._now_time()
 
-        status = Fore.LIGHTRED_EX + time + Fore.RED + message
+        status = Fore.LIGHTRED_EX + time + Fore.RED + message + Fore.RESET
         print(status)
 
     def _write(self, data: dict, path: pathlib.Path) -> None:

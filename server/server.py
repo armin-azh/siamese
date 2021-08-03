@@ -7,7 +7,11 @@ import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+from warnings import simplefilter
+
+simplefilter(action="ignore", category=FutureWarning)
 import sys
+# import signal
 import pathlib
 import time
 import configparser
@@ -67,6 +71,10 @@ from settings import (BASE_DIR,
 
 # serializer
 from .serializer import face_serializer
+
+
+# signal
+# from .signals import control_c_signal_handler
 
 
 def recognition_serve(args):
@@ -408,7 +416,7 @@ def recognition_track_let_serv(args):
     cnt = 0
 
     if database.is_db_stable():
-        logger.warn("[Stable] Database is stable")
+        logger.success("[Stable] Database is stable")
         stable_mode = True
     else:
         logger.dang("[Not Stable] Database is not stable, build npy or register someone!")
@@ -456,14 +464,14 @@ def recognition_track_let_serv(args):
 
                 watch_list = []
 
-                logger.info("[OK] Ready to start")
+                logger.success("[OK] Ready to start")
                 while cap.isOpened():
 
                     ret, frame = cap.read()
 
                     if not ret:
                         logger.dang("[Failure] Frame is not retrieved from source camera")
-                        break
+                        continue
 
                     serial_event = []
 
@@ -478,10 +486,12 @@ def recognition_track_let_serv(args):
                         faces, points = detect_face.detect_face(frame_, minsize, pnet, rnet, onet, threshold,
                                                                 factor)
 
-                    # expiration deletion
+                    # expiration deletion ( recognized )
                     ex_lists = list(tracker.get_expires())
 
                     get_aliases = tracker.get_aliases(ex_lists)
+
+                    # expiration deletion ( unrecognized )
 
                     for exp_cont in get_aliases:
                         exp_cont.sort(key=lambda pol: pol.counter, reverse=True)
@@ -599,6 +609,32 @@ def recognition_track_let_serv(args):
                                     f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: Yes")
 
                             unrecognized_tracker.drop_with_alias_name(ex_tk.alias_name)
+
+                    # expiration deletion (unrecognized)
+                    ex_lists = list(unrecognized_tracker.get_expires())
+                    for exp_ in ex_lists:
+                        if not exp_.mark:
+                            if exp_.counter > tracker_min_conf and tracker_container.validate(exp_.alias_name):
+                                now_ = datetime.now()
+
+                                serial_ = face_serializer(timestamp=int(now_.timestamp() * 1000),
+                                                          person_id=None,
+                                                          camera_id=None,
+                                                          image_path=exp_.filename,
+                                                          confidence=None)
+
+                                serial_event.append(serial_)
+
+                                logger.warn(f"[EXPIRE] Unrecognized Tracker With ID {exp_.alias_name} With Name/Names "
+                                            f"unknown-> Counter: {exp_.counter} Sent: No")
+                            else:
+                                logger.warn(
+                                    f"[NO REACH] Unrecognized Tracker With ID {ex_tk.alias_name} Can`t reach the "
+                                    f"quorum")
+                        else:
+                            logger.warn(
+                                f"[EXPIRE] Unrecognized Tracker With ID {exp_.alias_name} -> "
+                                f"Counter: {ex_tk.counter} Sent: Yes")
 
                     frame_size = frame.shape
 
