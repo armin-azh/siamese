@@ -517,8 +517,6 @@ def recognition_track_let_serv(args):
                                     logger.warn(f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach "
                                                 f"the quorum")
 
-                                tracker.drop_with_alias_name(first_gt_pol.alias_name)
-
                             elif not first_gt_pol.mark and first_gt_pol.alias_name:
                                 if first_gt_pol.alias_name in watch_list:
                                     watch_list.remove(first_gt_pol.alias_name)
@@ -559,6 +557,7 @@ def recognition_track_let_serv(args):
                                                 f"the quorum")
 
                             unrecognized_tracker.drop_with_alias_name(first_gt_pol.alias_name)
+                            tracker.drop_with_alias_name(first_gt_pol.alias_name)
 
                         elif 0 < len(exp_cont) <= 1:
                             ex_tk = exp_cont[0]
@@ -607,6 +606,7 @@ def recognition_track_let_serv(args):
                                     f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: Yes")
 
                             unrecognized_tracker.drop_with_alias_name(ex_tk.alias_name)
+                            tracker.drop_with_alias_name(first_gt_pol.alias_name)
 
                     # expiration deletion (unrecognized)
                     ex_lists = list(unrecognized_tracker.get_expires())
