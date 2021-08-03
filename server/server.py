@@ -491,8 +491,6 @@ def recognition_track_let_serv(args):
 
                     get_aliases = tracker.get_aliases(ex_lists)
 
-                    # expiration deletion ( unrecognized )
-
                     for exp_cont in get_aliases:
                         exp_cont.sort(key=lambda pol: pol.counter, reverse=True)
                         if len(exp_cont) > 1:
@@ -629,12 +627,12 @@ def recognition_track_let_serv(args):
                                             f"unknown-> Counter: {exp_.counter} Sent: No")
                             else:
                                 logger.warn(
-                                    f"[NO REACH] Unrecognized Tracker With ID {ex_tk.alias_name} Can`t reach the "
+                                    f"[NO REACH] Unrecognized Tracker With ID {exp_.alias_name} Can`t reach the "
                                     f"quorum")
                         else:
                             logger.warn(
                                 f"[EXPIRE] Unrecognized Tracker With ID {exp_.alias_name} -> "
-                                f"Counter: {ex_tk.counter} Sent: Yes")
+                                f"Counter: {exp_.counter} Sent: Yes")
 
                     frame_size = frame.shape
 
