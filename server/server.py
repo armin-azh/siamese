@@ -663,8 +663,10 @@ def recognition_track_let_serv(args):
                                     final_bounding_box.append(bounding_box)
                                     final_status.append(res[1].name)
                                     logger.info(
-                                        f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> Counter {res[1].counter} Confidence {res[1].confidence} "
-                                        f"Bounding Box {bounding_box}",
+                                        f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> "
+                                        f"Counter {res[1].counter} Confidence {round(float(res[1].confidence),3)} "
+                                        f"Bounding Box {bounding_box} "
+                                        f"Percentage {round(float((1-res[1].confidence)*100))}%",
                                         white=True)
                                     # print("Result", res[1].name, sep=" ")
                                 else:
@@ -735,8 +737,10 @@ def recognition_track_let_serv(args):
                                             tk_.angle = (poses[i, 0], poses[i, 1])
                                             tracker_container(n_id=tk_.alias_name)
                                             logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
-                                                        f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                                        f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
+                                                        f"Unknown -> Counter {tk_.counter} "
+                                                        f"Confidence {round(float(tk_.confidence),3)} "
+                                                        f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]} "
+                                                        f"Percentage {round(float((1 - tk_.confidence) * 100))}%",
                                                         white=True)
 
                                             if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
@@ -758,8 +762,10 @@ def recognition_track_let_serv(args):
                                             tk_.angle = (poses[i, 0], poses[i, 1])
                                             tk_.confidence = bs_similarity[i]
                                             logger.info(
-                                                f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                                f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
+                                                f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> "
+                                                f"Counter {tk_.counter} Confidence {round(float(tk_.confidence),3)} "
+                                                f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]} "
+                                                f"Percentage {round(float((1 - tk_.confidence) * 100))}%",
                                                 white=True)
 
                                             tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
@@ -807,7 +813,7 @@ def recognition_track_let_serv(args):
                                     tracker_container(n_id=tk_.alias_name)
                                     logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
                                                 f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                                f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]}",
+                                                f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]} ",
                                                 white=True)
 
                                     if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
