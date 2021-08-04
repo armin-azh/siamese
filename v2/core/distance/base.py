@@ -1,10 +1,10 @@
 import numpy as np
 
 
-class BaseDistant:
+class BaseDistance:
     def __init__(self, name=None, *args, **kwargs):
         self._name = self.__class__.__name__ if name is None else name
-        super(BaseDistant, self).__init__(*args, **kwargs)
+        super(BaseDistance, self).__init__(*args, **kwargs)
 
     def calculate_distant(self, n_obs: np.ndarray, bs_obs: np.ndarray) -> np.ndarray:
         """
