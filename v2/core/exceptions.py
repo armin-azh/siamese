@@ -1,0 +1,5 @@
+
+
+class InCompatibleDimError(Exception):
+    pass
+
