@@ -5,7 +5,7 @@ import sys
 from recognition.recognition import face_recognition, face_recognition_on_keras, test_recognition, cluster_faces
 from recognition.recognition import face_recognition_kalman
 from recognition.utils import convert_computation_graph_to_keras_model
-from server.server import recognition_serv_2,recognition_track_let_serv
+from server.server import recognition_serv_2, recognition_track_let_serv
 from database.component import inference_db
 from database.sync import generate_id
 from tools.system import system_status
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     parser.add_argument('--kalman_tracker', help='use kalman tracker', action='store_true')
     parser.add_argument('--video', help="video recognition flag", action='store_true')
     parser.add_argument('--video_file', help='video filename for recognition', type=str, default="")
-    parser.add_argument('--eval_method', help='evaluation method', choices=['cosine', 'svm', 'euclidean'],
+    parser.add_argument('--eval_method', help='evaluation method', choices=['cosine', 'svm', 'euclidean', "cosine_v2"],
                         default='cosine')
     parser.add_argument('--cluster', help="cluster video frame", action='store_true')
     parser.add_argument('--cluster_name', help="cluster name for saving images", type=str, default='')

@@ -26,7 +26,7 @@ from sklearn import preprocessing
 # recognition
 from recognition.utils import load_model, parse_status, Timer
 from recognition.preprocessing import normalize_input, cvt_to_gray
-from recognition.distance import bulk_cosine_similarity
+from recognition.distance import bulk_cosine_similarity,bulk_cosine_similarity_v2
 from recognition.utils import reshape_image
 
 # face detection
@@ -710,7 +710,14 @@ def recognition_track_let_serv(args):
                             if stable_mode:
                                 feed_dic = {phase_train: False, input_plc: tracks_face_to}
                                 embedded_array = sess.run(embeddings, feed_dic)
-                                dists = bulk_cosine_similarity(embedded_array, embeds)
+                                if args.eval_method == "cosine":
+                                    dists = bulk_cosine_similarity(embedded_array, embeds)
+                                elif args.eval_method == "cosine_v2":
+                                    dists = bulk_cosine_similarity_v2(embedded_array, embeds)
+                                else:
+                                    logger.dang("[Invalid] Invalid metric")
+                                    time.sleep(2)
+                                    sys.exit(0)
 
                                 bs_similarity_idx = np.argmin(dists, axis=1)
                                 bs_similarity = dists[np.arange(len(bs_similarity_idx)), bs_similarity_idx]
