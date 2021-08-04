@@ -746,7 +746,7 @@ def recognition_track_let_serv(args):
                                                         f"Tilt {round(float(poses[i, 0]), 3)} "
                                                         f"Pan {round(float(poses[i, 1]), 3)}",
                                                         white=True)
-
+                                            tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
                                             if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                                 # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
                                                 tk_.mark = True
