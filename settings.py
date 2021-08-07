@@ -36,6 +36,7 @@ SERVER_CONF = conf["Server"]
 IMAGE_CONF = conf["Image"]
 HPE_CONF = conf["HPE"]
 PROJECT_CONF = conf["Project"]
+MASK_CONF = conf["Mask"]
 
 SETTINGS_HEADER = ["Default",
                    "Image",
@@ -47,7 +48,8 @@ SETTINGS_HEADER = ["Default",
                    "ZeroMQ",
                    "Server",
                    "HPE",
-                   "Project"]
+                   "Project",
+                   "Mask"]
 
 COLOR_SUCCESS = (0, 255, 0)
 COLOR_DANG = (243, 32, 19)
