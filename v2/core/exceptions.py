@@ -8,3 +8,7 @@ class UnknownModelFileError(Exception):
 
 class SessionIsNotSetError(Exception):
     pass
+
+
+class DisableMethodWarning(Exception):
+    pass

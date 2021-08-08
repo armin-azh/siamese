@@ -1,5 +1,3 @@
-import os
-import re
 from pathlib import Path
 from typing import Tuple, List
 import tensorflow as tf
@@ -14,20 +12,21 @@ class BaseModel:
         "keras": [".h5", ".model"]
     }
 
-    def __init__(self, model_path: Path, name=None, *args, **kwargs):
-        _tm = self.__determine_type(model_path)
-        self._model = None
-        self._type = None
-        if _tm != "unknown":
-            self._type = _tm
-        else:
-            raise UnknownModelFileError(f"{model_path.suffix} is unknown")
+    def __init__(self, model_path, name=None, *args, **kwargs):
         self._name = self.__class__.__name__ if name is None else name
-        self._model_path = model_path
-        self._inputs = []
-        self._outputs = []
-        self._inputs_name = []
-        self._outputs_name = []
+        if model_path is not None:
+            _tm = self.__determine_type(model_path)
+            self._model = None
+            self._type = None
+            if _tm != "unknown":
+                self._type = _tm
+            else:
+                raise UnknownModelFileError(f"{model_path.suffix} is unknown")
+            self._model_path = model_path
+            self._inputs = []
+            self._outputs = []
+            self._inputs_name = []
+            self._outputs_name = []
 
         super(BaseModel, self).__init__(*args, **kwargs)
 
