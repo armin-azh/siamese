@@ -1,9 +1,11 @@
 from unittest import TestCase
 from pathlib import Path
 import tensorflow as tf
+import cv2
 
 # from models
 from .base import BaseModel
+from ._face_detector import FaceDetector
 
 # exceptions
 from v2.core.exceptions import *
@@ -51,3 +53,67 @@ class BaseModelTestCase(TestCase):
         self.assertTrue(len(model.inputs) > 0)
         t_shape = tf.TensorShape([None, 1])
         model.outputs[0][1].assert_is_compatible_with(t_shape)
+
+
+class FaceDetectorTestCase(TestCase):
+    def test_create_face_detector_class_and_disabled_methods(self):
+        threshold = [0.8, 0.8, 0.9]
+        scale_factor = 0.8
+        min_size = 20
+        face_detector = FaceDetector(min_face=min_size, scale_factor=scale_factor, stages_threshold=threshold,
+                                     name="mtcnn")
+        self.assertTrue(isinstance(face_detector, FaceDetector))
+
+        with self.assertRaises(DisableMethodWarning):
+            _ = face_detector.inputs
+
+        with self.assertRaises(DisableMethodWarning):
+            _ = face_detector.outputs
+
+        with self.assertRaises(DisableMethodWarning):
+            face_detector.set_inputs_name([""])
+
+        with self.assertRaises(DisableMethodWarning):
+            face_detector.set_outputs_name([""])
+
+    def test_create_face_detector_class_with_session(self):
+        # memory growth
+        physical_devices = tf.config.list_physical_devices('GPU')
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+        threshold = [0.8, 0.8, 0.9]
+        scale_factor = 0.8
+        min_size = 20
+        face_detector = FaceDetector(min_face=min_size, scale_factor=scale_factor, stages_threshold=threshold,
+                                     name="mtcnn")
+        with tf.compat.v1.Session() as sess:
+            face_detector.load_model(session=sess)
+
+    def test_create_face_detector_class_without_session(self):
+        # memory growth
+        physical_devices = tf.config.list_physical_devices('GPU')
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+        threshold = [0.8, 0.8, 0.9]
+        scale_factor = 0.8
+        min_size = 20
+        face_detector = FaceDetector(min_face=min_size, scale_factor=scale_factor, stages_threshold=threshold,
+                                     name="mtcnn")
+        with self.assertRaises(SessionIsNotSetError):
+            face_detector.load_model()
+
+    def test_extract_face_detector(self):
+        # memory growth
+        physical_devices = tf.config.list_physical_devices('GPU')
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+        threshold = [0.8, 0.8, 0.9]
+        scale_factor = 0.8
+        min_size = 20
+        face_detector = FaceDetector(min_face=min_size, scale_factor=scale_factor, stages_threshold=threshold,
+                                     name="mtcnn")
+        with tf.compat.v1.Session() as sess:
+            face_detector.load_model(session=sess)
+
+            im = cv2.imread("G:\\Documents\\Project\\facerecognition\\v2\\core\\network\\data\\celeb.jpg")
+            _, _ = face_detector.extract(im)

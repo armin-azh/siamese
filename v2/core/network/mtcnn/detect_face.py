@@ -124,7 +124,7 @@ class Network(object):
         assert c_o % group == 0
         # Convolution for a given input and kernel
         convolve = lambda i, k: tf.nn.conv2d(i, k, [1, s_h, s_w, 1], padding=padding)
-        with tf.compat.v1.variable_scope(name) as scope:
+        with tf.compat.v1.variable_scope(name,reuse=tf.compat.v1.AUTO_REUSE) as scope:
             kernel = self.make_var('weights', shape=[k_h, k_w, c_i // group, c_o])
             # This is the common-case. Convolve the input without any further complications.
             output = convolve(inp, kernel)
@@ -139,7 +139,7 @@ class Network(object):
 
     @layer
     def prelu(self, inp, name):
-        with tf.compat.v1.variable_scope(name):
+        with tf.compat.v1.variable_scope(name,reuse=tf.compat.v1.AUTO_REUSE):
             i = int(inp.get_shape()[-1])
             alpha = self.make_var('alpha', shape=(i,))
             output = tf.nn.relu(inp) + tf.multiply(alpha, -tf.nn.relu(-inp))
@@ -156,7 +156,7 @@ class Network(object):
 
     @layer
     def fc(self, inp, num_out, name, relu=True):
-        with tf.compat.v1.variable_scope(name):
+        with tf.compat.v1.variable_scope(name,reuse=tf.compat.v1.AUTO_REUSE):
             input_shape = inp.get_shape()
             if input_shape.ndims == 4:
                 # The input is spatial. Vectorize it first.

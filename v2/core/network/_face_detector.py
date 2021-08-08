@@ -11,7 +11,7 @@ from v2.core.exceptions import *
 
 
 class FaceDetector(BaseModel):
-    def __init__(self, stages_threshold: List[float, float, float], scale_factor: float, min_face: int, name=None,
+    def __init__(self, stages_threshold, scale_factor: float, min_face: int, name=None,
                  *args, **kwargs):
         self._stages_threshold = stages_threshold
         self._scale_factor = scale_factor
