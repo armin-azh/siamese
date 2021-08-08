@@ -1,9 +1,11 @@
 from unittest import TestCase
 import numpy as np
+import cv2
 
 # models
 from ._base import BaseNormalizer
 from ._norm import FaceNetNormalizer
+from ._conv import GrayScaleConvertor
 
 from v2.core.exceptions import *
 
@@ -42,10 +44,24 @@ class FaceNetNormalizerTestCase(TestCase):
             _ = norm.normalize(mat)
 
     def test_run_normalizer_empty(self):
-        size = (0, 160, 160,3)
+        size = (0, 160, 160, 3)
         mat = np.empty(size)
         norm = FaceNetNormalizer()
         ans = norm.normalize(mat)
         self.assertEqual(ans.shape, size)
 
 
+class GrayScaleConvertorTestCase(TestCase):
+    def test_run_one_channel(self):
+        cvt = GrayScaleConvertor()
+        im = cv2.imread("G:\\Documents\\Project\\facerecognition\\v2\\core\\network\\data\\celeb.jpg")
+        shape = im.shape[:2]
+        im = cvt.normalize(im, channel="one")
+        self.assertEqual(im.shape, shape)
+
+    def test_run_full_channel(self):
+        cvt = GrayScaleConvertor()
+        im = cv2.imread("G:\\Documents\\Project\\facerecognition\\v2\\core\\network\\data\\celeb.jpg")
+        shape = im.shape
+        im = cvt.normalize(im, channel="full")
+        self.assertEqual(im.shape, shape)
