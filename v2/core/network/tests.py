@@ -1,14 +1,21 @@
 from unittest import TestCase
 from pathlib import Path
+
+import numpy as np
 import tensorflow as tf
 import cv2
 
 # from models
 from .base import BaseModel
 from ._face_detector import FaceDetector
+from ._recognizer import FaceNetModel
+from v2.core.nomalizer import GrayScaleConvertor
 
 # exceptions
 from v2.core.exceptions import *
+
+from settings import BASE_DIR
+from settings import MODEL_CONF
 
 
 class BaseModelTestCase(TestCase):
@@ -117,3 +124,31 @@ class FaceDetectorTestCase(TestCase):
 
             im = cv2.imread("G:\\Documents\\Project\\facerecognition\\v2\\core\\network\\data\\celeb.jpg")
             _, _ = face_detector.extract(im)
+
+
+class FaceNetModelTestCase(TestCase):
+    def setUp(self) -> None:
+        self._model_path = Path(BASE_DIR).joinpath(MODEL_CONF.get("facenet"))
+        self._image = cv2.resize(GrayScaleConvertor().normalize(
+            cv2.imread(str(Path(BASE_DIR).joinpath("v2/core/network/data/celeb.jpg"))), channel="full"), (160, 160))
+
+    def test_create_face_net_model(self):
+        model = FaceNetModel(model_path=self._model_path, name="FaceNet")
+        model.load_model()
+        self.assertEqual(model.model_type, "tf")
+
+    def test_create_face_net_run(self):
+        model = FaceNetModel(model_path=self._model_path, name="FaceNet")
+        in_ims = np.expand_dims(self._image, axis=0)
+        with tf.compat.v1.Session() as sess:
+            model.load_model()
+            emb = model.get_embeddings(sess, input_im=in_ims)
+            self.assertEqual(emb.shape, (1, 512))
+
+    def test_create_face_net_run_with_incompatible_shape(self):
+        model = FaceNetModel(model_path=self._model_path, name="FaceNet")
+        in_ims = np.random.random((160, 160, 3))
+        with tf.compat.v1.Session() as sess:
+            model.load_model()
+            with self.assertRaises(InCompatibleDimError):
+                _ = model.get_embeddings(sess, input_im=in_ims)

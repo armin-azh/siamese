@@ -11,8 +11,6 @@ from settings import BASE_DIR
 import tensorflow as tf
 
 
-
-
 class Provider:
     def __init__(self):
         # tm = os.path.join(BASE_DIR, db_conf.get("database_path"))
@@ -22,7 +20,7 @@ class Provider:
         conf.read(os.path.join(BASE_DIR, "conf.ini"))
 
         self.db_conf = conf['Gallery']
-        tm ="G:\\Documents\\Project\\siamese\\data\\train\\set_2\\train"
+        tm = "G:\\Documents\\Project\\siamese\\data\\train\\set_2\\train"
         self._db = ImageDatabase(db_path=tm)
 
     def _update(self):
