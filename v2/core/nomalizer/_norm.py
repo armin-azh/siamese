@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import tensorflow as tf
+from typing import Tuple
 
 # model
 from ._base import BaseNormalizer
@@ -36,6 +37,7 @@ class FaceNetNormalizer(BaseNormalizer):
 class HeadPoseEstimatorNormalizer(BaseNormalizer):
     def __init__(self, name=None, *args, **kwargs):
         self._box_tensor_shape = tf.TensorShape([None, 4])
+        self._norm_output_tensor_shape = tf.TensorShape([None, 2])
         super(HeadPoseEstimatorNormalizer, self).__init__(name, *args, **kwargs)
 
     def normalize(self, mat: np.ndarray, **kwargs) -> np.ndarray:
@@ -138,3 +140,13 @@ class HeadPoseEstimatorNormalizer(BaseNormalizer):
 
         else:
             raise InCompatibleDimError("Unknown image dimension")
+
+    def normalize_output(self, mat: np.ndarray, tilt_norm: Tuple[float, float], pan_norm: Tuple[float, float],
+                         rescale: float) -> np.ndarray:
+        self._norm_output_tensor_shape.assert_is_compatible_with(mat.shape)
+        if mat.shape[0] > 0:
+            mat[:, 0] = (mat[:, 0] * tilt_norm[1] + tilt_norm[0]) * rescale
+            mat[:, 1] = (mat[:, 1] * pan_norm[1] + pan_norm[0]) * rescale
+            return mat
+        else:
+            return np.empty((0, 2))
