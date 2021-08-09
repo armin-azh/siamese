@@ -39,9 +39,7 @@ class HeadPoseEstimatorModel(BaseModel):
 
     def estimate_poses(self, session: tf.compat.v1.Session, input_im: np.ndarray, boxes: np.ndarray) -> np.ndarray:
         self._bounding_box_tensor_shape.assert_is_compatible_with(boxes.shape)
-        _in_shape = input_im.shape
         try:
-            self._input_tensor_shape.assert_is_compatible_with(_in_shape)
             _norm_cropped = self._normalizer.normalize(mat=input_im,
                                                        b_mat=boxes,
                                                        interpolation=cv2.INTER_LINEAR,

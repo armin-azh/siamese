@@ -158,6 +158,11 @@ class FaceNetModelTestCase(TestCase):
 
 class HeadPoseEstimatorTestCase(TestCase):
     def setUp(self) -> None:
+        self._im_path = Path(BASE_DIR).joinpath("v2/core/network/data/celeb.jpg")
+        self._im = cv2.cvtColor(cv2.imread(str(self._im_path)), cv2.COLOR_BGR2GRAY)
+
+        self._bounding_boxes = np.array([[54, 78, 75, 98], [12, 45, 32, 65]])
+
         self._model_path = Path(BASE_DIR).joinpath(HPE_CONF.get("model"))
         self._img_norm = (float(HPE_CONF.get("im_norm_mean")), float(HPE_CONF.get("im_norm_var")))
         self._tilt_norm = (float(HPE_CONF.get("tilt_norm_mean")), float(HPE_CONF.get("tilt_norm_var")))
@@ -184,3 +189,20 @@ class HeadPoseEstimatorTestCase(TestCase):
             self.assertEqual(model.inputs[0][0], "x:0")
             self.assertEqual(model.outputs[0][0], "Identity:0")
 
+    def test_predict_poses(self):
+        print(self._bounding_boxes.shape)
+        model = HeadPoseEstimatorModel(model_path=self._model_path,
+                                       img_norm=self._img_norm,
+                                       tilt_norm=self._tilt_norm,
+                                       pan_norm=self._pat_norm,
+                                       rescale=self._rescale,
+                                       conf=self._hpe_conf)
+
+        with tf.compat.v1.Session() as sess:
+            model.load_model()
+
+            poses = model.estimate_poses(session=sess,
+                                         input_im=self._im,
+                                         boxes=self._bounding_boxes,
+                                         )
+            print(poses)
