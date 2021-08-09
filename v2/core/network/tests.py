@@ -9,6 +9,7 @@ import cv2
 from .base import BaseModel
 from ._face_detector import FaceDetector
 from ._recognizer import FaceNetModel
+from ._hpe import HeadPoseEstimatorModel
 from v2.core.nomalizer import GrayScaleConvertor
 
 # exceptions
@@ -16,6 +17,7 @@ from v2.core.exceptions import *
 
 from settings import BASE_DIR
 from settings import MODEL_CONF
+from settings import HPE_CONF
 
 
 class BaseModelTestCase(TestCase):
@@ -152,3 +154,33 @@ class FaceNetModelTestCase(TestCase):
             model.load_model()
             with self.assertRaises(InCompatibleDimError):
                 _ = model.get_embeddings(sess, input_im=in_ims)
+
+
+class HeadPoseEstimatorTestCase(TestCase):
+    def setUp(self) -> None:
+        self._model_path = Path(BASE_DIR).joinpath(HPE_CONF.get("model"))
+        self._img_norm = (float(HPE_CONF.get("im_norm_mean")), float(HPE_CONF.get("im_norm_var")))
+        self._tilt_norm = (float(HPE_CONF.get("tilt_norm_mean")), float(HPE_CONF.get("tilt_norm_var")))
+        self._pat_norm = (float(HPE_CONF.get("pan_norm_mean")), float(HPE_CONF.get("pan_norm_var")))
+        self._rescale = float(HPE_CONF.get("rescale"))
+        self._hpe_conf = (
+            float(HPE_CONF.get("pan_left")),
+            float(HPE_CONF.get("pan_right")),
+            float(HPE_CONF.get("tilt_up")),
+            float(HPE_CONF.get("tilt_down"))
+        )
+
+    def test_create_hpe_a_object(self):
+        model = HeadPoseEstimatorModel(model_path=self._model_path,
+                                       img_norm=self._img_norm,
+                                       tilt_norm=self._tilt_norm,
+                                       pan_norm=self._pat_norm,
+                                       rescale=self._rescale,
+                                       conf=self._hpe_conf)
+        self.assertEqual(model._name, model.__class__.__name__)
+        self.assertEqual(model.model_type, "tf")
+        with tf.compat.v1.Session() as sess:
+            model.load_model()
+            self.assertEqual(model.inputs[0][0], "x:0")
+            self.assertEqual(model.outputs[0][0], "Identity:0")
+

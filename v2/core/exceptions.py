@@ -12,3 +12,7 @@ class SessionIsNotSetError(Exception):
 
 class DisableMethodWarning(Exception):
     pass
+
+
+class NoPassingArgumentError(Exception):
+    pass

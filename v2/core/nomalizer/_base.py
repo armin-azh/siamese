@@ -7,7 +7,7 @@ class BaseNormalizer:
 
         super(BaseNormalizer, self).__init__(*args, **kwargs)
 
-    def normalize(self, mat: np.ndarray) -> np.ndarray:
+    def normalize(self, mat: np.ndarray, **kwargs) -> np.ndarray:
         raise NotImplementedError
 
     @property
