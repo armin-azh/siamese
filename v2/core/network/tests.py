@@ -10,6 +10,7 @@ from .base import BaseModel
 from ._face_detector import FaceDetector
 from ._recognizer import FaceNetModel
 from ._hpe import HeadPoseEstimatorModel
+from ._mask import MaskClassifierModel
 from v2.core.nomalizer import GrayScaleConvertor
 
 # exceptions
@@ -18,6 +19,7 @@ from v2.core.exceptions import *
 from settings import BASE_DIR
 from settings import MODEL_CONF
 from settings import HPE_CONF
+from settings import MASK_CONF
 
 
 class BaseModelTestCase(TestCase):
@@ -239,3 +241,45 @@ class HeadPoseEstimatorTestCase(TestCase):
             idx, idx_c = model.validate_angle(poses)
             self.assertEqual(idx.shape, (0, 2))
             self.assertEqual(idx_c.shape, (0, 2))
+
+
+class MaskClassifierTestCase(TestCase):
+    def setUp(self) -> None:
+        self._model_path = Path(BASE_DIR).joinpath(MASK_CONF.get("model"))
+
+        self._im_path = Path(BASE_DIR).joinpath("v2/core/network/data/celeb.jpg")
+        self._im = cv2.imread(str(self._im_path))
+
+        self._bounding_boxes = np.array([[54, 78, 75, 98], [12, 45, 32, 65]])
+
+    def test_create_mask_classifier(self):
+        model = MaskClassifierModel(model_path=self._model_path, score_threshold=0.5)
+        self.assertEqual(model.model_type, "keras")
+
+        with tf.compat.v1.Session() as sess:
+            model.load_model(session=sess)
+            self.assertTrue(model._model)
+            self.assertTrue(len(model.inputs) > 0)
+            self.assertTrue(len(model.outputs) > 0)
+
+    def test_run_model(self):
+        model = MaskClassifierModel(model_path=self._model_path, score_threshold=0.5)
+        self.assertEqual(model.model_type, "keras")
+
+        with tf.compat.v1.Session() as sess:
+            model.load_model(session=sess)
+            ans = model.predict(self._im, self._bounding_boxes)
+            self.assertEqual(ans.shape, (2, 1))
+            masks, masks_c = model.validate_mask(ans)
+            self.assertTrue((len(masks) > 0 or len(masks_c) > 0))
+
+    def test_run_model_empty_bounding_box(self):
+        self._bounding_boxes = np.empty((0, 4))
+        model = MaskClassifierModel(model_path=self._model_path, score_threshold=0.5)
+
+        with tf.compat.v1.Session() as sess:
+            model.load_model(session=sess)
+            ans = model.predict(self._im, self._bounding_boxes)
+            self.assertEqual(ans.shape, (0, 1))
+            masks, masks_c = model.validate_mask(ans)
+            self.assertTrue((len(masks) == 0 and len(masks_c) == 0))
