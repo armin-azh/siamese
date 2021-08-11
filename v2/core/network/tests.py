@@ -190,7 +190,6 @@ class HeadPoseEstimatorTestCase(TestCase):
             self.assertEqual(model.outputs[0][0], "Identity:0")
 
     def test_predict_poses(self):
-        print(self._bounding_boxes.shape)
         model = HeadPoseEstimatorModel(model_path=self._model_path,
                                        img_norm=self._img_norm,
                                        tilt_norm=self._tilt_norm,
@@ -205,4 +204,38 @@ class HeadPoseEstimatorTestCase(TestCase):
                                          input_im=self._im,
                                          boxes=self._bounding_boxes,
                                          )
-            print(poses)
+            self.assertEqual(poses.shape, (2, 2))
+
+    def test_predict_poses_and_validate_angles(self):
+        model = HeadPoseEstimatorModel(model_path=self._model_path,
+                                       img_norm=self._img_norm,
+                                       tilt_norm=self._tilt_norm,
+                                       pan_norm=self._pat_norm,
+                                       rescale=self._rescale,
+                                       conf=self._hpe_conf)
+
+        with tf.compat.v1.Session() as sess:
+            model.load_model()
+
+            poses = model.estimate_poses(session=sess,
+                                         input_im=self._im,
+                                         boxes=self._bounding_boxes,
+                                         )
+            idx, idx_c = model.validate_angle(poses)
+            self.assertTrue((len(idx) > 0 or len(idx_c) > 0))
+
+    def test_predict_poses_and_validate_angles_with_empty_input(self):
+        model = HeadPoseEstimatorModel(model_path=self._model_path,
+                                       img_norm=self._img_norm,
+                                       tilt_norm=self._tilt_norm,
+                                       pan_norm=self._pat_norm,
+                                       rescale=self._rescale,
+                                       conf=self._hpe_conf)
+
+        with tf.compat.v1.Session() as sess:
+            model.load_model()
+
+            poses = np.empty((0, 2))
+            idx, idx_c = model.validate_angle(poses)
+            self.assertEqual(idx.shape, (0, 2))
+            self.assertEqual(idx_c.shape, (0, 2))

@@ -38,8 +38,9 @@ class HeadPoseEstimatorModel(BaseModel):
         self._normalizer = HpeNormalizer(name="pose-estimator")
 
     def estimate_poses(self, session: tf.compat.v1.Session, input_im: np.ndarray, boxes: np.ndarray) -> np.ndarray:
-        self._bounding_box_tensor_shape.assert_is_compatible_with(boxes.shape)
+
         try:
+            self._bounding_box_tensor_shape.assert_is_compatible_with(boxes.shape)
             _norm_cropped = self._normalizer.normalize(mat=input_im,
                                                        b_mat=boxes,
                                                        interpolation=cv2.INTER_LINEAR,
@@ -47,10 +48,10 @@ class HeadPoseEstimatorModel(BaseModel):
                                                        offset_per=0,
                                                        cropping="large")
 
-            self._input_tensor_shape.assert_is_compatible_with(_norm_cropped)
+            self._input_tensor_shape.assert_is_compatible_with(_norm_cropped.shape)
             _fn_input_plc = self._inputs[0][0]
             _fn_embed_plc = self._outputs[0][0]
-            _feed = {_fn_input_plc: self._normalizer.normalize(input_im)}
+            _feed = {_fn_input_plc: _norm_cropped}
             _poses = session.run(_fn_embed_plc, feed_dict=_feed)
             return self._normalizer.normalize_output(_poses, self._tilt_norm, self._pan_norm, self._rescale)
 
@@ -71,7 +72,7 @@ class HeadPoseEstimatorModel(BaseModel):
         ans = np.where(to_log)
         return ans[0]
 
-    def validate_angle(self, mat: np.ndarray):
+    def validate_angle(self, mat: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         self._poses_tensor_shape.assert_is_compatible_with(mat.shape)
         if mat.shape[0] > 0:
             return self.__validate_angle(mat), self.__validate_angle_complement(mat)
