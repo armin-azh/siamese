@@ -1,5 +1,6 @@
+import time
 from unittest import TestCase
-from ._measurement import Counter
+from ._measurement import Counter, FPS
 
 
 class CounterTestCase(TestCase):
@@ -25,3 +26,20 @@ class CounterTestCase(TestCase):
             counter.next()
         counter.reset()
         self.assertEqual(counter(), 0)
+
+
+class FpsTestCase(TestCase):
+    def test_create_fps(self):
+        fps = FPS()
+        fps.start()
+        fps.update()
+        time.sleep(3)
+        fps.stop()
+        self.assertTrue(fps.fps() > 0)
+
+    def test_create_fps_realtime(self):
+        fps = FPS()
+        fps.start()
+        fps.update()
+        fps.stop()
+        self.assertEqual(fps.fps(), 0.)
