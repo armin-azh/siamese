@@ -1,0 +1,4 @@
+
+
+class SetValueError(Exception):
+    pass
