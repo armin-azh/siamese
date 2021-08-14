@@ -56,3 +56,26 @@ class FileSource(BaseSource):
             return frame, self._finished
         else:
             return None, self._finished
+
+
+class ProtocolSource(BaseSource):
+    def __init__(self, uuid: str, src: str, output_size: Tuple[int, int], queue_size: int, logg_path: Path,
+                 display: bool = False):
+        super(ProtocolSource, self).__init__(uuid=uuid,
+                                             src=str(src),
+                                             src_type="protocol",
+                                             output_size=output_size,
+                                             queue_size=queue_size,
+                                             logg_path=logg_path,
+                                             display=display)
+
+    def stream(self):
+        if not self._online:
+            self._spin(1)
+            return None
+
+        if self._frame_dequeue and self._online:
+            frame = self._frame_dequeue[-1].get_pixel
+            return frame
+        else:
+            return None

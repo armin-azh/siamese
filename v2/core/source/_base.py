@@ -103,5 +103,9 @@ class BaseSource:
     def is_online(self) -> bool:
         return self._online
 
+    @property
+    def source_type(self) -> str:
+        return self._src_type
+
     def stream(self):
         raise NotImplementedError
