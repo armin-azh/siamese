@@ -8,6 +8,7 @@ from threading import Thread
 from pathlib import Path
 from datetime import datetime
 import cv2
+from heapq import heappop, heappush
 
 from v2.tools.logger import FileLogger, ConsoleLogger
 from v2.core.nomalizer import SpaceConvertor
@@ -86,6 +87,7 @@ class BaseSource:
                         self._console_logger.warn(msg)
                     self._spin(2)
                 self._spin(0.001)
+                self.__modify_date_time()
             except AttributeError:
                 pass
 
@@ -94,6 +96,10 @@ class BaseSource:
 
     def release(self):
         self._cap.release()
+
+    @property
+    def get_id(self) -> str:
+        return self._id
 
     @property
     def last_modified_time(self) -> datetime:
@@ -117,6 +123,37 @@ class BaseSource:
 
         if self._frame_dequeue and self._online:
             frame = self._frame_dequeue[-1].get_pixel
-            return self._convertor.normalize(mat=frame)
+            return self._convertor.normalize(mat=frame), self._frame_dequeue[-1].timestamp
         else:
-            return None
+            return None, None
+
+
+class SourcePool:
+    def __init__(self, src_list):
+        self._p_queue = []
+        for s in src_list:
+            heappush(self._p_queue, (s.last_modified_time, s))
+
+    def next_stream(self):
+        """
+        :return: matrix, id, timestamp
+        """
+        cap = heappop(self._p_queue)
+
+        if cap.source_type == "file":
+            frame, finished, timestamp = cap.stream()
+            if finished and frame is None:
+                return None, None, None
+            else:
+                heappush(self._p_queue, (cap.last_modified_time, cap))
+                if not finished and frame is None:
+                    return None, None, None
+                else:
+                    return frame, cap.get_id, timestamp
+
+        elif cap.source_type == "protocol" or cap.source_type == "webCam":
+            frame, timestamp = cap.stream()
+            if frame is None and timestamp is None:
+                return None, None, None
+            else:
+                return frame, cap.get_id, timestamp

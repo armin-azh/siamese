@@ -8,3 +8,7 @@ class SourceImage(BaseImage):
     def __init__(self, im: np.ndarray, *args, **kwargs):
         super(SourceImage, self).__init__(im, *args, **kwargs)
         self._time_stamp = datetime.now().timestamp()
+
+    @property
+    def timestamp(self) -> float:
+        return self._time_stamp

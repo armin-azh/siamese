@@ -53,9 +53,9 @@ class FileSource(BaseSource):
 
         if self._frame_dequeue and self._online:
             frame = self._frame_dequeue[-1].get_pixel
-            return frame, self._finished
+            return frame, self._finished, self._frame_dequeue[-1].timestamp
         else:
-            return None, self._finished
+            return None, self._finished, self._frame_dequeue[-1].timestamp
 
 
 class ProtocolSource(BaseSource):
