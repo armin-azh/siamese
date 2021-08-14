@@ -1,18 +1,18 @@
-
 cam1:
-  type: webcame
-  source: 0
-  display_log: yes
-  queue_size: 10
+  display_log: true
   output_size:
-    - 640
-    - 480
-
-cam2:
-  type: protocol
-  source: rtsp://192.168.1.100:8080/video/h264
-  display_log: yes
+  - 640
+  - 480
   queue_size: 10
-  ouput_size:
-    - 640
-    - 480
+  source: 0
+  type: webcam
+  uuid: 534e1f46fd4411ebb88b1c5a3e4e6f52
+cam2:
+  display_log: true
+  output_size:
+  - 640
+  - 480
+  queue_size: 10
+  source: rtsp://192.168.1.100:8080/video/h264
+  type: protocol
+  uuid: 5354d5f4fd4411eba76c1c5a3e4e6f52

@@ -23,6 +23,7 @@ class BaseProvider:
 
     def __call__(self, *args, **kwargs) -> SourcePool:
         data = self._read()
+        next_data = dict()
         cam_list = []
 
         cam_keys = data.keys()
@@ -31,11 +32,15 @@ class BaseProvider:
             meta = data[cam]
             cam_type = meta.get("type")
             source = meta["source"]
-            display = meta.get("display_log", default=False)
-            q_size = meta.get("queue_size", default=10)
+            display = meta.get("display_log")
+            if display is None:
+                display = False
+            q_size = meta.get("queue_size")
+            if q_size is None:
+                q_size = 10
             o_shape = (meta.get("output_size")[0], meta.get("output_size")[1]) if meta.get(
                 "output_size") is not None else (640, 480)
-            uu_id = meta.get("uuid", default=None)
+            uu_id = meta.get("uuid")
             n = None
 
             if cam_type == "file":
@@ -51,8 +56,10 @@ class BaseProvider:
                                  display=display)
 
             data[cam] = n.get_id
+            next_data[cam] = {"type": cam_type, "source": source, "display_log": display, "queue_size": q_size,
+                              "output_size": [o_shape[0], o_shape[1]],"uuid":n.get_id}
             cam_list.append(n)
 
-        self._write(data)
+        self._write(next_data)
 
         return SourcePool(src_list=cam_list)

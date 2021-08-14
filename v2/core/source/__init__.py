@@ -7,4 +7,4 @@ FileSourceModel = FileSource
 ProtocolSourceModel = ProtocolSource
 WebCamSourceModel = WebCamSource
 SourcePool = SourcePool
-BaseProvider = BaseProvider
+SourceProvider = BaseProvider
