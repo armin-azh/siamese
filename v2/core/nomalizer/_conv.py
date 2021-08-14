@@ -1,8 +1,10 @@
 import numpy as np
 import cv2
+from typing import Tuple
 
 # model
 from ._base import BaseNormalizer
+
 
 # from v2.core.exceptions import *
 
@@ -24,3 +26,12 @@ class GrayScaleConvertor(BaseNormalizer):
 
         else:
             raise ValueError("The value of the channel is not exists")
+
+
+class SpaceConvertor(BaseNormalizer):
+    def __init__(self, resize: Tuple[int, int], name=None, *args, **kwargs):
+        self._resize = resize
+        super(SpaceConvertor, self).__init__(name, *args, **kwargs)
+
+    def normalize(self, mat: np.ndarray, **kwargs) -> np.ndarray:
+        return cv2.resize(mat, self._resize).astype(np.uint8)

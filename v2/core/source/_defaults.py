@@ -71,10 +71,10 @@ class ProtocolSource(BaseSource):
 
 
 class WebCamSource(BaseSource):
-    def __init__(self, uuid: str, src: str, output_size: Tuple[int, int], queue_size: int, logg_path: Path,
+    def __init__(self, uuid: str, src: int, output_size: Tuple[int, int], queue_size: int, logg_path: Path,
                  display: bool = False):
         super(WebCamSource, self).__init__(uuid=uuid,
-                                           src=str(src),
+                                           src=src,
                                            src_type="webCam",
                                            output_size=output_size,
                                            queue_size=queue_size,

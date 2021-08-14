@@ -16,7 +16,8 @@ from .exceptions import *
 from v2.core.source._image import SourceImage
 
 
-class BaseSource:
+class \
+        BaseSource:
     def __init__(self, uuid: str, src, output_size: Tuple[int, int], src_type: str, queue_size: int,
                  logg_path: Path, display: bool = False):
         self._id = uuid if uuid is not None else uuid1().hex
