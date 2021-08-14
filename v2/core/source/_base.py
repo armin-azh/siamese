@@ -87,7 +87,6 @@ class BaseSource:
                         self._console_logger.warn(msg)
                     self._spin(2)
                 self._spin(0.001)
-                self.__modify_date_time()
             except AttributeError:
                 pass
 
@@ -117,15 +116,19 @@ class BaseSource:
         return self._src_type
 
     def stream(self):
+        self._last_modified_time = self.__modify_date_time()
         if not self._online:
             self._spin(1)
-            return None
+            return None, None
 
         if self._frame_dequeue and self._online:
             frame = self._frame_dequeue[-1].get_pixel
             return self._convertor.normalize(mat=frame), self._frame_dequeue[-1].timestamp
         else:
             return None, None
+
+    def __gt__(self, other):
+        return True if self._last_modified_time>other.last_modified_time else False
 
 
 class SourcePool:
@@ -138,7 +141,8 @@ class SourcePool:
         """
         :return: matrix, id, timestamp
         """
-        cap = heappop(self._p_queue)
+        print(self._p_queue)
+        _, cap = heappop(self._p_queue)
 
         if cap.source_type == "file":
             frame, finished, timestamp = cap.stream()
@@ -152,6 +156,8 @@ class SourcePool:
                     return frame, cap.get_id, timestamp
 
         elif cap.source_type == "protocol" or cap.source_type == "webCam":
+            heappush(self._p_queue, (cap.last_modified_time, cap))
+            print(cap)
             frame, timestamp = cap.stream()
             if frame is None and timestamp is None:
                 return None, None, None
