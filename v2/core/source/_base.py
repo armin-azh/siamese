@@ -128,7 +128,7 @@ class BaseSource:
             return None, None
 
     def __gt__(self, other):
-        return True if self._last_modified_time>other.last_modified_time else False
+        return True if self._last_modified_time > other.last_modified_time else False
 
 
 class SourcePool:
@@ -141,7 +141,6 @@ class SourcePool:
         """
         :return: matrix, id, timestamp
         """
-        print(self._p_queue)
         _, cap = heappop(self._p_queue)
 
         if cap.source_type == "file":
@@ -157,7 +156,6 @@ class SourcePool:
 
         elif cap.source_type == "protocol" or cap.source_type == "webCam":
             heappush(self._p_queue, (cap.last_modified_time, cap))
-            print(cap)
             frame, timestamp = cap.stream()
             if frame is None and timestamp is None:
                 return None, None, None
