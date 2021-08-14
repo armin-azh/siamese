@@ -37,6 +37,7 @@ IMAGE_CONF = conf["Image"]
 HPE_CONF = conf["HPE"]
 PROJECT_CONF = conf["Project"]
 MASK_CONF = conf["Mask"]
+LOG_CONF = conf["Log"]
 
 SETTINGS_HEADER = ["Default",
                    "Image",
@@ -49,7 +50,8 @@ SETTINGS_HEADER = ["Default",
                    "Server",
                    "HPE",
                    "Project",
-                   "Mask"]
+                   "Mask",
+                   "Log"]
 
 COLOR_SUCCESS = (0, 255, 0)
 COLOR_DANG = (243, 32, 19)
