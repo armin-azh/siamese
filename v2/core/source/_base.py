@@ -17,7 +17,7 @@ from v2.core.source._image import SourceImage
 
 
 class BaseSource:
-    def __init__(self, uuid: str, src: str, output_size: Tuple[int, int], src_type: str, queue_size: int,
+    def __init__(self, uuid: str, src, output_size: Tuple[int, int], src_type: str, queue_size: int,
                  logg_path: Path, display: bool = False):
         self._id = uuid if uuid is not None else uuid1().hex
         self._src = src
@@ -108,4 +108,12 @@ class BaseSource:
         return self._src_type
 
     def stream(self):
-        raise NotImplementedError
+        if not self._online:
+            self._spin(1)
+            return None
+
+        if self._frame_dequeue and self._online:
+            frame = self._frame_dequeue[-1].get_pixel
+            return frame
+        else:
+            return None
