@@ -51,11 +51,4 @@ class CharField(BaseField):
     def cleaned_date(self) -> str:
         return self._value
 
-    def create(self, *args, **kwargs):
-        """
-        create new instance from this method
-        """
-        _data = kwargs["data"]
-        _tn = CharField(name=self._name, required=self._required)
-        _tn(val=_data)
-        return _tn
+
