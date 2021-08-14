@@ -104,13 +104,4 @@ class BaseSource:
         return self._online
 
     def stream(self):
-
-        if not self._online:
-            self._spin(1)
-            return None
-
-        if self._frame_dequeue and self._online:
-            frame = self._frame_dequeue[-1].get_pixel
-            return frame
-        else:
-            return None
+        raise NotImplementedError
