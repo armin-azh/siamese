@@ -10,19 +10,20 @@ from datetime import datetime
 import cv2
 
 from v2.tools.logger import FileLogger, ConsoleLogger
+from v2.core.nomalizer import SpaceConvertor
 
 from .exceptions import *
 
 from v2.core.source._image import SourceImage
 
 
-class \
-        BaseSource:
+class BaseSource:
     def __init__(self, uuid: str, src, output_size: Tuple[int, int], src_type: str, queue_size: int,
-                 logg_path: Path, display: bool = False):
+                 logg_path: Path, display: bool = False, cvt=SpaceConvertor):
         self._id = uuid if uuid is not None else uuid1().hex
         self._src = src
         self._output_size = output_size
+        self._org_size = None
         self._src_type = src_type
         self._queue_size = queue_size
         self._frame_dequeue = deque(maxlen=self._queue_size)
@@ -45,6 +46,7 @@ class \
         if self._display_log:
             self._console_logger.success(msg)
         self._last_modified_time = self.__modify_date_time()
+        self._convertor = cvt(resize=self._output_size)
 
     def _verify_network_stream(self):
         cap = cv2.VideoCapture(self._src)
@@ -115,6 +117,6 @@ class \
 
         if self._frame_dequeue and self._online:
             frame = self._frame_dequeue[-1].get_pixel
-            return frame
+            return self._convertor.normalize(mat=frame)
         else:
             return None
