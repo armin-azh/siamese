@@ -5,8 +5,11 @@ from collections import deque
 from threading import Thread
 from pathlib import Path
 from datetime import datetime
+import cv2
 
 from v2.tools.logger import FileLogger, ConsoleLogger
+
+from .exceptions import *
 
 
 class BaseSource:
@@ -25,6 +28,9 @@ class BaseSource:
         self._log_path.mkdir(parents=True, exist_ok=True)
         self._file_logger = FileLogger(self._log_path, self._id)
         self._console_logger = ConsoleLogger()
+        self.__test()
+        self._cap = cv2.VideoCapture(self._src)
+        self._online = False
 
     def _get_frame(self):
         pass
@@ -36,11 +42,28 @@ class BaseSource:
     def reset(self):
         pass
 
-    def test(self):
-        pass
+    def __test(self):
+        """
+        test video exists or not
+        :return:
+        """
+        try:
+            cap = cv2.VideoCapture(self._src)
+            if cap is None or not cap.isOpened():
+                msg = f"[FAILURE] source {self._src} is not exists"
+                self._file_logger.info(msg)
+                if self._display_log:
+                    self._console_logger.dang(msg)
+                raise SourceIsNotExist(msg)
+        except cv2.error as err:
+            raise SourceIsNotExist(f"[FAILURE] source {self._src} is not exists")
 
     def release(self):
         pass
 
     def last_modified_time(self):
         pass
+
+    @property
+    def is_online(self) -> bool:
+        return self._online
