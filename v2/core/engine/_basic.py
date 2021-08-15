@@ -1,4 +1,3 @@
-from typing import Tuple
 from pathlib import Path
 from datetime import datetime
 
@@ -18,6 +17,10 @@ class BasicService:
         self._console_logger = ConsoleLogger()
 
         super(BasicService, self).__init__(*args, **kwargs)
+
+    @property
+    def name(self) -> str:
+        return self._name
 
     def exec_(self, *args, **kwargs) -> None:
         raise NotImplementedError
