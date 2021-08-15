@@ -24,3 +24,6 @@ class BasicService:
 
     def exec_(self, *args, **kwargs) -> None:
         raise NotImplementedError
+
+    def _submit_time(self):
+        return datetime.now()
