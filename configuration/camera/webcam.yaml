@@ -1,0 +1,9 @@
+webcam:
+  display_log: true
+  output_size:
+  - 640
+  - 480
+  queue_size: 10
+  source: 0
+  type: webcam
+  uuid: 534e1f46fd4411ebb88b1c5a3e4e6f52

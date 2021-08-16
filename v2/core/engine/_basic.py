@@ -6,7 +6,7 @@ from v2.tools.logger import get_logger, ConsoleLogger
 
 
 class BasicService:
-    def __init__(self, name, log_path: Path, *args, **kwargs):
+    def __init__(self, name, log_path: Path, display=True, *args, **kwargs):
         self._name = self.__class__.__name__ if name is None else name
         self._started_at = None
         self._log_path = log_path.joinpath(f"service/{self._name}")
@@ -15,6 +15,7 @@ class BasicService:
         self._log_filename = self._log_path.joinpath(f"{_cu}.log")
         self._file_logger = get_logger(self._log_filename, self._name)
         self._console_logger = ConsoleLogger()
+        self._display = display
 
         super(BasicService, self).__init__(*args, **kwargs)
 

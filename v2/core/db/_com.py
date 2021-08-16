@@ -3,6 +3,7 @@ import numpy as np
 from pathlib import Path
 from uuid import uuid1
 from typing import List, Generator
+import json
 
 # model
 from v2.contrib.images import Image
@@ -121,3 +122,18 @@ class BasicDatabase:
 
     def search(self, uu_id: str):
         raise NotImplementedError
+
+
+class Database(BasicDatabase):
+    PREFIX = 'gallery'
+
+    def __init__(self, db_path: Path, *args, **kwargs):
+        if not db_path.is_dir():
+            raise InvalidDatabasePathError(f"the path {str(db_path)} is not a directory")
+        self._db_path = db_path
+        self._db_path.mkdir(parents=True,exist_ok=True)
+        super(Database, self).__init__(*args, **kwargs)
+
+    def __initial_db(self):
+        pass
+
