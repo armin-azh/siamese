@@ -100,3 +100,24 @@ class Identity:
                 yield Image(file_path=_p, im=None, in_memory=in_memory)
         else:
             raise InvalidPrefixError("passing invalid prefix")
+
+
+class BasicDatabase:
+    def __init__(self, *args, **kwargs):
+        super(BasicDatabase, self).__init__(*args, **kwargs)
+
+    def _parse(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def get_embedded(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def __initial_db(self):
+        raise NotImplementedError
+
+    @property
+    def is_stable(self) -> bool:
+        raise NotImplementedError
+
+    def search(self, uu_id: str):
+        raise NotImplementedError
