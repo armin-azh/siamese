@@ -132,9 +132,10 @@ class RawVisualService(EmbeddingService):
                         if has_head.shape[0] > 0:
                             mask_scores = self._mask_d.predict(origin_gray_full_ch_frame,
                                                                origin_f_bound[has_head, ...].astype(np.int))
+                            has_mask, has_no_mask = self._mask_d.validate_mask(mask_scores)
 
-                            print(mask_scores.shape)
-                            # print(has_no_head)
+                            print(has_mask)
+                            print(has_no_mask)
 
                         # display
                         display_frame = self._draw(o_frame, origin_f_bound, None)
