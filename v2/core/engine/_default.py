@@ -88,7 +88,6 @@ class RawVisualService(EmbeddingService):
                     self._file_logger.info(msg)
                     if self._display:
                         self._console_logger.success(msg)
-                    self._hpe_model.load_model()
 
                     # head pose estimator
                     self._hpe_model.load_model()
@@ -96,7 +95,13 @@ class RawVisualService(EmbeddingService):
                     self._file_logger.info(msg)
                     if self._display:
                         self._console_logger.success(msg)
-                    self._hpe_model.load_model()
+
+                    # mask detector
+                    self._mask_d.load_model(session=sess)
+                    msg = f"[OK] mask classifier loaded."
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
 
                     while True:
                         o_frame, v_frame, v_id, v_timestamp = self._vision.next_stream()
@@ -111,10 +116,11 @@ class RawVisualService(EmbeddingService):
 
                         f_bound, f_landmarks = self._f_d.extract(im=v_frame)
                         origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
-                        origin_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
-                        origin_full_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="full")
+                        origin_gray_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
+                        origin_gray_full_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="full")
 
-                        head_scores = self._hpe_model.estimate_poses(sess, origin_one_ch_frame, origin_f_bound.astype(np.int))
+                        head_scores = self._hpe_model.estimate_poses(sess, origin_gray_one_ch_frame,
+                                                                     origin_f_bound.astype(np.int))
                         has_head, has_no_head = self._hpe_model.validate_angle(head_scores)
 
                         if has_no_head.shape[0]:
@@ -123,8 +129,12 @@ class RawVisualService(EmbeddingService):
                             if self._display:
                                 self._console_logger.warn(msg)
 
-                        print(has_head)
-                        # print(has_no_head)
+                        if has_head.shape[0] > 0:
+                            mask_scores = self._mask_d.predict(origin_gray_full_ch_frame,
+                                                               origin_f_bound[has_head, ...].astype(np.int))
+
+                            print(mask_scores.shape)
+                            # print(has_no_head)
 
                         # display
                         display_frame = self._draw(o_frame, origin_f_bound, None)
