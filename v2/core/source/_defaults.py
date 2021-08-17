@@ -49,13 +49,13 @@ class FileSource(BaseSource):
     def stream(self):
         if not self._online:
             self._spin(1)
-            return None, self._finished
+            return None, None, self._finished
 
         if self._frame_dequeue and self._online:
             frame = self._frame_dequeue[-1].get_pixel
-            return frame, self._finished, self._frame_dequeue[-1].timestamp
+            return frame, self._convertor.normalize(mat=frame), self._finished, self._frame_dequeue[-1].timestamp
         else:
-            return None, self._finished, self._frame_dequeue[-1].timestamp
+            return None, None, self._finished, self._frame_dequeue[-1].timestamp
 
 
 class ProtocolSource(BaseSource):

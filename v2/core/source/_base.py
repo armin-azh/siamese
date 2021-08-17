@@ -119,13 +119,13 @@ class BaseSource:
         self._last_modified_time = self.__modify_date_time()
         if not self._online:
             self._spin(1)
-            return None, None
+            return None, None, None
 
         if self._frame_dequeue and self._online:
             frame = self._frame_dequeue[-1].get_pixel
-            return self._convertor.normalize(mat=frame), self._frame_dequeue[-1].timestamp
+            return self._convertor.normalize(mat=frame), frame, self._frame_dequeue[-1].timestamp
         else:
-            return None, None
+            return None, None, None
 
     def __gt__(self, other):
         return True if self._last_modified_time > other.last_modified_time else False
@@ -139,25 +139,25 @@ class SourcePool:
 
     def next_stream(self):
         """
-        :return: matrix, id, timestamp
+        :return: origin_matrix, matrix, id, timestamp
         """
         _, cap = heappop(self._p_queue)
 
         if cap.source_type == "file":
-            frame, finished, timestamp = cap.stream()
-            if finished and frame is None:
-                return None, None, None
+            origin_frame, frame, finished, timestamp = cap.stream()
+            if finished and frame is None and origin_frame is None:
+                return None, None, None, None
             else:
                 heappush(self._p_queue, (cap.last_modified_time, cap))
                 if not finished and frame is None:
-                    return None, None, None
+                    return None, None, None, None
                 else:
-                    return frame, cap.get_id, timestamp
+                    return origin_frame, frame, cap.get_id, timestamp
 
         elif cap.source_type == "protocol" or cap.source_type == "webCam":
             heappush(self._p_queue, (cap.last_modified_time, cap))
-            frame, timestamp = cap.stream()
-            if frame is None and timestamp is None:
-                return None, None, None
+            origin_frame, frame, timestamp = cap.stream()
+            if frame is None and timestamp is None and origin_frame is None:
+                return None, None, None, None
             else:
-                return frame, cap.get_id, timestamp
+                return origin_frame, frame, cap.get_id, timestamp
