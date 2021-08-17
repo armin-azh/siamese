@@ -117,6 +117,12 @@ class RawVisualService(EmbeddingService):
                         head_scores = self._hpe_model.estimate_poses(sess, origin_one_ch_frame, origin_f_bound.astype(np.int))
                         has_head, has_no_head = self._hpe_model.validate_angle(head_scores)
 
+                        if has_no_head.shape[0]:
+                            msg = f"[Drop] {head_scores.shape[0]} face have been dropped."
+                            self._file_logger.info(msg)
+                            if self._display:
+                                self._console_logger.warn(msg)
+
                         print(has_head)
                         # print(has_no_head)
 
