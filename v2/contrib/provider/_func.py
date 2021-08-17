@@ -4,7 +4,9 @@ from v2.core.source import SourceProvider
 from v2.core.distance import CosineDistanceV2
 from v2.core.db import SimpleDatabase
 from v2.core.network import (MultiCascadeFaceDetector,
-                             FaceNetModel)
+                             FaceNetModel,
+                             MaskModel,
+                             HPEModel)
 from v2.core.engine import RawVisualService
 from v2.tools.logger import LOG_Path
 from settings import (CAMERA_MODEL_CONF,
@@ -12,7 +14,9 @@ from settings import (CAMERA_MODEL_CONF,
                       DETECTOR_CONF,
                       MODEL_CONF,
                       GALLERY_CONF,
-                      DEFAULT_CONF)
+                      DEFAULT_CONF,
+                      MASK_CONF,
+                      HPE_CONF)
 
 
 def raw_visual_v1_service() -> RawVisualService:
@@ -34,10 +38,30 @@ def raw_visual_v1_service() -> RawVisualService:
 
     distance = CosineDistanceV2(similarity_threshold=float(DEFAULT_CONF.get("similarity_threshold")))
 
+    mask_detector = MaskModel(model_path=base.joinpath(MASK_CONF.get("model")),
+                              score_threshold=float(MASK_CONF.get("score_threshold")))
+
+    hpe_conf = (
+        float(HPE_CONF.get("pan_left")),
+        float(HPE_CONF.get("pan_right")),
+        float(HPE_CONF.get("tilt_up")),
+        float(HPE_CONF.get("tilt_down"))
+    )
+
+    hpe = HPEModel(model_path=base.joinpath(HPE_CONF.get("model")),
+                   img_norm=(float(HPE_CONF.get("im_norm_mean")), float(HPE_CONF.get("im_norm_var"))),
+                   tilt_norm=(float(HPE_CONF.get("tilt_norm_mean")), float(HPE_CONF.get("tilt_norm_var"))),
+                   pan_norm=(float(HPE_CONF.get("pan_norm_mean")), float(HPE_CONF.get("pan_norm_var"))),
+                   rescale=float(HPE_CONF.get("rescale")),
+                   conf=hpe_conf
+                   )
+
     return RawVisualService(source_pool=vision_source(),
                             face_detector=face_dm,
                             embedded=embedded_model,
                             database=db,
                             distance=distance,
+                            mask_detector=mask_detector,
+                            hpe=hpe,
                             log_path=LOG_Path,
                             name="basic_raw_visualization_service")

@@ -9,9 +9,12 @@ from ._basic import BasicService
 from pathlib import Path
 
 from v2.core.source import SourcePool
-from v2.core.network import MultiCascadeFaceDetector
-from v2.core.network import FaceNetModel
+from v2.core.network import (MultiCascadeFaceDetector,
+                             FaceNetModel,
+                             HPEModel,
+                             MaskModel)
 from v2.core.db import SimpleDatabase
+from v2.core.nomalizer import GrayScaleConvertor
 from v2.core.distance import CosineDistanceV2, CosineDistanceV1
 from v2.tools import draw_cure_face
 
@@ -19,13 +22,17 @@ from v2.tools import draw_cure_face
 class EmbeddingService(BasicService):
     def __init__(self, name, log_path: Path, source_pool: SourcePool, face_detector: Union[MultiCascadeFaceDetector],
                  embedded: Union[FaceNetModel], database: Union[SimpleDatabase],
-                 distance: Union[CosineDistanceV2, CosineDistanceV1], display=True,
+                 distance: Union[CosineDistanceV2, CosineDistanceV1], mask_detector: Union[MaskModel],
+                 hpe: Union[HPEModel], display=True,
                  *args, **kwargs):
         self._vision = source_pool
         self._f_d = face_detector
         self._embedded = embedded
         self._db = database
         self._dist = distance
+        self._hpe_model = hpe
+        self._mask_d = mask_detector
+        self._gray_conv = GrayScaleConvertor()
         super(EmbeddingService, self).__init__(name=name, log_path=log_path, display=display, *args, **kwargs)
 
     def _scale_factor(self, origin_shape: Tuple[int, int], conv_shape: Tuple[int, int]) -> Tuple[float, float]:
@@ -75,7 +82,21 @@ class RawVisualService(EmbeddingService):
             with tf.Graph().as_default():
                 with tf.compat.v1.Session() as sess:
 
+                    # face detector
                     self._f_d.load_model(session=sess)
+                    msg = f"[OK] face detector model loaded"
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
+                    self._hpe_model.load_model()
+
+                    # head pose estimator
+                    self._hpe_model.load_model()
+                    msg = f"[OK] head pose estimator loaded"
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
+                    self._hpe_model.load_model()
 
                     while True:
                         o_frame, v_frame, v_id, v_timestamp = self._vision.next_stream()
@@ -90,8 +111,16 @@ class RawVisualService(EmbeddingService):
 
                         f_bound, f_landmarks = self._f_d.extract(im=v_frame)
                         origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
+                        origin_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
+                        origin_full_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="full")
 
-                        display_frame = self._draw(v_frame, f_bound, None)
+                        head_scores = self._hpe_model.estimate_poses(sess, origin_one_ch_frame, origin_f_bound.astype(np.int))
+                        has_head, has_no_head = self._hpe_model.validate_angle(head_scores)
 
+                        print(has_head)
+                        # print(has_no_head)
+
+                        # display
+                        display_frame = self._draw(o_frame, origin_f_bound, None)
                         window_name = f"{v_id[0:5]}..."
                         cv2.imshow(window_name, display_frame)
