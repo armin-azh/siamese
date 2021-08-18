@@ -17,8 +17,8 @@ from settings import (CAMERA_MODEL_CONF,
                       DEFAULT_CONF,
                       MASK_CONF,
                       HPE_CONF)
-from settings import (PATH_NORMAL,
-                      PATH_MASK)
+# from settings import (PATH_NORMAL,
+#                       PATH_MASK)
 
 
 def clustering_v1_service(phase="normal") -> ClusteringService:

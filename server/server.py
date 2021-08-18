@@ -26,7 +26,7 @@ from sklearn import preprocessing
 # recognition
 from recognition.utils import load_model, parse_status, Timer
 from recognition.preprocessing import normalize_input, cvt_to_gray
-from recognition.distance import bulk_cosine_similarity,bulk_cosine_similarity_v2
+from recognition.distance import bulk_cosine_similarity, bulk_cosine_similarity_v2
 from recognition.utils import reshape_image
 
 # face detection
@@ -51,7 +51,7 @@ from hpe import HeadPoseEstimation
 
 # tools
 from tools.logger import Logger
-from stream.source import OpencvSource
+from stream.source import OpencvSource, MultiSource
 
 # setting
 from settings import (COLOR_DANG,
@@ -459,13 +459,13 @@ def recognition_track_let_serv(args):
                     _source = SOURCE_CONF.get("cam_1")
                     _source_name = "rtsp_video_cam_1"
 
-                cap = OpencvSource(src=_source, name=_source_name, width=int(CAMERA_MODEL_CONF.get("width")),
-                                   height=int(CAMERA_MODEL_CONF.get("height")))
+                cap = MultiSource(src=_source, name=_source_name, width=int(CAMERA_MODEL_CONF.get("width")),
+                                  height=int(CAMERA_MODEL_CONF.get("height")))
 
                 watch_list = []
 
                 logger.success("[OK] Ready to start")
-                while cap.isOpened():
+                while True:
 
                     try:
                         ret, frame = cap.read()
