@@ -1,0 +1,8 @@
+samsung:
+  display_log: true
+  output_size:
+  - 640
+  - 480
+  queue_size: 10
+  source: rtsp://192.168.1.100:8080/video/h264
+  type: protocol
