@@ -8,3 +8,7 @@ class InvalidPrefixError(Exception):
 
 class NpyFileNotFoundError(Exception):
     pass
+
+
+class IdentityIsExistsError(Exception):
+    pass

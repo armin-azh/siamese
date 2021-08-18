@@ -52,6 +52,69 @@ class EmbeddingService(BasicService):
             return np.empty((0, 4))
 
 
+class ClusteringService(EmbeddingService):
+    def __init__(self, name, log_path: Path, display=True, *args, **kwargs):
+        super(ClusteringService, self).__init__(name=name, log_path=log_path, display=display, *args, **kwargs)
+
+    def exec_(self, *args, **kwargs) -> None:
+
+        physical_devices = tf.config.list_physical_devices('GPU')
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+        msg = f"[Start] clustering server is now starting"
+        self._file_logger.info(msg)
+        if self._display:
+            self._console_logger.success(msg)
+
+        with tf.device('/device:gpu:0'):
+            with tf.Graph().as_default():
+                with tf.compat.v1.Session() as sess:
+
+                    # face detector
+                    self._f_d.load_model(session=sess)
+                    msg = f"[OK] face detector model loaded"
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
+
+                    # head pose estimator
+                    self._hpe_model.load_model()
+                    msg = f"[OK] head pose estimator loaded"
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
+
+                    # load embedding network
+                    self._embedded.load_model()
+                    msg = f"[OK] embedding model loaded."
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
+
+                    while True:
+                        o_frame, v_frame, v_id, v_timestamp = self._vision.next_stream()
+
+                        if v_frame is None and v_id is None and v_timestamp is None:
+                            continue
+
+                        scale_ratio = self._scale_factor(origin_shape=o_frame.shape, conv_shape=v_frame.shape)
+
+                        f_bound, f_landmarks = self._f_d.extract(im=v_frame)
+                        origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
+                        origin_gray_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
+                        origin_gray_full_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="full")
+
+                        head_scores = self._hpe_model.estimate_poses(sess, origin_gray_one_ch_frame,
+                                                                     origin_f_bound.astype(np.int))
+                        has_head, has_no_head = self._hpe_model.validate_angle(head_scores)
+
+                        if has_no_head.shape[0]:
+                            msg = f"[Drop] {head_scores.shape[0]} face have been dropped."
+                            self._file_logger.info(msg)
+                            if self._display:
+                                self._console_logger.warn(msg)
+
+
 class RawVisualService(EmbeddingService):
     COLOR_DEFAULT = (0, 0, 255)
     COLOR_DODGER_BLUE = (255, 144, 30)

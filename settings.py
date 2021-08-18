@@ -56,3 +56,12 @@ SETTINGS_HEADER = ["Default",
 COLOR_SUCCESS = (0, 255, 0)
 COLOR_DANG = (243, 32, 19)
 COLOR_WARN = (255, 255, 0)
+
+# # paths
+# # store mask video
+# PATH_MASK = pathlib.Path(BASE_DIR).joinpath("mask")
+# PATH_MASK.mkdir(parents=True, exist_ok=True)
+#
+# # store normal video
+# PATH_NORMAL = pathlib.Path(BASE_DIR).joinpath("normal")
+# PATH_NORMAL.mkdir(parents=True, exist_ok=True)

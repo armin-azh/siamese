@@ -7,7 +7,7 @@ from v2.core.network import (MultiCascadeFaceDetector,
                              FaceNetModel,
                              MaskModel,
                              HPEModel)
-from v2.core.engine import RawVisualService
+from v2.core.engine import RawVisualService, ClusteringService
 from v2.tools.logger import LOG_Path
 from settings import (CAMERA_MODEL_CONF,
                       BASE_DIR,
@@ -17,6 +17,12 @@ from settings import (CAMERA_MODEL_CONF,
                       DEFAULT_CONF,
                       MASK_CONF,
                       HPE_CONF)
+from settings import (PATH_NORMAL,
+                      PATH_MASK)
+
+
+def clustering_v1_service(phase="normal") -> ClusteringService:
+    pass
 
 
 def raw_visual_v1_service() -> RawVisualService:

@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from pathlib import Path
 from uuid import uuid1
-from typing import List, Generator
+from typing import List, Generator, Union
 import json
 
 # model
@@ -30,11 +30,6 @@ class Identity:
         em_path.mkdir(parents=True, exist_ok=True)
         self._mask_npy_file = em_path.joinpath("mask.npy")
         self._normal_npy_file = em_path.joinpath("normal.npy")
-
-        if kwargs["is_new"]:
-            pass
-        else:
-            self._images = []
 
         super(Identity, self).__init__(*args, **kwargs)
 
@@ -131,9 +126,36 @@ class Database(BasicDatabase):
         if not db_path.is_dir():
             raise InvalidDatabasePathError(f"the path {str(db_path)} is not a directory")
         self._db_path = db_path
-        self._db_path.mkdir(parents=True,exist_ok=True)
+        self._db_path.mkdir(parents=True, exist_ok=True)
         super(Database, self).__init__(*args, **kwargs)
 
     def __initial_db(self):
         pass
 
+    def __get_uu_ids(self) -> Generator:
+        for _p in self._db_path.glob('*'):
+            yield _p.stem
+
+    def __search_uu_id(self, uu_id: str) -> Union[Path, None]:
+        """
+        check a specific uu_id is exists or not
+        :param uu_id:
+        :return:
+        """
+        _paths = list(self._db_path.glob(uu_id))
+        return None if len(_paths) == 0 else _paths[0]
+
+    def add_new_identity(self, uu_id: str):
+        id_path = self.__search_uu_id(uu_id)
+        if id_path is not None:
+            raise IdentityIsExistsError(f"Identity wit ID {uu_id} is exists")
+        n_id_path = self._db_path.joinpath(uu_id)
+        n_id_path.mkdir(exist_ok=True)
+        n_id = Identity(root_path=n_id_path, uu_id=uu_id)
+        return n_id
+
+    def get_identity(self, uu_id: str):
+        id_path = self.__search_uu_id(uu_id)
+        if id_path is None:
+            raise IdentityIsExistsError(f"Identity with ID {uu_id} is Not exists")
+        return Identity(root_path=id_path, uu_id=id_path.stem)
