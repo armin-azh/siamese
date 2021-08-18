@@ -72,6 +72,9 @@ from settings import (BASE_DIR,
 # serializer
 from .serializer import face_serializer
 
+# logs
+from v2.tools.logger import LOG_Path, FileLogger
+
 
 # signal
 # from .signals import control_c_signal_handler
@@ -349,6 +352,12 @@ def recognition_serv_2(args):
 
 def recognition_track_let_serv(args):
     # image size
+    debug_mode = args.debug
+    log_path = LOG_Path.joinpath("server")
+    log_path.mkdir(parents=True, exist_ok=True)
+    _cu = datetime.strftime(datetime.now(), '%Y%m%d-%H%M%S')
+
+    file_logger = FileLogger(log_path=log_path.joinpath(f"{_cu}.log"), name="server")
     output_size = (int(IMAGE_CONF.get('width')), int(IMAGE_CONF.get('height')))
 
     # logger
@@ -414,12 +423,16 @@ def recognition_track_let_serv(args):
     )
 
     cnt = 0
-
+    msg = None
     if database.is_db_stable():
-        logger.success("[Stable] Database is stable")
+        msg = "[Stable] Database is stable"
+        file_logger.info(msg)
+        logger.success(msg)
         stable_mode = True
     else:
-        logger.dang("[Not Stable] Database is not stable, build npy or register someone!")
+        msg = "[Not Stable] Database is not stable, build npy or register someone!"
+        file_logger.info(msg)
+        logger.dang(msg)
         stable_mode = False
 
     # computation graph
@@ -463,20 +476,19 @@ def recognition_track_let_serv(args):
                                   height=int(CAMERA_MODEL_CONF.get("height")))
 
                 watch_list = []
-
-                logger.success("[OK] Ready to start")
+                msg = "[OK] Ready to start"
+                file_logger.info(msg)
+                logger.success(msg)
                 while True:
 
                     try:
                         ret, frame = cap.read()
 
                         if not ret:
-                            logger.dang("[Failure] Frame is not retrieved from source camera")
+                            msg = "[Failure] Frame is not retrieved from source camera"
+                            file_logger.info(msg)
+                            logger.dang(msg)
                             continue
-
-                        print(frame.shape)
-                        print(frame)
-                        print(ret)
 
                         serial_event = []
 
@@ -500,8 +512,12 @@ def recognition_track_let_serv(args):
                             exp_cont.sort(key=lambda pol: pol.counter, reverse=True)
                             if len(exp_cont) > 1:
                                 names = [c.name for c in exp_cont]
-                                logger.warn(
-                                    f"[EXPIRE] Tracker With ID {exp_cont[0].alias_name} With Name/Names {names}")
+
+                                msg = f"[EXPIRE] Tracker With ID {exp_cont[0].alias_name} With Name/Names {names}"
+                                file_logger.info(msg)
+                                if debug_mode:
+                                    logger.warn(msg)
+
                                 first_gt_pol = exp_cont[0]
                                 sec_gt_pol = exp_cont[1]
 
@@ -517,10 +533,17 @@ def recognition_track_let_serv(args):
 
                                         serial_event.append(serial_)
 
-                                        logger.warn(f"----> Choose Unknown")
+                                        msg = f"----> Choose Unknown"
+                                        file_logger.info(msg)
+                                        if debug_mode:
+                                            logger.warn(msg)
+
                                     else:
-                                        logger.warn(f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach "
-                                                    f"the quorum")
+                                        msg = f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach the " \
+                                              f"quorum "
+                                        file_logger.info(msg)
+                                        if debug_mode:
+                                            logger.warn(msg)
 
                                 elif not first_gt_pol.mark and first_gt_pol.alias_name:
                                     if first_gt_pol.alias_name in watch_list:
@@ -539,9 +562,13 @@ def recognition_track_let_serv(args):
                                                                       image_path=first_gt_pol.filename,
                                                                       confidence=round(score * 100, 2))
                                             serial_event.append(serial_)
-                                            logger.warn(
-                                                f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} "
-                                                f"Confidence: {first_gt_pol.confidence} Sent: No")
+
+                                            msg = f"----> Choose {first_gt_pol.name}-> Counter: {first_gt_pol.counter} " \
+                                                  f"Confidence: {first_gt_pol.confidence} Sent: No"
+                                            file_logger.info(msg)
+                                            if debug_mode:
+                                                logger.warn(msg)
+
                                         else:
                                             if tracker_container.validate(n_id=first_gt_pol.alias_name):
                                                 now_ = datetime.now()
@@ -554,12 +581,17 @@ def recognition_track_let_serv(args):
 
                                                 serial_event.append(serial_)
 
-                                                logger.warn(f"----> Choose Unknown")
+                                                msg = f"----> Choose Unknown"
+                                                file_logger.info(msg)
+                                                if debug_mode:
+                                                    logger.warn(msg)
 
                                             else:
-                                                logger.warn(
-                                                    f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach "
-                                                    f"the quorum")
+                                                msg = f"[NO REACH] Tracker With ID {first_gt_pol.alias_name} Can`t reach " \
+                                                      f"the quorum"
+                                                file_logger.info(msg)
+                                                if debug_mode:
+                                                    logger.warn(msg)
 
                                 unrecognized_tracker.drop_with_alias_name(first_gt_pol.alias_name)
                                 tracker.drop_with_alias_name(first_gt_pol.alias_name)
@@ -581,9 +613,13 @@ def recognition_track_let_serv(args):
                                                                   image_path=ex_tk.filename,
                                                                   confidence=round(score * 100, 2))
                                         serial_event.append(serial_)
-                                        logger.warn(
-                                            f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> "
-                                            f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: No")
+
+                                        msg = f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> " \
+                                              f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: No"
+                                        file_logger.info(msg)
+                                        if debug_mode:
+                                            logger.warn(msg)
+
                                     else:
                                         if tracker_container.validate(n_id=ex_tk.alias_name):
                                             now_ = datetime.now()
@@ -596,19 +632,25 @@ def recognition_track_let_serv(args):
 
                                             serial_event.append(serial_)
 
-                                            logger.warn(f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names "
-                                                        f"unknown-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence}"
-                                                        )
+                                            msg = f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names " \
+                                                  f"unknown-> Counter: {ex_tk.counter} Confidence: {ex_tk.confidence}"
+                                            file_logger.info(msg)
+                                            if debug_mode:
+                                                logger.warn(msg)
 
                                         else:
-                                            logger.warn(
-                                                f"[NO REACH] Tracker With ID {ex_tk.alias_name} Can`t reach the "
-                                                f"quorum")
+                                            msg = f"[NO REACH] Tracker With ID {ex_tk.alias_name} Can`t reach the " \
+                                                  f"quorum"
+                                            file_logger.info(msg)
+                                            if debug_mode:
+                                                logger.warn(msg)
 
                                 else:
-                                    logger.warn(
-                                        f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> "
-                                        f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: Yes")
+                                    msg = f"[EXPIRE] Tracker With ID {ex_tk.alias_name} With Name/Names {ex_tk.name}-> " \
+                                          f"Counter: {ex_tk.counter} Confidence: {ex_tk.confidence} Sent: Yes"
+                                    file_logger.info(msg)
+                                    if debug_mode:
+                                        logger.warn(msg)
 
                                 unrecognized_tracker.drop_with_alias_name(ex_tk.alias_name)
                                 tracker.drop_with_alias_name(ex_tk.alias_name)
@@ -628,17 +670,26 @@ def recognition_track_let_serv(args):
 
                                     serial_event.append(serial_)
 
-                                    logger.warn(
-                                        f"[EXPIRE] Unrecognized Tracker With ID {exp_.alias_name} With Name/Names "
-                                        f"unknown-> Counter: {exp_.counter} Sent: No")
+                                    msg = f"[EXPIRE] Unrecognized Tracker With ID {exp_.alias_name} With Name/Names " \
+                                          f"unknown-> Counter: {exp_.counter} Sent: No"
+                                    file_logger.info(msg)
+                                    if debug_mode:
+                                        logger.warn(msg)
+
                                 else:
-                                    logger.warn(
-                                        f"[NO REACH] Unrecognized Tracker With ID {exp_.alias_name} Can`t reach the "
-                                        f"quorum")
+                                    msg = f"[NO REACH] Unrecognized Tracker With ID {exp_.alias_name} Can`t reach the " \
+                                          f"quorum"
+                                    file_logger.info(msg)
+                                    if debug_mode:
+                                        logger.warn(msg)
+
                             else:
-                                logger.warn(
-                                    f"[EXPIRE] Unrecognized Tracker With ID {exp_.alias_name} -> "
-                                    f"Counter: {exp_.counter} Sent: Yes")
+
+                                msg = f"[EXPIRE] Unrecognized Tracker With ID {exp_.alias_name} -> " \
+                                      f"Counter: {exp_.counter} Sent: Yes"
+                                file_logger.info(msg)
+                                if debug_mode:
+                                    logger.warn(msg)
 
                         frame_size = frame.shape
 
@@ -667,13 +718,17 @@ def recognition_track_let_serv(args):
                                     final_bounding_box.append(bounding_box)
                                     final_status.append(res[1].name)
                                     __tilt, __pan = res[1].angle
-                                    logger.info(
-                                        f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> "
-                                        f"Counter {res[1].counter} Confidence {round(float(res[1].confidence), 3)} "
-                                        f"Bounding Box {bounding_box} "
-                                        f"Tilt {round(float(__tilt), 3)} "
-                                        f"Pan {round(float(__pan), 3)}",
-                                        white=True)
+
+                                    msg = f"[OK] +Recognized Tracker ID {res[1].alias_name} With Name {res[1].name}-> " \
+                                          f"Counter {res[1].counter} Confidence {round(float(res[1].confidence), 3)} " \
+                                          f"Bounding Box {bounding_box} " \
+                                          f"Tilt {round(float(__tilt), 3)} " \
+                                          f"Pan {round(float(__pan), 3)}"
+
+                                    file_logger.info(msg)
+                                    if debug_mode:
+                                        logger.info(msg, white=True)
+
                                     # print("Result", res[1].name, sep=" ")
                                 else:
                                     tracks_bounding_box_to.append(bounding_box)
@@ -701,7 +756,11 @@ def recognition_track_let_serv(args):
                         # Drop
                         if com_pos_idx.shape[0] > 0:
                             for c_idx in com_pos_idx:
-                                logger.dang(f"[DROP] Face With Tilt {poses[c_idx, 0]} Pan {poses[c_idx, 1]}")
+                                msg = f"[DROP] Face With Tilt {poses[c_idx, 0]} Pan {poses[c_idx, 1]}"
+
+                                file_logger.info(msg)
+                                if debug_mode:
+                                    logger.dang(msg)
 
                         if tracks_face_to.shape[0] > 0 and right_pose_idx.shape[0] > 0:
                             # update
@@ -750,13 +809,18 @@ def recognition_track_let_serv(args):
                                             tk_.angle = (poses[i, 0], poses[i, 1])
                                             tk_.confidence = bs_similarity[i]
                                             tracker_container(n_id=tk_.alias_name)
-                                            logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
-                                                        f"Unknown -> Counter {tk_.counter} "
-                                                        f"Confidence {round(float(tk_.confidence), 3)} "
-                                                        f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]} "
-                                                        f"Tilt {round(float(poses[i, 0]), 3)} "
-                                                        f"Pan {round(float(poses[i, 1]), 3)}",
-                                                        white=True)
+
+                                            msg = f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name " \
+                                                  f"Unknown -> Counter {tk_.counter} " \
+                                                  f"Confidence {round(float(tk_.confidence), 3)} " \
+                                                  f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]} " \
+                                                  f"Tilt {round(float(poses[i, 0]), 3)} " \
+                                                  f"Pan {round(float(poses[i, 1]), 3)}"
+
+                                            file_logger.info(msg)
+                                            if debug_mode:
+                                                logger.info(msg, white=True)
+
                                             tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
                                             if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                                 # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
@@ -776,13 +840,16 @@ def recognition_track_let_serv(args):
                                             tracker_container(n_id=tk_.alias_name)
                                             tk_.angle = (poses[i, 0], poses[i, 1])
                                             tk_.confidence = bs_similarity[i]
-                                            logger.info(
-                                                f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> "
-                                                f"Counter {tk_.counter} Confidence {round(float(tk_.confidence), 3)} "
-                                                f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]} "
-                                                f"Tilt {round(float(poses[i, 0]), 3)} "
-                                                f"Pan {round(float(poses[i, 1]), 3)}",
-                                                white=True)
+
+                                            msg = f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name {tk_.name}-> " \
+                                                  f"Counter {tk_.counter} Confidence {round(float(tk_.confidence), 3)} " \
+                                                  f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]} " \
+                                                  f"Tilt {round(float(poses[i, 0]), 3)} " \
+                                                  f"Pan {round(float(poses[i, 1]), 3)}"
+
+                                            file_logger.info(msg)
+                                            if debug_mode:
+                                                logger.info(msg, white=True)
 
                                             tk_.save_image(cap.original_frame[y1:y2, x1:x2], face_save_path)
 
@@ -827,10 +894,14 @@ def recognition_track_let_serv(args):
                                     tk_, _ = unrecognized_tracker(name=tk_status, alias_name=tk_status)
                                     tk_.angle = (poses[i, 0], poses[i, 1])
                                     tracker_container(n_id=tk_.alias_name)
-                                    logger.info(f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name "
-                                                f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} "
-                                                f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]} ",
-                                                white=True)
+
+                                    msg = f"[OK] -Recognized Tracker ID {tk_.alias_name} With Name " \
+                                          f"Unknown -> Counter {tk_.counter} Confidence {tk_.confidence} " \
+                                          f"Bounding Box {[x1_t, y1_t, x2_t, y2_t]} "
+
+                                    file_logger.info(msg)
+                                    if debug_mode:
+                                        logger.info(msg, white=True)
 
                                     if tk_.status == Policy.STATUS_CONF and not tk_.mark and status[0]:
                                         # print(f"=> Unrecognized with id {tk_status} {bs_similarity[i]}")
@@ -848,8 +919,15 @@ def recognition_track_let_serv(args):
                         if serial_event:
                             json_obj = json.dumps({"data": serial_event})
                             sock.sendto(json_obj.encode(), address)
-                            logger.warn("[SEND] " + f"{address[0]}:{address[1]} " + json_obj)
+
+                            msg = "[SEND] " + f"{address[0]}:{address[1]} " + json_obj
+
+                            file_logger.info(msg)
+                            if debug_mode:
+                                logger.warn(msg)
 
                     except KeyboardInterrupt:
-                        logger.warn("[Shutdown] Server is Shutting down")
+                        msg = "[Shutdown] Server is Shutting down"
+                        file_logger.info(msg)
+                        logger.warn(msg)
                         sys.exit(0)

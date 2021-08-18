@@ -118,6 +118,7 @@ if __name__ == "__main__":
     parser.add_argument("--download_models", help="download model and save on local storage", action='store_true')
     parser.add_argument("--scene", help="scenario detail", type=str, default='')
     parser.add_argument("--generate_id", help="generate id", action="store_true")
+    parser.add_argument("--debug", help="debug mode or not", action="store_true")
 
     args = parser.parse_args()
 
