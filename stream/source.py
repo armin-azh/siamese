@@ -103,7 +103,7 @@ class MultiSource(Source):
         super(MultiSource, self).__init__(*args, **kwargs)
 
     def read(self):
-        origin_frame, frame,cap_id,time_stamp = self._source.next_stream()
+        origin_frame, frame, cap_id, time_stamp = self._source.next_stream()
         # print(frame.dtype)
         self._origin_frame = origin_frame.copy() if origin_frame is not None else None
         self._origin_size = origin_frame.shape[:2] if origin_frame is not None else None

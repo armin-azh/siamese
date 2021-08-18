@@ -6,3 +6,4 @@ samsung:
   queue_size: 10
   source: rtsp://192.168.1.100:8080/video/h264
   type: protocol
+  uuid: 66222b52003b11ecb7991c5a3e4e6f52

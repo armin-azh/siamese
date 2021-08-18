@@ -474,6 +474,10 @@ def recognition_track_let_serv(args):
                             logger.dang("[Failure] Frame is not retrieved from source camera")
                             continue
 
+                        print(frame.shape)
+                        print(frame)
+                        print(ret)
+
                         serial_event = []
 
                         frame_ = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

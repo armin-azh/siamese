@@ -123,7 +123,7 @@ class BaseSource:
 
         if self._frame_dequeue and self._online:
             frame = self._frame_dequeue[-1].get_pixel
-            return self._convertor.normalize(mat=frame), frame, self._frame_dequeue[-1].timestamp
+            return frame,self._convertor.normalize(mat=frame), self._frame_dequeue[-1].timestamp
         else:
             return None, None, None
 
