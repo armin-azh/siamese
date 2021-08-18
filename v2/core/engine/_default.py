@@ -103,6 +103,13 @@ class RawVisualService(EmbeddingService):
                     if self._display:
                         self._console_logger.success(msg)
 
+                    # load embedding network
+                    self._embedded.load_model()
+                    msg = f"[OK] embedding model loaded."
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
+
                     while True:
                         o_frame, v_frame, v_id, v_timestamp = self._vision.next_stream()
 
@@ -133,6 +140,8 @@ class RawVisualService(EmbeddingService):
                             mask_scores = self._mask_d.predict(origin_gray_full_ch_frame,
                                                                origin_f_bound[has_head, ...].astype(np.int))
                             has_mask, has_no_mask = self._mask_d.validate_mask(mask_scores)
+
+
 
                             print(has_mask)
                             print(has_no_mask)
