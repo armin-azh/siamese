@@ -115,6 +115,10 @@ class BaseSource:
     def source_type(self) -> str:
         return self._src_type
 
+    @property
+    def source(self):
+        return self._src
+
     def stream(self):
         self._last_modified_time = self.__modify_date_time()
         if not self._online:

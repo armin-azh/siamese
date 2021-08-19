@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Union
 from pathlib import Path
 
 from ._base import BaseSource
@@ -8,7 +8,8 @@ from .exceptions import *
 
 
 class FileSource(BaseSource):
-    def __init__(self, uuid: str, src: Path, output_size: Tuple[int, int], queue_size: int, logg_path: Path,
+    def __init__(self, uuid: Union[None, str], src: Path, output_size: Tuple[int, int], queue_size: int,
+                 logg_path: Path,
                  display: bool = False):
         if not src.exists():
             raise SourceIsNotExist("this source is not exists")
@@ -49,7 +50,7 @@ class FileSource(BaseSource):
     def stream(self):
         if not self._online:
             self._spin(1)
-            return None, None, self._finished
+            return None, None, self._finished, None
 
         if self._frame_dequeue and self._online:
             frame = self._frame_dequeue[-1].get_pixel

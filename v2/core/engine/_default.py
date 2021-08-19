@@ -1,5 +1,6 @@
 from typing import Tuple
-from typing import Union
+from typing import Union, List
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -7,6 +8,8 @@ import tensorflow as tf
 
 from ._basic import BasicService
 from pathlib import Path
+
+from v2.core.source import FileSourceModel
 
 from v2.core.source import SourcePool
 from v2.core.network import (MultiCascadeFaceDetector,
@@ -16,13 +19,14 @@ from v2.core.network import (MultiCascadeFaceDetector,
 from v2.core.db import SimpleDatabase
 from v2.core.nomalizer import GrayScaleConvertor
 from v2.core.distance import CosineDistanceV2, CosineDistanceV1
-from v2.tools import draw_cure_face
+from v2.tools import draw_cure_face, Counter
 
 
 class EmbeddingService(BasicService):
-    def __init__(self, name, log_path: Path, source_pool: SourcePool, face_detector: Union[MultiCascadeFaceDetector],
+    def __init__(self, name, log_path: Path, source_pool: Union[SourcePool, List[FileSourceModel]],
+                 face_detector: Union[MultiCascadeFaceDetector],
                  embedded: Union[FaceNetModel], database: Union[SimpleDatabase],
-                 distance: Union[CosineDistanceV2, CosineDistanceV1], mask_detector: Union[MaskModel],
+                 distance: Union[CosineDistanceV2, CosineDistanceV1, None], mask_detector: Union[MaskModel, None],
                  hpe: Union[HPEModel], display=True,
                  *args, **kwargs):
         self._vision = source_pool
@@ -54,7 +58,8 @@ class EmbeddingService(BasicService):
 
 class ClusteringService(EmbeddingService):
     def __init__(self, name, log_path: Path, display=True, *args, **kwargs):
-        super(ClusteringService, self).__init__(name=name, log_path=log_path, display=display, *args, **kwargs)
+        super(ClusteringService, self).__init__(name=name, log_path=log_path, mask_detector=None, distance=None,
+                                                display=display, *args, **kwargs)
 
     def exec_(self, *args, **kwargs) -> None:
 
@@ -91,28 +96,45 @@ class ClusteringService(EmbeddingService):
                     if self._display:
                         self._console_logger.success(msg)
 
-                    while True:
-                        o_frame, v_frame, v_id, v_timestamp = self._vision.next_stream()
+                    n_src = len(self._vision)
 
-                        if v_frame is None and v_id is None and v_timestamp is None:
-                            continue
+                    for src in self._vision:
 
-                        scale_ratio = self._scale_factor(origin_shape=o_frame.shape, conv_shape=v_frame.shape)
+                        msg = f"[Start] {src.source} is now reading."
+                        self._file_logger.info(msg)
+                        if self._display:
+                            self._console_logger.success(msg)
 
-                        f_bound, f_landmarks = self._f_d.extract(im=v_frame)
-                        origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
-                        origin_gray_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
-                        origin_gray_full_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="full")
+                        new_identity_uuid = Path(src.source).stem
 
-                        head_scores = self._hpe_model.estimate_poses(sess, origin_gray_one_ch_frame,
-                                                                     origin_f_bound.astype(np.int))
-                        has_head, has_no_head = self._hpe_model.validate_angle(head_scores)
+                        cnt = Counter(limit=None)
+                        while True:
+                            cnt.next()
+                            o_frame, v_frame, finished, _ = src.stream()
 
-                        if has_no_head.shape[0]:
-                            msg = f"[Drop] {head_scores.shape[0]} face have been dropped."
-                            self._file_logger.info(msg)
-                            if self._display:
-                                self._console_logger.warn(msg)
+                            print(o_frame, v_frame, finished, sep=" ")
+
+                            if o_frame is None and v_frame is None and finished:
+                                continue
+
+                            scale_ratio = self._scale_factor(origin_shape=o_frame.shape, conv_shape=v_frame.shape)
+
+                            f_bound, f_landmarks = self._f_d.extract(im=v_frame)
+                            origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
+                            origin_gray_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
+                            origin_gray_full_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="full")
+
+                            head_scores = self._hpe_model.estimate_poses(sess, origin_gray_one_ch_frame,
+                                                                         origin_f_bound.astype(np.int))
+                            has_head, has_no_head = self._hpe_model.validate_angle(head_scores)
+
+                            if has_no_head.shape[0]:
+                                msg = f"[Drop] {head_scores.shape[0]} face have been dropped."
+                                self._file_logger.info(msg)
+                                if self._display:
+                                    self._console_logger.warn(msg)
+
+                        print(cnt())
 
 
 class RawVisualService(EmbeddingService):
@@ -203,8 +225,6 @@ class RawVisualService(EmbeddingService):
                             mask_scores = self._mask_d.predict(origin_gray_full_ch_frame,
                                                                origin_f_bound[has_head, ...].astype(np.int))
                             has_mask, has_no_mask = self._mask_d.validate_mask(mask_scores)
-
-
 
                             print(has_mask)
                             print(has_no_mask)
