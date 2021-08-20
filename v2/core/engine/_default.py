@@ -10,6 +10,7 @@ from ._basic import BasicService
 from pathlib import Path
 
 from v2.core.source import FileSourceModel
+from v2.core.cluster import k_mean_clustering
 from v2.contrib.images import Image
 from v2.core.source import SourcePool
 from v2.core.network import (MultiCascadeFaceDetector,
@@ -58,9 +59,10 @@ class EmbeddingService(BasicService):
 
 
 class ClusteringService(EmbeddingService):
-    def __init__(self, name, log_path: Path, display=True, *args, **kwargs):
+    def __init__(self, name, log_path: Path, n_cluster: int, display=True, *args, **kwargs):
         self._space_normalizer = SpaceConvertor((640, 480))
         self._face_net_160_nomr = FaceNet160Cropper()
+        self._n_cluster = n_cluster
         super(ClusteringService, self).__init__(name=name, log_path=log_path, mask_detector=None, distance=None,
                                                 display=display, *args, **kwargs)
 
@@ -145,8 +147,6 @@ class ClusteringService(EmbeddingService):
                                                                          origin_f_bound.astype(np.int))
                             has_head, has_no_head = self._hpe_model.validate_angle(head_scores)
 
-                            print(has_head.shape)
-
                             if has_no_head.shape[0]:
                                 msg = f"[Drop] {head_scores.shape[0]} face have been dropped."
                                 self._file_logger.info(msg)
@@ -162,17 +162,36 @@ class ClusteringService(EmbeddingService):
                                                                                       offset_per=0,
                                                                                       cropping="large")[0, :, :, :])
                                 color_cropped.append(Image(im=self._face_net_160_nomr.normalize(mat=o_frame,
-                                                                                       b_mat=origin_f_bound.astype(
-                                                                                           np.int),
-                                                                                       interpolation=cv2.INTER_LINEAR,
-                                                                                       offset_per=0,
-                                                                                       cropping="large")[0, :, :, :],
+                                                                                                b_mat=origin_f_bound.astype(
+                                                                                                    np.int),
+                                                                                                interpolation=cv2.INTER_LINEAR,
+                                                                                                offset_per=0,
+                                                                                                cropping="large")[0, :,
+                                                              :, :],
                                                            file_path=None))
 
                         gray_cropped = np.array(gray_cropped)
-                        iden.write_images(color_cropped)
+                        if gray_cropped.shape[0] < self._n_cluster:
+                            msg = f"[Failed] number of extracted faced is less than the number of clusters"
+                            self._file_logger.info(msg)
+                            if self._display:
+                                self._console_logger.dang(msg)
+                        if gray_cropped.shape[0] > 0:
+                            embs = self._embedded.get_embeddings(session=sess, input_im=gray_cropped)
+                            _, centroids = k_mean_clustering(embeddings=embs, n_cluster=self._n_cluster)
+                            iden.write_embeddings(centroids)
 
-                        print(gray_cropped.shape)
+                        iden.write_images(color_cropped)
+                        if gray_cropped.shape[0] < self._n_cluster:
+                            msg = f"[Finish] {new_identity_uuid} clustering finished."
+                            self._file_logger.info(msg)
+                            if self._display:
+                                self._console_logger.dang(msg)
+
+                    msg = f"[Done] Clustering service job finished."
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
 
 
 class RawVisualService(EmbeddingService):

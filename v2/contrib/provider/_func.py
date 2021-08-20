@@ -31,6 +31,8 @@ def clustering_v1_service(phase="normal") -> ClusteringService:
     else:
         raise ValueError("wrong phase")
 
+    n_cluster = int(GALLERY_CONF.get("n_clusters"))
+
     files_sources = [_file for _file in files if _file.is_file()]
 
     minsize = int(DETECTOR_CONF.get("min_face_size"))
@@ -68,6 +70,7 @@ def clustering_v1_service(phase="normal") -> ClusteringService:
                              database=db,
                              hpe=hpe,
                              log_path=LOG_Path,
+                             n_cluster=n_cluster,
                              name="basic_raw_visualization_service")
 
 
