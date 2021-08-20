@@ -31,8 +31,7 @@ def clustering_v1_service(phase="normal") -> ClusteringService:
     else:
         raise ValueError("wrong phase")
 
-    files_sources = [FileSourceModel(src=_file, output_size=(640, 480), queue_size=1000, logg_path=LOG_Path, uuid=None)
-                     for _file in files if _file.is_file()]
+    files_sources = [_file for _file in files if _file.is_file()]
 
     minsize = int(DETECTOR_CONF.get("min_face_size"))
     threshold = [
@@ -45,8 +44,9 @@ def clustering_v1_service(phase="normal") -> ClusteringService:
 
     embedded_model = FaceNetModel(model_path=base.joinpath(MODEL_CONF.get('facenet')))
 
-    db = SimpleDatabase(db_path=base.joinpath(GALLERY_CONF.get("database_path")))
+    # db = SimpleDatabase(db_path=base.joinpath(GALLERY_CONF.get("database_path")))
 
+    db = SimpleDatabase(db_path=Path("G:\\Documents\\Project\\facerecognition\\data\\temp\\db"))
     hpe_conf = (
         float(HPE_CONF.get("pan_left")),
         float(HPE_CONF.get("pan_right")),

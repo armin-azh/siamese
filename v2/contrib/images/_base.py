@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Union
 from pathlib import Path
 
 # exceptions
@@ -35,7 +35,8 @@ class BaseImage:
 
 
 class Image(BaseImage):
-    def __init__(self, file_path: Path, im: np.ndarray, in_memory: bool = True, *args, **kwargs):
+    def __init__(self, file_path: Union[Path, None], im: Union[np.ndarray, None], in_memory: bool = True, *args,
+                 **kwargs):
         if file_path is None and im is None:
             raise UndefinedSate("you can`t create Image instance with passing None value for both file_path and im")
         if file_path is not None and (not file_path.exists() or not file_path.is_file()):

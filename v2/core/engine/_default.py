@@ -10,16 +10,17 @@ from ._basic import BasicService
 from pathlib import Path
 
 from v2.core.source import FileSourceModel
-
+from v2.contrib.images import Image
 from v2.core.source import SourcePool
 from v2.core.network import (MultiCascadeFaceDetector,
                              FaceNetModel,
                              HPEModel,
                              MaskModel)
 from v2.core.db import SimpleDatabase
-from v2.core.nomalizer import GrayScaleConvertor
+from v2.core.nomalizer import GrayScaleConvertor, SpaceConvertor, FaceNet160Cropper
 from v2.core.distance import CosineDistanceV2, CosineDistanceV1
 from v2.tools import draw_cure_face, Counter
+from v2.core.db.exceptions import *
 
 
 class EmbeddingService(BasicService):
@@ -58,6 +59,8 @@ class EmbeddingService(BasicService):
 
 class ClusteringService(EmbeddingService):
     def __init__(self, name, log_path: Path, display=True, *args, **kwargs):
+        self._space_normalizer = SpaceConvertor((640, 480))
+        self._face_net_160_nomr = FaceNet160Cropper()
         super(ClusteringService, self).__init__(name=name, log_path=log_path, mask_detector=None, distance=None,
                                                 display=display, *args, **kwargs)
 
@@ -100,22 +103,36 @@ class ClusteringService(EmbeddingService):
 
                     for src in self._vision:
 
-                        msg = f"[Start] {src.source} is now reading."
+                        msg = f"[Start] {src} is now reading."
                         self._file_logger.info(msg)
                         if self._display:
                             self._console_logger.success(msg)
 
-                        new_identity_uuid = Path(src.source).stem
+                        new_identity_uuid = src.stem
+
+                        try:
+                            iden = self._db.add_new_identity(new_identity_uuid)
+                            msg = f"[New] {new_identity_uuid} identity created."
+                            self._file_logger.info(msg)
+                            if self._display:
+                                self._console_logger.success(msg)
+                        except IdentityIsExistsError:
+                            iden = self._db.get_identity(new_identity_uuid)
+                            msg = f"[Exists] {new_identity_uuid} identity is Exists."
+                            self._file_logger.info(msg)
+                            if self._display:
+                                self._console_logger.warn(msg)
 
                         cnt = Counter(limit=None)
-                        while True:
+                        cap = cv2.VideoCapture(str(src))
+                        color_cropped = []
+                        gray_cropped = []
+                        while cap.isOpened():
                             cnt.next()
-                            o_frame, v_frame, finished, _ = src.stream()
-
-                            print(o_frame, v_frame, finished, sep=" ")
-
-                            if o_frame is None and v_frame is None and finished:
-                                continue
+                            ret, o_frame = cap.read()
+                            if ret is None or o_frame is None:
+                                break
+                            v_frame = self._space_normalizer.normalize(o_frame)
 
                             scale_ratio = self._scale_factor(origin_shape=o_frame.shape, conv_shape=v_frame.shape)
 
@@ -128,13 +145,34 @@ class ClusteringService(EmbeddingService):
                                                                          origin_f_bound.astype(np.int))
                             has_head, has_no_head = self._hpe_model.validate_angle(head_scores)
 
+                            print(has_head.shape)
+
                             if has_no_head.shape[0]:
                                 msg = f"[Drop] {head_scores.shape[0]} face have been dropped."
                                 self._file_logger.info(msg)
                                 if self._display:
                                     self._console_logger.warn(msg)
 
-                        print(cnt())
+                            if has_head.shape[0]:
+                                origin_f_bound = origin_f_bound[has_head, :]
+                                gray_cropped.append(self._face_net_160_nomr.normalize(mat=origin_gray_full_ch_frame,
+                                                                                      b_mat=origin_f_bound.astype(
+                                                                                          np.int),
+                                                                                      interpolation=cv2.INTER_LINEAR,
+                                                                                      offset_per=0,
+                                                                                      cropping="large")[0, :, :, :])
+                                color_cropped.append(Image(im=self._face_net_160_nomr.normalize(mat=o_frame,
+                                                                                       b_mat=origin_f_bound.astype(
+                                                                                           np.int),
+                                                                                       interpolation=cv2.INTER_LINEAR,
+                                                                                       offset_per=0,
+                                                                                       cropping="large")[0, :, :, :],
+                                                           file_path=None))
+
+                        gray_cropped = np.array(gray_cropped)
+                        iden.write_images(color_cropped)
+
+                        print(gray_cropped.shape)
 
 
 class RawVisualService(EmbeddingService):
