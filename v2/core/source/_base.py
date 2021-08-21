@@ -82,6 +82,7 @@ class BaseSource:
                         self._online = False
                 else:
                     msg = f"[Reconnect] reconnect to the {self._src}"
+                    self._load_network_stream()
                     self._file_logger.info(msg)
                     if self._display_log:
                         self._console_logger.warn(msg)
