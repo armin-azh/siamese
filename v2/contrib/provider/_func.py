@@ -46,9 +46,9 @@ def clustering_v1_service(phase="normal") -> ClusteringService:
 
     embedded_model = FaceNetModel(model_path=base.joinpath(MODEL_CONF.get('facenet')))
 
-    # db = SimpleDatabase(db_path=base.joinpath(GALLERY_CONF.get("database_path")))
+    db = SimpleDatabase(db_path=base.joinpath(GALLERY_CONF.get("database_path")))
 
-    db = SimpleDatabase(db_path=Path("G:\\Documents\\Project\\facerecognition\\data\\temp\\db"))
+    # db = SimpleDatabase(db_path=Path("G:\\Documents\\Project\\facerecognition\\data\\temp\\db"))
     hpe_conf = (
         float(HPE_CONF.get("pan_left")),
         float(HPE_CONF.get("pan_right")),
