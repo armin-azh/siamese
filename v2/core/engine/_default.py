@@ -8,6 +8,8 @@ import tensorflow as tf
 
 from ._basic import BasicService
 from pathlib import Path
+from shutil import move
+import random
 
 from v2.core.source import FileSourceModel
 from v2.core.cluster import k_mean_clustering
@@ -22,6 +24,10 @@ from v2.core.nomalizer import GrayScaleConvertor, SpaceConvertor, FaceNet160Crop
 from v2.core.distance import CosineDistanceV2, CosineDistanceV1
 from v2.tools import draw_cure_face, Counter
 from v2.core.db.exceptions import *
+
+from .exceptions import *
+
+from settings import PATH_CAP
 
 
 class EmbeddingService(BasicService):
@@ -66,10 +72,13 @@ class ClusteringService(EmbeddingService):
         super(ClusteringService, self).__init__(name=name, log_path=log_path, mask_detector=None, distance=None,
                                                 display=display, *args, **kwargs)
 
-    def exec_(self, *args, **kwargs) -> None:
+    def exec_(self, phase, *args, **kwargs) -> None:
 
         physical_devices = tf.config.list_physical_devices('GPU')
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+        if phase not in ["mask", "normal"]:
+            raise PassInvalidPhaseError("you passed invalid phase name!")
 
         msg = f"[Start] clustering server is now starting"
         self._file_logger.info(msg)
@@ -170,6 +179,7 @@ class ClusteringService(EmbeddingService):
                                                               :, :],
                                                            file_path=None))
 
+                        cap.release()
                         gray_cropped = np.array(gray_cropped)
                         if gray_cropped.shape[0] < self._n_cluster:
                             msg = f"[Failed] number of extracted faced is less than the number of clusters"
@@ -179,14 +189,24 @@ class ClusteringService(EmbeddingService):
                         if gray_cropped.shape[0] > 0:
                             embs = self._embedded.get_embeddings(session=sess, input_im=gray_cropped)
                             _, centroids = k_mean_clustering(embeddings=embs, n_cluster=self._n_cluster)
-                            iden.write_embeddings(centroids)
+                            iden.write_embeddings(centroids, prefix=phase)
 
-                        iden.write_images(color_cropped)
+                        iden.write_images(color_cropped,prefix=phase)
                         if gray_cropped.shape[0] < self._n_cluster:
                             msg = f"[Finish] {new_identity_uuid} clustering finished."
                             self._file_logger.info(msg)
                             if self._display:
                                 self._console_logger.dang(msg)
+
+                        origin_src = Path(src)
+                        suf = random.randint(0, 1000)
+                        destination = PATH_CAP.joinpath(origin_src.stem + str(suf) + "_done" + origin_src.suffix)
+                        move(str(src), destination)
+
+                        msg = f"[Move] {origin_src.stem + origin_src.suffix} moved to {str(destination)}"
+                        self._file_logger.info(msg)
+                        if self._display:
+                            self._console_logger.success(msg)
 
                     msg = f"[Done] Clustering service job finished."
                     self._file_logger.info(msg)

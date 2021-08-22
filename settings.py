@@ -65,3 +65,7 @@ PATH_MASK.mkdir(parents=True, exist_ok=True)
 # store normal video
 PATH_NORMAL = pathlib.Path(BASE_DIR).joinpath(DEFAULT_CONF.get("save_video")).joinpath("normal")
 PATH_NORMAL.mkdir(parents=True, exist_ok=True)
+
+# store reviewed video
+PATH_CAP = pathlib.Path(BASE_DIR).joinpath(DEFAULT_CONF.get("save_video")).joinpath('reviewed')
+PATH_CAP.mkdir(parents=True, exist_ok=True)

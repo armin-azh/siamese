@@ -1,0 +1,2 @@
+class PassInvalidPhaseError(Exception):
+    pass
