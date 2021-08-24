@@ -2,8 +2,10 @@ import cv2
 import numpy as np
 from pathlib import Path
 from uuid import uuid1
-from typing import List, Generator, Union
+from typing import List, Generator, Union, Tuple
 import json
+from sklearn import preprocessing
+from sklearn.preprocessing._label import LabelEncoder as Label_DT
 
 # model
 from v2.contrib.images import Image
@@ -154,8 +156,60 @@ class Database(BasicDatabase):
         n_id = Identity(root_path=n_id_path, uu_id=uu_id)
         return n_id
 
-    def get_identity(self, uu_id: str):
+    def get_identity(self, uu_id: str) -> Identity:
         id_path = self.__search_uu_id(uu_id)
         if id_path is None:
             raise IdentityIsExistsError(f"Identity with ID {uu_id} is Not exists")
         return Identity(root_path=id_path, uu_id=id_path.stem)
+
+    def get_embedded(self, *args, **kwargs) -> Tuple[
+        np.ndarray, np.ndarray, Label_DT, np.ndarray, np.ndarray, Label_DT]:
+        """
+
+        :param args:
+        :param kwargs:
+        :return: normal_embeddings,normal_labels,normal_label_encoder,mask_embeddings,mask_labels,mask_label_encoder
+        """
+        mask_labels = []
+        normal_labels = []
+
+        masks_embed = []
+        normals_embed = []
+
+        normal_en_label = preprocessing.LabelEncoder()
+        mask_en_label = preprocessing.LabelEncoder()
+
+        for uu_id in self._db_path.glob("*"):
+            id_container = self.get_identity(uu_id.stem)
+
+            try:
+                normal_embed = id_container.load_embedding(prefix="normal")
+                normals_embed.append(normal_embed)
+                normal_labels += [uu_id.stem] * normal_embed.shape[0]
+            except NpyFileNotFoundError:
+                pass
+
+            try:
+                mask_embed = id_container.load_embedding(prefix="mask")
+                masks_embed.append(mask_embed)
+                mask_labels += [uu_id.stem] * mask_embed.shape[0]
+            except NpyFileNotFoundError:
+                pass
+
+        try:
+            masks_embed = np.concatenate(masks_embed, axis=0)
+        except ValueError:
+            masks_embed = np.empty((0, 512))
+
+        try:
+            normals_embed = np.concatenate(normals_embed, axis=0)
+        except ValueError:
+            normals_embed = np.empty((0, 512))
+
+        normal_en_label.fit(list(set(normal_labels)))
+        mask_en_label.fit(list(set(mask_labels)))
+
+        normal_labels = normal_en_label.transform(normal_labels)
+        mask_labels = mask_en_label.transform(mask_labels)
+
+        return normals_embed, normal_labels, normal_en_label, masks_embed, mask_labels, mask_en_label
