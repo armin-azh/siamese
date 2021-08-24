@@ -45,6 +45,7 @@ class EmbeddingService(BasicService):
         self._hpe_model = hpe
         self._mask_d = mask_detector
         self._gray_conv = GrayScaleConvertor()
+
         super(EmbeddingService, self).__init__(name=name, log_path=log_path, display=display, *args, **kwargs)
 
     def _scale_factor(self, origin_shape: Tuple[int, int], conv_shape: Tuple[int, int]) -> Tuple[float, float]:
@@ -191,7 +192,7 @@ class ClusteringService(EmbeddingService):
                             _, centroids = k_mean_clustering(embeddings=embs, n_cluster=self._n_cluster)
                             iden.write_embeddings(centroids, prefix=phase)
 
-                        iden.write_images(color_cropped,prefix=phase)
+                        iden.write_images(color_cropped, prefix=phase)
                         if gray_cropped.shape[0] < self._n_cluster:
                             msg = f"[Finish] {new_identity_uuid} clustering finished."
                             self._file_logger.info(msg)
@@ -220,6 +221,13 @@ class RawVisualService(EmbeddingService):
 
     def __init__(self, name, log_path: Path, display=True, *args, **kwargs):
         super(RawVisualService, self).__init__(name=name, log_path=log_path, display=display, *args, **kwargs)
+        self._normal_em, self._normal_lb, self._normal_en, self._mask_em, self._mask_lb, self._mask_en = self._db.get_embedded()
+
+    def _format_db(self):
+        msg = f"$ [DB] Normal Embeddings: {self._normal_em.shape[0]}, Mask Embeddings: {self._mask_em.shape[0]}"
+        self._file_logger.info(msg)
+        if self._display:
+            self._console_logger.success(msg)
 
     def _draw(self, mat: np.ndarray, box_mat: np.ndarray, label_mat: Union[np.ndarray, None] = None) -> np.ndarray:
 
@@ -239,6 +247,8 @@ class RawVisualService(EmbeddingService):
         self._file_logger.info(msg)
         if self._display:
             self._console_logger.success(msg)
+
+        self._format_db()
 
         with tf.device('/device:gpu:0'):
             with tf.Graph().as_default():
