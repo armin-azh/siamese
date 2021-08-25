@@ -329,11 +329,10 @@ class RawVisualService(EmbeddingService):
                             normal_embedded_160 = embedded_160[has_no_mask, ...]
                             mask_embedded_160 = embedded_160[has_mask, ...]
 
-                            if normal_embedded_160.shape[0]>0:
-                                pass
-                            if mask_embedded_160.shape[0]>0:
-                                pass
-
+                            if normal_embedded_160.shape[0] > 0:
+                                normal_dists = self._dist.calculate_distant(normal_embedded_160, self._normal_em)
+                            if mask_embedded_160.shape[0] > 0:
+                                mask_dists = self._dist.calculate_distant(mask_embedded_160, self._mask_em)
 
                         # display
                         display_frame = self._draw(o_frame, origin_f_bound, None)
