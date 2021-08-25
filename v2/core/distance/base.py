@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Tuple
 
 
 class BaseDistance:
@@ -20,6 +21,14 @@ class BaseDistance:
         this method extract the index there we want
         :param r_obs: calculate_distant result
         :return: indexes
+        """
+        raise NotImplementedError
+
+    def validate(self, r_obs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        this method validate r_obs values base on a threshold
+        :param r_obs:
+        :return: validate and not validate indexes
         """
         raise NotImplementedError
 

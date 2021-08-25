@@ -56,6 +56,11 @@ class CosineDistance(BaseDistance):
         min_obs = np.argmin(r_obs, axis=1)
         return r_obs[np.arange(len(min_obs)), min_obs], min_obs
 
+    def validate(self, r_obs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        _valid_ans = np.where(r_obs <= self._sim_threshold)
+        _invalid_ans = np.where(r_obs > self._sim_threshold)
+        return _valid_ans[0], _invalid_ans[0]
+
 
 class SklearnCosineDistance(BaseDistance):
 
@@ -87,6 +92,11 @@ class SklearnCosineDistance(BaseDistance):
             raise InCompatibleDimError("The n_obs is not compatible with bs_obs")
 
         return cosine_distances(n_obs, bs_obs)
+
+    def validate(self, r_obs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        _valid_ans = np.where(r_obs <= self._sim_threshold)
+        _invalid_ans = np.where(r_obs > self._sim_threshold)
+        return _valid_ans[0], _invalid_ans[0]
 
 
 class EuclideanDistance(BaseDistance):
@@ -132,6 +142,11 @@ class EuclideanDistance(BaseDistance):
             dists.append(self.__euclidean_similarity_1_k(vec, bs_obs))
         return np.array(dists)
 
+    def validate(self, r_obs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        _valid_ans = np.where(r_obs <= self._sim_threshold)
+        _invalid_ans = np.where(r_obs > self._sim_threshold)
+        return _valid_ans[0], _invalid_ans[0]
+
 
 class SklearnEuclideanDistance(BaseDistance):
 
@@ -163,3 +178,8 @@ class SklearnEuclideanDistance(BaseDistance):
             raise InCompatibleDimError("The n_obs is not compatible with bs_obs")
 
         return euclidean_distances(n_obs, bs_obs)
+
+    def validate(self, r_obs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        _valid_ans = np.where(r_obs <= self._sim_threshold)
+        _invalid_ans = np.where(r_obs > self._sim_threshold)
+        return _valid_ans[0], _invalid_ans[0]

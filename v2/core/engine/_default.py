@@ -332,17 +332,24 @@ class RawVisualService(EmbeddingService):
                             if normal_embedded_160.shape[0] > 0:
                                 normal_dists = self._dist.calculate_distant(normal_embedded_160, self._normal_em)
                                 normal_dists, normal_top_dists = self._dist.satisfy(normal_dists)
-                                normal_pred_en = self._normal_lb[normal_top_dists]
+                                normal_val_dists_idx, normal_in_val_dists_idx = self._dist.validate(normal_dists)
+                                normal_val_dists = normal_dists[normal_val_dists_idx]
+                                normal_in_val_dists = normal_dists[normal_in_val_dists_idx]
+                                normal_val_top_idx = normal_top_dists[normal_val_dists_idx]
+                                normal_in_val_top_idx = normal_top_dists[normal_in_val_dists_idx]
+                                normal_pred_en = self._normal_lb[normal_val_top_idx]
                                 normal_pred = self._normal_en.inverse_transform(normal_pred_en)
 
-                                print(normal_dists)
                             if mask_embedded_160.shape[0] > 0:
                                 mask_dists = self._dist.calculate_distant(mask_embedded_160, self._mask_em)
                                 mask_dists, mask_top_dists = self._dist.satisfy(mask_dists)
-                                mask_pred_en = self._mask_lb[mask_top_dists]
+                                mask_val_dists_idx, mask_in_val_dists_idx = self._dist.validate(mask_dists)
+                                mask_val_dists = mask_dists[mask_val_dists_idx]
+                                mask_in_val_dists = mask_dists[mask_in_val_dists_idx]
+                                mask_val_top_idx = mask_top_dists[mask_val_dists_idx]
+                                mask_in_val_top_idx = mask_top_dists[mask_in_val_dists_idx]
+                                mask_pred_en = self._mask_lb[mask_val_top_idx]
                                 mask_pred = self._mask_en.inverse_transform(mask_pred_en)
-                                print(mask_pred)
-                                print(mask_dists)
 
                         # display
                         display_frame = self._draw(o_frame, origin_f_bound, None)
