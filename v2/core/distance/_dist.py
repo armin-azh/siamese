@@ -1,5 +1,6 @@
 import numpy as np
-from sklearn.metrics.pairwise import cosine_distances,euclidean_distances
+from sklearn.metrics.pairwise import cosine_distances, euclidean_distances
+from typing import Tuple
 
 # base
 from .base import BaseDistance
@@ -45,7 +46,7 @@ class CosineDistance(BaseDistance):
             dists.append(self.__cosine_similarity_1_k(vec, bs_obs))
         return np.array(dists)
 
-    def satisfy(self, r_obs: np.ndarray) -> np.ndarray:
+    def satisfy(self, r_obs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         :param r_obs: matrix in shape (n,m)
         :return:
@@ -53,7 +54,7 @@ class CosineDistance(BaseDistance):
         if len(r_obs.shape) != 2:
             raise InCompatibleDimError("The r_obs is not 2 dimension")
         min_obs = np.argmin(r_obs, axis=1)
-        return r_obs[np.arange(len(min_obs)), min_obs]
+        return r_obs[np.arange(len(min_obs)), min_obs], min_obs
 
 
 class SklearnCosineDistance(BaseDistance):
@@ -62,7 +63,7 @@ class SklearnCosineDistance(BaseDistance):
         self._sim_threshold = similarity_threshold
         super(SklearnCosineDistance, self).__init__(name, *args, **kwargs)
 
-    def satisfy(self, r_obs: np.ndarray) -> np.ndarray:
+    def satisfy(self, r_obs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         :param r_obs: matrix in shape (n,m)
         :return:
@@ -70,7 +71,7 @@ class SklearnCosineDistance(BaseDistance):
         if len(r_obs.shape) != 2:
             raise InCompatibleDimError("The r_obs is not 2 dimension")
         min_obs = np.argmin(r_obs, axis=1)
-        return r_obs[np.arange(len(min_obs)), min_obs]
+        return r_obs[np.arange(len(min_obs)), min_obs], min_obs
 
     def calculate_distant(self, n_obs: np.ndarray, bs_obs: np.ndarray) -> np.ndarray:
         """
@@ -93,7 +94,7 @@ class EuclideanDistance(BaseDistance):
         self._sim_threshold = similarity_threshold
         super(EuclideanDistance, self).__init__(name, *args, **kwargs)
 
-    def satisfy(self, r_obs: np.ndarray) -> np.ndarray:
+    def satisfy(self, r_obs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         :param r_obs: matrix in shape (n,m)
         :return:
@@ -101,7 +102,7 @@ class EuclideanDistance(BaseDistance):
         if len(r_obs.shape) != 2:
             raise InCompatibleDimError("The r_obs is not 2 dimension")
         min_obs = np.argmin(r_obs, axis=1)
-        return r_obs[np.arange(len(min_obs)), min_obs]
+        return r_obs[np.arange(len(min_obs)), min_obs], min_obs
 
     def __euclidean_similarity_1_k(self, n_obs: np.ndarray, bs_obs: np.ndarray) -> np.ndarray:
         """
@@ -110,7 +111,7 @@ class EuclideanDistance(BaseDistance):
         :param n_obs:
         :return: vector in shape (n,)
         """
-        return np.linalg.norm(n_obs - bs_obs,axis=1)
+        return np.linalg.norm(n_obs - bs_obs, axis=1)
 
     def calculate_distant(self, n_obs: np.ndarray, bs_obs: np.ndarray) -> np.ndarray:
         """
@@ -138,7 +139,7 @@ class SklearnEuclideanDistance(BaseDistance):
         self._sim_threshold = similarity_threshold
         super(SklearnEuclideanDistance, self).__init__(name, *args, **kwargs)
 
-    def satisfy(self, r_obs: np.ndarray) -> np.ndarray:
+    def satisfy(self, r_obs: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         :param r_obs: matrix in shape (n,m)
         :return:
@@ -146,7 +147,7 @@ class SklearnEuclideanDistance(BaseDistance):
         if len(r_obs.shape) != 2:
             raise InCompatibleDimError("The r_obs is not 2 dimension")
         min_obs = np.argmin(r_obs, axis=1)
-        return r_obs[np.arange(len(min_obs)), min_obs]
+        return r_obs[np.arange(len(min_obs)), min_obs], min_obs
 
     def calculate_distant(self, n_obs: np.ndarray, bs_obs: np.ndarray) -> np.ndarray:
         """
