@@ -222,6 +222,7 @@ class RawVisualService(EmbeddingService):
     def __init__(self, name, log_path: Path, display=True, *args, **kwargs):
         super(RawVisualService, self).__init__(name=name, log_path=log_path, display=display, *args, **kwargs)
         self._normal_em, self._normal_lb, self._normal_en, self._mask_em, self._mask_lb, self._mask_en = self._db.get_embedded()
+        self._face_net_160_norm = FaceNet160Cropper()
 
     def _format_db(self):
         msg = f"$ [DB] Normal Embeddings: {self._normal_em.shape[0]}, Mask Embeddings: {self._mask_em.shape[0]}"
@@ -309,12 +310,30 @@ class RawVisualService(EmbeddingService):
                                 self._console_logger.warn(msg)
 
                         if has_head.shape[0] > 0:
+                            has_head_origin_f_bound = origin_f_bound[has_head, ...].copy()
                             mask_scores = self._mask_d.predict(origin_gray_full_ch_frame,
-                                                               origin_f_bound[has_head, ...].astype(np.int))
+                                                               has_head_origin_f_bound.astype(np.int))
                             has_mask, has_no_mask = self._mask_d.validate_mask(mask_scores)
 
-                            print(has_mask)
-                            print(has_no_mask)
+                            n_cropped_ims_160 = self._face_net_160_norm.normalize(mat=origin_gray_full_ch_frame,
+                                                                                  b_mat=has_head_origin_f_bound.astype(
+                                                                                      np.int),
+                                                                                  interpolation=cv2.INTER_LINEAR,
+                                                                                  offset_per=0,
+                                                                                  cropping="large")
+                            embedded_160 = self._embedded.get_embeddings(session=sess, input_im=n_cropped_ims_160)
+
+                            normal_origin_f_bound = has_head_origin_f_bound[has_no_mask, ...]
+                            mask_origin_f_bound = has_head_origin_f_bound[has_mask, ...]
+
+                            normal_embedded_160 = embedded_160[has_no_mask, ...]
+                            mask_embedded_160 = embedded_160[has_mask, ...]
+
+                            if normal_embedded_160.shape[0]>0:
+                                pass
+                            if mask_embedded_160.shape[0]>0:
+                                pass
+
 
                         # display
                         display_frame = self._draw(o_frame, origin_f_bound, None)
