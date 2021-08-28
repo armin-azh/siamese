@@ -230,12 +230,16 @@ class RawVisualService(EmbeddingService):
         if self._display:
             self._console_logger.success(msg)
 
-    def _draw(self, mat: np.ndarray, box_mat: np.ndarray, label_mat: Union[np.ndarray, None] = None) -> np.ndarray:
+    def _draw(self, mat: np.ndarray, box_mat: np.ndarray,
+              label_mat: Union[np.ndarray, None, list] = None) -> np.ndarray:
 
-        for _b in box_mat[:, :4]:
+        for _idx, _b in enumerate(box_mat[:, :4]):
             _x_min, _y_min, _x_max, _y_max = _b
             mat = draw_cure_face(mat, (int(_x_min), int(_y_min)), (int(_x_max), int(_y_max)), 5, 10,
                                  self.COLOR_DODGER_BLUE, 2)
+            if label_mat is not None:
+                mat = cv2.putText(mat, f"{label_mat[_idx]}", (_x_min, _y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                  self.COLOR_DODGER_BLUE, 1)
 
         return mat
 
@@ -309,6 +313,8 @@ class RawVisualService(EmbeddingService):
                             if self._display:
                                 self._console_logger.warn(msg)
 
+                        display_frame = o_frame.copy()
+
                         if has_head.shape[0] > 0:
                             has_head_origin_f_bound = origin_f_bound[has_head, ...].copy()
                             mask_scores = self._mask_d.predict(origin_gray_full_ch_frame,
@@ -334,24 +340,37 @@ class RawVisualService(EmbeddingService):
                                 normal_dists, normal_top_dists = self._dist.satisfy(normal_dists)
                                 normal_val_dists_idx, normal_in_val_dists_idx = self._dist.validate(normal_dists)
                                 normal_val_dists = normal_dists[normal_val_dists_idx]
+                                normal_val_origin_f_bound = normal_origin_f_bound[normal_val_dists_idx, :]
                                 normal_in_val_dists = normal_dists[normal_in_val_dists_idx]
+                                normal_in_val_origin_f_bound = normal_origin_f_bound[normal_in_val_dists_idx, :]
                                 normal_val_top_idx = normal_top_dists[normal_val_dists_idx]
                                 normal_in_val_top_idx = normal_top_dists[normal_in_val_dists_idx]
                                 normal_pred_en = self._normal_lb[normal_val_top_idx]
-                                normal_pred = self._normal_en.inverse_transform(normal_pred_en)
+                                normal_val_pred = self._normal_en.inverse_transform(normal_pred_en)
+                                normal_in_val_pred = ["unrecognized"] * normal_in_val_top_idx.shape[0]
+                                display_frame = self._draw(display_frame, normal_val_origin_f_bound.astype(np.int),
+                                                           normal_val_pred)
+                                display_frame = self._draw(display_frame, normal_in_val_origin_f_bound.astype(np.int),
+                                                           normal_in_val_pred)
 
                             if mask_embedded_160.shape[0] > 0:
                                 mask_dists = self._dist.calculate_distant(mask_embedded_160, self._mask_em)
                                 mask_dists, mask_top_dists = self._dist.satisfy(mask_dists)
                                 mask_val_dists_idx, mask_in_val_dists_idx = self._dist.validate(mask_dists)
                                 mask_val_dists = mask_dists[mask_val_dists_idx]
+                                mask_val_origin_f_bound = mask_origin_f_bound[mask_val_dists_idx, :]
                                 mask_in_val_dists = mask_dists[mask_in_val_dists_idx]
+                                mask_in_val_origin_f_bound = mask_origin_f_bound[mask_in_val_dists_idx, :]
                                 mask_val_top_idx = mask_top_dists[mask_val_dists_idx]
                                 mask_in_val_top_idx = mask_top_dists[mask_in_val_dists_idx]
                                 mask_pred_en = self._mask_lb[mask_val_top_idx]
-                                mask_pred = self._mask_en.inverse_transform(mask_pred_en)
+                                mask_val_pred = self._mask_en.inverse_transform(mask_pred_en)
+                                mask_in_val_pred = ["unrecognized"] * mask_in_val_top_idx.shape[0]
+                                display_frame = self._draw(display_frame, mask_val_origin_f_bound.astype(np.int),
+                                                           mask_val_pred)
+                                display_frame = self._draw(display_frame, mask_in_val_origin_f_bound.astype(np.int),
+                                                           mask_in_val_pred)
 
                         # display
-                        display_frame = self._draw(o_frame, origin_f_bound, None)
                         window_name = f"{v_id[0:5]}..."
                         cv2.imshow(window_name, display_frame)
