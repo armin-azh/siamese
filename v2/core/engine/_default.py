@@ -218,6 +218,11 @@ class ClusteringService(EmbeddingService):
 class RawVisualService(EmbeddingService):
     COLOR_DEFAULT = (0, 0, 255)
     COLOR_DODGER_BLUE = (255, 144, 30)
+    COLOR_RED = (25, 25, 255)
+    COLOR_GREEN = (77, 255, 106)
+    COLOR_PUMPKINS = (25, 102, 255)
+    COLOR_BLACK = (0, 0, 0)
+    COLOR_WHITE = (255, 255, 255)
 
     def __init__(self, name, log_path: Path, display=True, *args, **kwargs):
         super(RawVisualService, self).__init__(name=name, log_path=log_path, display=display, *args, **kwargs)
@@ -231,15 +236,46 @@ class RawVisualService(EmbeddingService):
             self._console_logger.success(msg)
 
     def _draw(self, mat: np.ndarray, box_mat: np.ndarray,
-              label_mat: Union[np.ndarray, None, list] = None) -> np.ndarray:
+              label_mat: Union[np.ndarray, None, list] = None,
+              dists_mat: Union[np.ndarray, None, list] = None,
+              has_mask: Union[bool, None] = None) -> np.ndarray:
 
         for _idx, _b in enumerate(box_mat[:, :4]):
             _x_min, _y_min, _x_max, _y_max = _b
             mat = draw_cure_face(mat, (int(_x_min), int(_y_min)), (int(_x_max), int(_y_max)), 5, 10,
                                  self.COLOR_DODGER_BLUE, 2)
             if label_mat is not None:
-                mat = cv2.putText(mat, f"{label_mat[_idx]}", (_x_min, _y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                                  self.COLOR_DODGER_BLUE, 1)
+                _x_show = np.max([_x_min, 0])
+                _y_show = np.max([_y_min - 30, 0])
+                mat = cv2.putText(mat,
+                                  f"{label_mat[_idx]}",
+                                  (_x_show, _y_show),
+                                  cv2.FONT_HERSHEY_COMPLEX_SMALL,
+                                  0.5,
+                                  self.COLOR_PUMPKINS,
+                                  1)
+
+            if dists_mat is not None:
+                _x_show = np.max([_x_min, 0])
+                _y_show = np.max([_y_min - 20, 0])
+                mat = cv2.putText(mat,
+                                  f"{round(float(dists_mat[_idx]), 3)}",
+                                  (_x_show, _y_show),
+                                  cv2.FONT_HERSHEY_COMPLEX_SMALL,
+                                  0.5,
+                                  self.COLOR_PUMPKINS,
+                                  1)
+            if has_mask is not None:
+                _x_show = np.max([_x_min, 0])
+                _y_show = np.max([_y_min - 10, 0])
+                _msg = "mask" if has_mask else "no mask"
+                mat = cv2.putText(mat,
+                                  f"{_msg}",
+                                  (_x_show, _y_show),
+                                  cv2.FONT_HERSHEY_COMPLEX_SMALL,
+                                  0.5,
+                                  self.COLOR_PUMPKINS,
+                                  1)
 
         return mat
 
@@ -349,9 +385,9 @@ class RawVisualService(EmbeddingService):
                                 normal_val_pred = self._normal_en.inverse_transform(normal_pred_en)
                                 normal_in_val_pred = ["unrecognized"] * normal_in_val_top_idx.shape[0]
                                 display_frame = self._draw(display_frame, normal_val_origin_f_bound.astype(np.int),
-                                                           normal_val_pred)
+                                                           normal_val_pred, normal_val_dists, True)
                                 display_frame = self._draw(display_frame, normal_in_val_origin_f_bound.astype(np.int),
-                                                           normal_in_val_pred)
+                                                           normal_in_val_pred, normal_in_val_dists, True)
 
                             if mask_embedded_160.shape[0] > 0:
                                 mask_dists = self._dist.calculate_distant(mask_embedded_160, self._mask_em)
@@ -367,9 +403,9 @@ class RawVisualService(EmbeddingService):
                                 mask_val_pred = self._mask_en.inverse_transform(mask_pred_en)
                                 mask_in_val_pred = ["unrecognized"] * mask_in_val_top_idx.shape[0]
                                 display_frame = self._draw(display_frame, mask_val_origin_f_bound.astype(np.int),
-                                                           mask_val_pred)
+                                                           mask_val_pred, mask_val_dists, False)
                                 display_frame = self._draw(display_frame, mask_in_val_origin_f_bound.astype(np.int),
-                                                           mask_in_val_pred)
+                                                           mask_in_val_pred, mask_in_val_dists, False)
 
                         # display
                         window_name = f"{v_id[0:5]}..."
