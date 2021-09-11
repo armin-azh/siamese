@@ -42,11 +42,11 @@ class MaskClassifierModel(BaseModel):
         else:
             return np.empty((0, 1))
 
-    def __validate_no_mask(self, mat: np.ndarray) -> np.ndarray:
+    def __validate_mask(self, mat: np.ndarray) -> np.ndarray:
         _ans = np.where(mat[:, :] <= self._score_threshold)
         return _ans[0]
 
-    def __validate_mask(self, mat: np.ndarray) -> np.ndarray:
+    def __validate_no_mask(self, mat: np.ndarray) -> np.ndarray:
         _ans = np.where(mat[:, :] > self._score_threshold)
         return _ans[0]
 

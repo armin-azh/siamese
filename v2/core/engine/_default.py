@@ -375,6 +375,7 @@ class RawVisualService(EmbeddingService):
                             mask_embedded_160 = embedded_160[has_mask, ...]
 
                             if normal_embedded_160.shape[0] > 0:
+                                print("no mask")
                                 normal_dists = self._dist.calculate_distant(normal_embedded_160, self._normal_em)
                                 normal_dists, normal_top_dists = self._dist.satisfy(normal_dists)
                                 normal_val_dists_idx, normal_in_val_dists_idx = self._dist.validate(normal_dists)
@@ -388,11 +389,12 @@ class RawVisualService(EmbeddingService):
                                 normal_val_pred = self._normal_en.inverse_transform(normal_pred_en)
                                 normal_in_val_pred = ["unrecognized"] * normal_in_val_top_idx.shape[0]
                                 display_frame = self._draw(display_frame, normal_val_origin_f_bound.astype(np.int),
-                                                           normal_val_pred, normal_val_dists, True)
+                                                           normal_val_pred, normal_val_dists, False)
                                 display_frame = self._draw(display_frame, normal_in_val_origin_f_bound.astype(np.int),
-                                                           normal_in_val_pred, normal_in_val_dists, True)
+                                                           normal_in_val_pred, normal_in_val_dists, False)
 
                             if mask_embedded_160.shape[0] > 0:
+                                print("mask")
                                 mask_dists = self._dist.calculate_distant(mask_embedded_160, self._mask_em)
                                 mask_dists, mask_top_dists = self._dist.satisfy(mask_dists)
                                 mask_val_dists_idx, mask_in_val_dists_idx = self._dist.validate(mask_dists)
@@ -406,9 +408,9 @@ class RawVisualService(EmbeddingService):
                                 mask_val_pred = self._mask_en.inverse_transform(mask_pred_en)
                                 mask_in_val_pred = ["unrecognized"] * mask_in_val_top_idx.shape[0]
                                 display_frame = self._draw(display_frame, mask_val_origin_f_bound.astype(np.int),
-                                                           mask_val_pred, mask_val_dists, False)
+                                                           mask_val_pred, mask_val_dists, True)
                                 display_frame = self._draw(display_frame, mask_in_val_origin_f_bound.astype(np.int),
-                                                           mask_in_val_pred, mask_in_val_dists, False)
+                                                           mask_in_val_pred, mask_in_val_dists, True)
 
                         # display
                         window_name = f"{v_id[0:5]}..."
