@@ -230,7 +230,7 @@ class RawVisualService(EmbeddingService):
         self._face_net_160_norm = FaceNet160Cropper()
 
     def _format_db(self):
-        msg = f"$ [DB] Normal Embeddings: {self._normal_em.shape[0]}, Mask Embeddings: {self._mask_em.shape[0]}"
+        msg = f"[DB] Normal Embeddings: {self._normal_em.shape[0]}, Mask Embeddings: {self._mask_em.shape[0]}"
         self._file_logger.info(msg)
         if self._display:
             self._console_logger.success(msg)
@@ -355,6 +355,7 @@ class RawVisualService(EmbeddingService):
                             has_head_origin_f_bound = origin_f_bound[has_head, ...].copy()
                             mask_scores = self._mask_d.predict(origin_gray_full_ch_frame,
                                                                has_head_origin_f_bound.astype(np.int))
+                            print(mask_scores[0])
                             has_mask, has_no_mask = self._mask_d.validate_mask(mask_scores)
 
                             n_cropped_ims_160 = self._face_net_160_norm.normalize(mat=origin_gray_full_ch_frame,
@@ -363,6 +364,8 @@ class RawVisualService(EmbeddingService):
                                                                                   interpolation=cv2.INTER_LINEAR,
                                                                                   offset_per=0,
                                                                                   cropping="large")
+
+                            cv2.imshow("Cropped", n_cropped_ims_160[0])
                             embedded_160 = self._embedded.get_embeddings(session=sess, input_im=n_cropped_ims_160)
 
                             normal_origin_f_bound = has_head_origin_f_bound[has_no_mask, ...]

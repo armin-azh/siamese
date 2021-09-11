@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .base import BaseModel
 from v2.core.nomalizer import MaskNormalizer
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 
 # exceptions
 from v2.core.exceptions import *
@@ -36,15 +37,16 @@ class MaskClassifierModel(BaseModel):
                                                        offset_per=0,
                                                        cropping="large")
             self._input_tensor_shape.assert_is_compatible_with(_norm_cropped.shape)
+            _norm_cropped = preprocess_input(_norm_cropped)
             return self._model.predict(_norm_cropped)
         else:
             return np.empty((0, 1))
 
-    def __validate_mask(self, mat: np.ndarray) -> np.ndarray:
+    def __validate_no_mask(self, mat: np.ndarray) -> np.ndarray:
         _ans = np.where(mat[:, :] <= self._score_threshold)
         return _ans[0]
 
-    def __validate_no_mask(self, mat: np.ndarray) -> np.ndarray:
+    def __validate_mask(self, mat: np.ndarray) -> np.ndarray:
         _ans = np.where(mat[:, :] > self._score_threshold)
         return _ans[0]
 

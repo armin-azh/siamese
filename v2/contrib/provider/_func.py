@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from v2.core.source import SourceProvider, FileSourceModel
-from v2.core.distance import CosineDistanceV2
+from v2.core.distance import CosineDistanceV2, CosineDistanceV1
 from v2.core.db import SimpleDatabase
 from v2.core.network import (MultiCascadeFaceDetector,
                              FaceNetModel,
@@ -91,7 +91,7 @@ def raw_visual_v1_service() -> RawVisualService:
 
     db = SimpleDatabase(db_path=base.joinpath(GALLERY_CONF.get("database_path")))
 
-    distance = CosineDistanceV2(similarity_threshold=float(DEFAULT_CONF.get("similarity_threshold")))
+    distance = CosineDistanceV1(similarity_threshold=float(DEFAULT_CONF.get("similarity_threshold")))
 
     mask_detector = MaskModel(model_path=base.joinpath(MASK_CONF.get("model")),
                               score_threshold=float(MASK_CONF.get("score_threshold")))
