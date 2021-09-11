@@ -252,7 +252,7 @@ class RawVisualService(EmbeddingService):
                                   (_x_show, _y_show),
                                   cv2.FONT_HERSHEY_COMPLEX_SMALL,
                                   0.5,
-                                  self.COLOR_PUMPKINS,
+                                  self.COLOR_RED if label_mat[_idx] == "unrecognized" else self.COLOR_GREEN,
                                   1)
 
             if dists_mat is not None:
@@ -355,7 +355,6 @@ class RawVisualService(EmbeddingService):
                             has_head_origin_f_bound = origin_f_bound[has_head, ...].copy()
                             mask_scores = self._mask_d.predict(origin_gray_full_ch_frame,
                                                                has_head_origin_f_bound.astype(np.int))
-                            print(mask_scores[0])
                             has_mask, has_no_mask = self._mask_d.validate_mask(mask_scores)
 
                             n_cropped_ims_160 = self._face_net_160_norm.normalize(mat=origin_gray_full_ch_frame,
@@ -365,7 +364,6 @@ class RawVisualService(EmbeddingService):
                                                                                   offset_per=0,
                                                                                   cropping="large")
 
-                            cv2.imshow("Cropped", n_cropped_ims_160[0])
                             embedded_160 = self._embedded.get_embeddings(session=sess, input_im=n_cropped_ims_160)
 
                             normal_origin_f_bound = has_head_origin_f_bound[has_no_mask, ...]
@@ -375,7 +373,6 @@ class RawVisualService(EmbeddingService):
                             mask_embedded_160 = embedded_160[has_mask, ...]
 
                             if normal_embedded_160.shape[0] > 0:
-                                print("no mask")
                                 normal_dists = self._dist.calculate_distant(normal_embedded_160, self._normal_em)
                                 normal_dists, normal_top_dists = self._dist.satisfy(normal_dists)
                                 normal_val_dists_idx, normal_in_val_dists_idx = self._dist.validate(normal_dists)
@@ -394,7 +391,6 @@ class RawVisualService(EmbeddingService):
                                                            normal_in_val_pred, normal_in_val_dists, False)
 
                             if mask_embedded_160.shape[0] > 0:
-                                print("mask")
                                 mask_dists = self._dist.calculate_distant(mask_embedded_160, self._mask_em)
                                 mask_dists, mask_top_dists = self._dist.satisfy(mask_dists)
                                 mask_val_dists_idx, mask_in_val_dists_idx = self._dist.validate(mask_dists)
