@@ -24,6 +24,7 @@ from v2.core.nomalizer import GrayScaleConvertor, SpaceConvertor, FaceNet160Crop
 from v2.core.distance import CosineDistanceV2, CosineDistanceV1
 from v2.tools import draw_cure_face, Counter
 from v2.core.db.exceptions import *
+from v2.core.tracklet import SortTrackerV1
 
 from .exceptions import *
 
@@ -228,6 +229,7 @@ class RawVisualService(EmbeddingService):
         super(RawVisualService, self).__init__(name=name, log_path=log_path, display=display, *args, **kwargs)
         self._normal_em, self._normal_lb, self._normal_en, self._mask_em, self._mask_lb, self._mask_en = self._db.get_embedded()
         self._face_net_160_norm = FaceNet160Cropper()
+        self._tracker = SortTrackerV1(face_threshold=0.9, detect_interval=2, iou_threshold=.2, max_age=1, min_hit=5)
 
     def _format_db(self):
         msg = f"[DB] Normal Embeddings: {self._normal_em.shape[0]}, Mask Embeddings: {self._mask_em.shape[0]}"
@@ -323,7 +325,10 @@ class RawVisualService(EmbeddingService):
                     if self._display:
                         self._console_logger.success(msg)
 
+                    interval_cnt = Counter()
+
                     while True:
+                        interval_cnt.next()
                         o_frame, v_frame, v_id, v_timestamp = self._vision.next_stream()
 
                         if v_frame is None and v_id is None and v_timestamp is None:
@@ -334,7 +339,23 @@ class RawVisualService(EmbeddingService):
                         if cv2.waitKey(1) == ord("q"):
                             break
 
-                        f_bound, f_landmarks = self._f_d.extract(im=v_frame)
+                        print(interval_cnt())
+                        if interval_cnt() % 2 == 0:
+                            print("Detector")
+                            f_bound, f_landmarks = self._f_d.extract(im=v_frame)
+                            interval_cnt.reset()
+                        else:
+                            print("No Detector")
+                            f_bound = []
+                            f_landmarks = []
+
+                        f_bound = self._tracker.detect(faces=f_bound,
+                                                       frame=v_frame,
+                                                       points=f_landmarks,
+                                                       frame_size=v_frame.shape[:2])
+
+                        if len(f_bound) == 0:
+                            continue
                         origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
                         origin_gray_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
                         origin_gray_full_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="full")

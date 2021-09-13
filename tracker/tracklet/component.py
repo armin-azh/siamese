@@ -16,7 +16,7 @@ class Sort:
         self.frame_count = 0
         self._iou_threshold = iou_threshold
 
-    def update(self, dets, img_size, addtional_attribute_list, predict_num):
+def update(self, dets, img_size, addtional_attribute_list, predict_num):
 
         self.frame_count += 1
         # get predicted locations from existing trackers.

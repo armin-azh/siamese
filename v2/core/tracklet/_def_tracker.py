@@ -89,10 +89,10 @@ class SortTracker(Tracker):
                     trk.update(detects[d, :][0])
                     trk.face_addtional_attribute.append(attribute_list[d[0]])
 
-                for i in unmatched_detections:
-                    trk = KalmanBoxTracker(bbox=detects[i, :])
-                    trk.face_addtional_attribute.append(attribute_list[i])
-                    self._trackers.append(trk)
+            for i in unmatched_detections:
+                trk = KalmanBoxTracker(bbox=detects[i, :])
+                trk.face_addtional_attribute.append(attribute_list[i])
+                self._trackers.append(trk)
 
         _i = len(self._trackers)
 
@@ -106,7 +106,8 @@ class SortTracker(Tracker):
 
             _i -= 1
 
-            if trk.time_since_update >= self._max_age or trk.predict_num >= self._detect_interval or d[2] < 0 or d[3] < 0 or d[
+            if trk.time_since_update >= self._max_age or trk.predict_num >= self._detect_interval or d[2] < 0 or d[
+                3] < 0 or d[
                 0] > \
                     frame_size[1] or d[1] > frame_size[0]:
                 if len(trk.face_addtional_attribute) >= 5:
@@ -117,7 +118,7 @@ class SortTracker(Tracker):
             return np.concatenate(ret)
         return np.empty((0, 5))
 
-    def _judge_side_face(self,facial_landmarks: np.ndarray):
+    def _judge_side_face(self, facial_landmarks: np.ndarray):
         wide_dist = np.linalg.norm(facial_landmarks[0] - facial_landmarks[1])
         high_dist = np.linalg.norm(facial_landmarks[0] - facial_landmarks[3])
         dist_rate = high_dist / wide_dist
