@@ -16,7 +16,8 @@ from settings import (CAMERA_MODEL_CONF,
                       GALLERY_CONF,
                       DEFAULT_CONF,
                       MASK_CONF,
-                      HPE_CONF)
+                      HPE_CONF,
+                      TRACKER_CONF)
 from settings import (PATH_NORMAL,
                       PATH_MASK)
 
@@ -111,6 +112,14 @@ def raw_visual_v1_service() -> RawVisualService:
                    conf=hpe_conf
                    )
 
+    trk_conf = {
+        "face_threshold": float(DETECTOR_CONF.get("conf_thresh")),
+        "detect_interval": int(DETECTOR_CONF.get("mtcnn_per_frame")),
+        "iou_threshold": float(TRACKER_CONF.get("iou_threshold")),
+        "max_age": int(TRACKER_CONF.get("max_age")),
+        "min_hit": int(TRACKER_CONF.get("min_hits"))
+    }
+
     return RawVisualService(source_pool=vision_source(),
                             face_detector=face_dm,
                             embedded=embedded_model,
@@ -118,5 +127,6 @@ def raw_visual_v1_service() -> RawVisualService:
                             distance=distance,
                             mask_detector=mask_detector,
                             hpe=hpe,
+                            tracker_conf=trk_conf,
                             log_path=LOG_Path,
                             name="basic_raw_visualization_service")

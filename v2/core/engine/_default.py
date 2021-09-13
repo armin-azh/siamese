@@ -225,11 +225,12 @@ class RawVisualService(EmbeddingService):
     COLOR_BLACK = (0, 0, 0)
     COLOR_WHITE = (255, 255, 255)
 
-    def __init__(self, name, log_path: Path, display=True, *args, **kwargs):
+    def __init__(self, name, log_path: Path, tracker_conf: dict, display=True, *args, **kwargs):
         super(RawVisualService, self).__init__(name=name, log_path=log_path, display=display, *args, **kwargs)
         self._normal_em, self._normal_lb, self._normal_en, self._mask_em, self._mask_lb, self._mask_en = self._db.get_embedded()
         self._face_net_160_norm = FaceNet160Cropper()
-        self._tracker = SortTrackerV1(face_threshold=0.9, detect_interval=2, iou_threshold=.2, max_age=1, min_hit=5)
+        self._trk_conf = tracker_conf
+        self._tracker = SortTrackerV1(**self._trk_conf)
 
     def _format_db(self):
         msg = f"[DB] Normal Embeddings: {self._normal_em.shape[0]}, Mask Embeddings: {self._mask_em.shape[0]}"
@@ -328,7 +329,6 @@ class RawVisualService(EmbeddingService):
                     interval_cnt = Counter()
 
                     while True:
-                        interval_cnt.next()
                         o_frame, v_frame, v_id, v_timestamp = self._vision.next_stream()
 
                         if v_frame is None and v_id is None and v_timestamp is None:
@@ -339,12 +339,13 @@ class RawVisualService(EmbeddingService):
                         if cv2.waitKey(1) == ord("q"):
                             break
 
-                        if interval_cnt() % 2 == 0:
+                        if interval_cnt() % 2 == self._trk_conf.get("detect_interval"):
                             f_bound, f_landmarks = self._f_d.extract(im=v_frame)
                             interval_cnt.reset()
                         else:
                             f_bound = []
                             f_landmarks = []
+                            interval_cnt.next()
 
                         f_bound = self._tracker.detect(faces=f_bound,
                                                        frame=v_frame,
