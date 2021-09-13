@@ -339,13 +339,10 @@ class RawVisualService(EmbeddingService):
                         if cv2.waitKey(1) == ord("q"):
                             break
 
-                        print(interval_cnt())
                         if interval_cnt() % 2 == 0:
-                            print("Detector")
                             f_bound, f_landmarks = self._f_d.extract(im=v_frame)
                             interval_cnt.reset()
                         else:
-                            print("No Detector")
                             f_bound = []
                             f_landmarks = []
 
@@ -354,8 +351,6 @@ class RawVisualService(EmbeddingService):
                                                        points=f_landmarks,
                                                        frame_size=v_frame.shape[:2])
 
-                        if len(f_bound) == 0:
-                            continue
                         origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
                         origin_gray_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
                         origin_gray_full_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="full")
