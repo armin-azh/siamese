@@ -238,8 +238,6 @@ class RawVisualService(EmbeddingService):
         self._trk_conf = tracker_conf
         self._tracker = SortTrackerV1(**self._trk_conf)
 
-
-
     def _draw_fps(self, mat: np.ndarray, fps: float):
         shape = mat.shape
         return cv2.putText(mat,
@@ -446,8 +444,9 @@ class RawVisualService(EmbeddingService):
                         window_name = f"{v_id[0:5]}..."
                         cv2.imshow(window_name, display_frame)
 
+
 class SocketService(EmbeddingService):
-    def __init__(self,name, log_path: Path, tracker_conf: dict, *args, **kwargs):
+    def __init__(self, name, log_path: Path, tracker_conf: dict, *args, **kwargs):
         super(SocketService, self).__init__(name=name, log_path=log_path, display=True, *args, **kwargs)
         self._normal_em, self._normal_lb, self._normal_en, self._mask_em, self._mask_lb, self._mask_en = self._db.get_embedded()
         self._face_net_160_norm = FaceNet160Cropper()
