@@ -22,7 +22,7 @@ from v2.core.network import (MultiCascadeFaceDetector,
 from v2.core.db import SimpleDatabase
 from v2.core.nomalizer import GrayScaleConvertor, SpaceConvertor, FaceNet160Cropper
 from v2.core.distance import CosineDistanceV2, CosineDistanceV1
-from v2.tools import draw_cure_face, Counter,FPS
+from v2.tools import draw_cure_face, Counter, FPS
 from v2.core.db.exceptions import *
 from v2.core.tracklet import SortTrackerV1
 
@@ -238,6 +238,16 @@ class RawVisualService(EmbeddingService):
         if self._display:
             self._console_logger.success(msg)
 
+    def _draw_fps(self, mat: np.ndarray, fps: float):
+        shape = mat.shape
+        return cv2.putText(mat,
+                           f"FPS: {round(fps, 3)}",
+                           (5, 10),
+                           cv2.FONT_HERSHEY_COMPLEX_SMALL,
+                           0.5,
+                           self.COLOR_RED,
+                           1)
+
     def _draw(self, mat: np.ndarray, box_mat: np.ndarray,
               label_mat: Union[np.ndarray, None, list] = None,
               dists_mat: Union[np.ndarray, None, list] = None,
@@ -430,5 +440,6 @@ class RawVisualService(EmbeddingService):
                                                            mask_in_val_pred, mask_in_val_dists, True)
 
                         # display
+                        display_frame = self._draw_fps(display_frame, fps.fps())
                         window_name = f"{v_id[0:5]}..."
                         cv2.imshow(window_name, display_frame)

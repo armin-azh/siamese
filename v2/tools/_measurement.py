@@ -48,7 +48,7 @@ class FPS:
     def fps(self) -> float:
         try:
             if self._end is None:
-                return self._n_frame()/(time.time()-self._start)
+                return self._n_frame()/(datetime.datetime.now()-self._start).total_seconds()
             return self._n_frame() / self.elapsed()
         except ZeroDivisionError:
             return 0.
