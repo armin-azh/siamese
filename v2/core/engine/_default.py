@@ -604,7 +604,7 @@ class SocketService(EmbeddingService):
 class UDPService(SocketService):
     def __init__(self, name, log_path: Path, tracker_conf: dict, socket_conf: dict, *args, **kwargs):
         super(UDPService, self).__init__(name=name, log_path=log_path, tracker_conf=tracker_conf,
-                                         socket_conf=socket_conf, display=True, *args, **kwargs)
+                                         socket_conf=socket_conf, *args, **kwargs)
         self._sender = self._socket()
 
     def _socket(self, *args, **kwargs) -> socket.socket:
@@ -612,4 +612,5 @@ class UDPService(SocketService):
 
     def _send(self, data: dict) -> None:
         json_obj = json.dumps({"data": data})
-        self._sender.sendto(json_obj.encode(), address=tuple(self._socket_conf.values()))
+        self._sender.sendto(json_obj.encode(), tuple(self._socket_conf.values()))
+        print("[SEND]")
