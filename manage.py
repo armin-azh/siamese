@@ -1,6 +1,13 @@
 import argparse
 import configparser
 import os
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+from warnings import simplefilter
+
+simplefilter(action="ignore", category=FutureWarning)
+
 import sys
 from recognition.recognition import face_recognition, face_recognition_on_keras, test_recognition, cluster_faces
 from recognition.recognition import face_recognition_kalman
