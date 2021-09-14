@@ -65,6 +65,12 @@ class EmbeddingService(BasicService):
         else:
             return np.empty((0, 4))
 
+    def _format_db(self):
+        msg = f"[DB] Normal Embeddings: {self._normal_em.shape[0]}, Mask Embeddings: {self._mask_em.shape[0]}"
+        self._file_logger.info(msg)
+        if self._display:
+            self._console_logger.success(msg)
+
 
 class ClusteringService(EmbeddingService):
     def __init__(self, name, log_path: Path, n_cluster: int, display=True, *args, **kwargs):
@@ -232,11 +238,7 @@ class RawVisualService(EmbeddingService):
         self._trk_conf = tracker_conf
         self._tracker = SortTrackerV1(**self._trk_conf)
 
-    def _format_db(self):
-        msg = f"[DB] Normal Embeddings: {self._normal_em.shape[0]}, Mask Embeddings: {self._mask_em.shape[0]}"
-        self._file_logger.info(msg)
-        if self._display:
-            self._console_logger.success(msg)
+
 
     def _draw_fps(self, mat: np.ndarray, fps: float):
         shape = mat.shape
@@ -443,3 +445,11 @@ class RawVisualService(EmbeddingService):
                         display_frame = self._draw_fps(display_frame, fps.fps())
                         window_name = f"{v_id[0:5]}..."
                         cv2.imshow(window_name, display_frame)
+
+class SocketService(EmbeddingService):
+    def __init__(self,name, log_path: Path, tracker_conf: dict, *args, **kwargs):
+        super(SocketService, self).__init__(name=name, log_path=log_path, display=True, *args, **kwargs)
+        self._normal_em, self._normal_lb, self._normal_en, self._mask_em, self._mask_lb, self._mask_en = self._db.get_embedded()
+        self._face_net_160_norm = FaceNet160Cropper()
+        self._trk_conf = tracker_conf
+        self._tracker = SortTrackerV1(**self._trk_conf)
