@@ -1,4 +1,5 @@
 import datetime
+import time
 
 
 class Counter:
@@ -46,6 +47,8 @@ class FPS:
 
     def fps(self) -> float:
         try:
+            if self._end is None:
+                return self._n_frame()/(time.time()-self._start)
             return self._n_frame() / self.elapsed()
         except ZeroDivisionError:
             return 0.

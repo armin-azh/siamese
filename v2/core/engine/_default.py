@@ -22,7 +22,7 @@ from v2.core.network import (MultiCascadeFaceDetector,
 from v2.core.db import SimpleDatabase
 from v2.core.nomalizer import GrayScaleConvertor, SpaceConvertor, FaceNet160Cropper
 from v2.core.distance import CosineDistanceV2, CosineDistanceV1
-from v2.tools import draw_cure_face, Counter
+from v2.tools import draw_cure_face, Counter,FPS
 from v2.core.db.exceptions import *
 from v2.core.tracklet import SortTrackerV1
 
@@ -327,8 +327,10 @@ class RawVisualService(EmbeddingService):
                         self._console_logger.success(msg)
 
                     interval_cnt = Counter()
-
+                    fps = FPS()
+                    fps.start()
                     while True:
+                        fps.update()
                         o_frame, v_frame, v_id, v_timestamp = self._vision.next_stream()
 
                         if v_frame is None and v_id is None and v_timestamp is None:
@@ -339,14 +341,16 @@ class RawVisualService(EmbeddingService):
                         if cv2.waitKey(1) == ord("q"):
                             break
 
-                        if interval_cnt() % 2 == self._trk_conf.get("detect_interval"):
+                        # interval
+                        if interval_cnt() % self._trk_conf.get("detect_interval") == 0:
                             f_bound, f_landmarks = self._f_d.extract(im=v_frame)
                             interval_cnt.reset()
                         else:
                             f_bound = []
                             f_landmarks = []
-                            interval_cnt.next()
+                        interval_cnt.next()
 
+                        # track
                         f_bound = self._tracker.detect(faces=f_bound,
                                                        frame=v_frame,
                                                        points=f_landmarks,
