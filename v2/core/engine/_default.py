@@ -446,9 +446,33 @@ class RawVisualService(EmbeddingService):
 
 
 class SocketService(EmbeddingService):
-    def __init__(self, name, log_path: Path, tracker_conf: dict, *args, **kwargs):
+    def __init__(self, name, log_path: Path, tracker_conf: dict, socket_conf: dict, *args, **kwargs):
         super(SocketService, self).__init__(name=name, log_path=log_path, display=True, *args, **kwargs)
         self._normal_em, self._normal_lb, self._normal_en, self._mask_em, self._mask_lb, self._mask_en = self._db.get_embedded()
         self._face_net_160_norm = FaceNet160Cropper()
         self._trk_conf = tracker_conf
         self._tracker = SortTrackerV1(**self._trk_conf)
+        self._socket_conf = socket_conf
+        self._sender = None
+
+    def _socket(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def _send(self, data: dict) -> None:
+        raise NotImplementedError
+
+    def exec_(self, *args, **kwargs) -> None:
+        pass
+
+
+class UDPService(SocketService):
+    def __init__(self, name, log_path: Path, tracker_conf: dict, socket_conf: dict, *args, **kwargs):
+        super(UDPService, self).__init__(name=name, log_path=log_path, tracker_conf=tracker_conf,
+                                         socket_conf=socket_conf, display=True, *args, **kwargs)
+        self._sender = self._socket()
+
+    def _socket(self, *args, **kwargs):
+        pass
+
+    def _send(self, data: dict) -> None:
+        pass
