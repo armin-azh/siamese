@@ -3,6 +3,8 @@ from typing import Union, List
 from pathlib import Path
 
 import cv2
+import socket
+import json
 import numpy as np
 import tensorflow as tf
 
@@ -462,7 +464,141 @@ class SocketService(EmbeddingService):
         raise NotImplementedError
 
     def exec_(self, *args, **kwargs) -> None:
-        pass
+        physical_devices = tf.config.list_physical_devices('GPU')
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+        msg = f"[Start] recognition server is now starting"
+        self._file_logger.info(msg)
+        if self._display:
+            self._console_logger.success(msg)
+
+        self._format_db()
+
+        with tf.device('/device:gpu:0'):
+            with tf.Graph().as_default():
+                with tf.compat.v1.Session() as sess:
+
+                    # face detector
+                    self._f_d.load_model(session=sess)
+                    msg = f"[OK] face detector model loaded"
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
+
+                    # head pose estimator
+                    self._hpe_model.load_model()
+                    msg = f"[OK] head pose estimator loaded"
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
+
+                    # mask detector
+                    self._mask_d.load_model(session=sess)
+                    msg = f"[OK] mask classifier loaded."
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
+
+                    # load embedding network
+                    self._embedded.load_model()
+                    msg = f"[OK] embedding model loaded."
+                    self._file_logger.info(msg)
+                    if self._display:
+                        self._console_logger.success(msg)
+
+                    interval_cnt = Counter()
+
+                    while True:
+                        o_frame, v_frame, v_id, v_timestamp = self._vision.next_stream()
+
+                        if v_frame is None and v_id is None and v_timestamp is None:
+                            continue
+
+                        scale_ratio = self._scale_factor(origin_shape=o_frame.shape, conv_shape=v_frame.shape)
+
+                        if cv2.waitKey(1) == ord("q"):
+                            break
+
+                        # interval
+                        if interval_cnt() % self._trk_conf.get("detect_interval") == 0:
+                            f_bound, f_landmarks = self._f_d.extract(im=v_frame)
+                            interval_cnt.reset()
+                        else:
+                            f_bound = []
+                            f_landmarks = []
+                        interval_cnt.next()
+
+                        # track
+                        f_bound = self._tracker.detect(faces=f_bound,
+                                                       frame=v_frame,
+                                                       points=f_landmarks,
+                                                       frame_size=v_frame.shape[:2])
+
+                        origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
+                        origin_gray_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
+                        origin_gray_full_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="full")
+
+                        head_scores = self._hpe_model.estimate_poses(sess, origin_gray_one_ch_frame,
+                                                                     origin_f_bound.astype(np.int))
+                        has_head, has_no_head = self._hpe_model.validate_angle(head_scores)
+
+                        if has_no_head.shape[0]:
+                            msg = f"[Drop] {head_scores.shape[0]} face have been dropped."
+                            self._file_logger.info(msg)
+                            if self._display:
+                                self._console_logger.warn(msg)
+
+                        if has_head.shape[0] > 0:
+                            has_head_origin_f_bound = origin_f_bound[has_head, ...].copy()
+                            mask_scores = self._mask_d.predict(origin_gray_full_ch_frame,
+                                                               has_head_origin_f_bound.astype(np.int))
+                            has_mask, has_no_mask = self._mask_d.validate_mask(mask_scores)
+
+                            n_cropped_ims_160 = self._face_net_160_norm.normalize(mat=origin_gray_full_ch_frame,
+                                                                                  b_mat=has_head_origin_f_bound.astype(
+                                                                                      np.int),
+                                                                                  interpolation=cv2.INTER_LINEAR,
+                                                                                  offset_per=0,
+                                                                                  cropping="large")
+
+                            embedded_160 = self._embedded.get_embeddings(session=sess, input_im=n_cropped_ims_160)
+
+                            normal_origin_f_bound = has_head_origin_f_bound[has_no_mask, ...]
+                            mask_origin_f_bound = has_head_origin_f_bound[has_mask, ...]
+
+                            normal_embedded_160 = embedded_160[has_no_mask, ...]
+                            mask_embedded_160 = embedded_160[has_mask, ...]
+
+                            if normal_embedded_160.shape[0] > 0:
+                                normal_dists = self._dist.calculate_distant(normal_embedded_160, self._normal_em)
+                                normal_dists, normal_top_dists = self._dist.satisfy(normal_dists)
+                                normal_val_dists_idx, normal_in_val_dists_idx = self._dist.validate(normal_dists)
+                                normal_val_dists = normal_dists[normal_val_dists_idx]
+                                normal_val_origin_f_bound = normal_origin_f_bound[normal_val_dists_idx, :]
+                                normal_in_val_dists = normal_dists[normal_in_val_dists_idx]
+                                normal_in_val_origin_f_bound = normal_origin_f_bound[normal_in_val_dists_idx, :]
+                                normal_val_top_idx = normal_top_dists[normal_val_dists_idx]
+                                normal_in_val_top_idx = normal_top_dists[normal_in_val_dists_idx]
+                                normal_pred_en = self._normal_lb[normal_val_top_idx]
+                                normal_val_pred = self._normal_en.inverse_transform(normal_pred_en)
+                                normal_in_val_pred = ["unrecognized"] * normal_in_val_top_idx.shape[0]
+
+                            if mask_embedded_160.shape[0] > 0:
+                                mask_dists = self._dist.calculate_distant(mask_embedded_160, self._mask_em)
+                                mask_dists, mask_top_dists = self._dist.satisfy(mask_dists)
+                                mask_val_dists_idx, mask_in_val_dists_idx = self._dist.validate(mask_dists)
+                                mask_val_dists = mask_dists[mask_val_dists_idx]
+                                mask_val_origin_f_bound = mask_origin_f_bound[mask_val_dists_idx, :]
+                                mask_in_val_dists = mask_dists[mask_in_val_dists_idx]
+                                mask_in_val_origin_f_bound = mask_origin_f_bound[mask_in_val_dists_idx, :]
+                                mask_val_top_idx = mask_top_dists[mask_val_dists_idx]
+                                mask_in_val_top_idx = mask_top_dists[mask_in_val_dists_idx]
+                                mask_pred_en = self._mask_lb[mask_val_top_idx]
+                                mask_val_pred = self._mask_en.inverse_transform(mask_pred_en)
+                                mask_in_val_pred = ["unrecognized"] * mask_in_val_top_idx.shape[0]
+
+                        data = {}
+                        self._send(data=data)
 
 
 class UDPService(SocketService):
@@ -471,8 +607,9 @@ class UDPService(SocketService):
                                          socket_conf=socket_conf, display=True, *args, **kwargs)
         self._sender = self._socket()
 
-    def _socket(self, *args, **kwargs):
-        pass
+    def _socket(self, *args, **kwargs) -> socket.socket:
+        return socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def _send(self, data: dict) -> None:
-        pass
+        json_obj = json.dumps({"data": data})
+        self._sender.sendto(json_obj.encode(), address=tuple(self._socket_conf.values()))
