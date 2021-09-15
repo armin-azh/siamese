@@ -480,7 +480,6 @@ class SocketService(EmbeddingService):
 
     def _update(self, origin_frame: np.ndarray, pred: np.ndarray, trk_ids: np.ndarray, box: np.ndarray,
                 dists: np.ndarray, status: str):
-        assert origin_frame.shape[0] == pred.shape[0]
         assert pred.shape[0] == trk_ids.shape[0]
         assert trk_ids.shape[0] == box.shape[0]
         assert box.shape[0] == dists.shape[0]
@@ -634,21 +633,21 @@ class SocketService(EmbeddingService):
                                 normal_val_dists_idx, normal_in_val_dists_idx = self._dist.validate(normal_dists)
                                 normal_val_dists = normal_dists[normal_val_dists_idx]
                                 normal_val_origin_f_bound = normal_origin_f_bound[normal_val_dists_idx, :]
-                                normal_val_trk_ids = normal_trk_ids[normal_val_dists_idx, :]
+                                normal_val_trk_ids = normal_trk_ids[normal_val_dists_idx, ...]
                                 normal_in_val_dists = normal_dists[normal_in_val_dists_idx]
                                 normal_in_val_origin_f_bound = normal_origin_f_bound[normal_in_val_dists_idx, :]
-                                normal_in_val_trk_ids = normal_in_val_dists_idx[normal_in_val_dists_idx, :]
+                                normal_in_val_trk_ids = normal_trk_ids[normal_in_val_dists_idx, ...]
                                 normal_val_top_idx = normal_top_dists[normal_val_dists_idx]
                                 normal_in_val_top_idx = normal_top_dists[normal_in_val_dists_idx]
                                 normal_pred_en = self._normal_lb[normal_val_top_idx]
                                 normal_val_pred = self._normal_en.inverse_transform(normal_pred_en)
                                 normal_in_val_pred = ["unrecognized"] * normal_in_val_top_idx.shape[0]
 
-                                self._recognise_update(origin_frame=o_frame, pred=normal_val_pred,
+                                self._recognise_update(origin_frame=o_frame, pred=np.array(normal_val_pred),
                                                        trk_ids=normal_val_trk_ids, box=normal_val_origin_f_bound,
                                                        dists=normal_val_dists)
 
-                                self._un_recognise_update(origin_frame=o_frame, pred=normal_in_val_pred,
+                                self._un_recognise_update(origin_frame=o_frame, pred=np.array(normal_in_val_pred),
                                                           trk_ids=normal_in_val_trk_ids,
                                                           box=normal_in_val_origin_f_bound,
                                                           dists=normal_in_val_dists)
@@ -660,21 +659,21 @@ class SocketService(EmbeddingService):
                                 mask_val_dists_idx, mask_in_val_dists_idx = self._dist.validate(mask_dists)
                                 mask_val_dists = mask_dists[mask_val_dists_idx]
                                 mask_val_origin_f_bound = mask_origin_f_bound[mask_val_dists_idx, :]
-                                mask_val_trk_ids = mask_trk_ids[mask_val_dists_idx, :]
+                                mask_val_trk_ids = mask_trk_ids[mask_val_dists_idx, ...]
                                 mask_in_val_dists = mask_dists[mask_in_val_dists_idx]
                                 mask_in_val_origin_f_bound = mask_origin_f_bound[mask_in_val_dists_idx, :]
-                                mask_in_val_trk_ids = mask_trk_ids[mask_in_val_dists_idx, :]
+                                mask_in_val_trk_ids = mask_trk_ids[mask_in_val_dists_idx, ...]
                                 mask_val_top_idx = mask_top_dists[mask_val_dists_idx]
                                 mask_in_val_top_idx = mask_top_dists[mask_in_val_dists_idx]
                                 mask_pred_en = self._mask_lb[mask_val_top_idx]
                                 mask_val_pred = self._mask_en.inverse_transform(mask_pred_en)
                                 mask_in_val_pred = ["unrecognized"] * mask_in_val_top_idx.shape[0]
 
-                                self._recognise_update(origin_frame=o_frame, pred=mask_val_pred,
+                                self._recognise_update(origin_frame=o_frame, pred=np.array(mask_val_pred),
                                                        trk_ids=mask_val_trk_ids, box=mask_val_origin_f_bound,
                                                        dists=mask_val_dists)
 
-                                self._un_recognise_update(origin_frame=o_frame, pred=mask_in_val_pred,
+                                self._un_recognise_update(origin_frame=o_frame, pred=np.array(mask_in_val_pred),
                                                           trk_ids=mask_in_val_trk_ids,
                                                           box=mask_in_val_origin_f_bound,
                                                           dists=mask_in_val_dists)
