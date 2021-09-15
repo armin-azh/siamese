@@ -38,7 +38,7 @@ class FaPolicyV1(Policy):
         confirmed_unknown_idx = []
         not_confirmed_idx = []
 
-        for idx, trk_id in trk_ids:
+        for idx, trk_id in enumerate(trk_ids):
             _f = self._find(trk_id)
 
             if _f is None:
