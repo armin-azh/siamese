@@ -199,6 +199,7 @@ class TrackerContainer:
         self._trk_id = tracker_id
         self._alias_name = alias_name
         self._modified = self._now()
+        self._last_seen_image = None
 
     @property
     def trk_id(self):
@@ -228,6 +229,14 @@ class TrackerContainer:
     def status(self) -> str:
         return self.UNKNOWN if self._alias_name is None else self.KNOWN
 
+    @property
+    def image(self) -> np.ndarray:
+        return self._last_seen_image
+
+    @image.setter
+    def image(self, mat: np.ndarray) -> None:
+        self._last_seen_image = mat
+
     def _now(self) -> datetime:
         return datetime.now()
 
@@ -239,3 +248,18 @@ class TrackerContainer:
         :return:
         """
         return (_e - _s).total_seconds()
+
+    def __call__(self, mat: np.ndarray, status: str, *args, **kwargs):
+        if status == self.KNOWN:
+            self._cnt[self.KNOWN]()
+        elif status == self.UNKNOWN:
+            self._cnt[self.UNKNOWN]()
+        else:
+            raise ValueError("This status value is not supported")
+        self._modified = self._now()
+
+    def know(self, mat: np.ndarray):
+        self(mat=mat, status=self.KNOWN)
+
+    def unknown(self, mat: np.ndarray):
+        self(mat=mat, status=self.UNKNOWN)
