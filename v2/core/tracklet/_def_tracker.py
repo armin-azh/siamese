@@ -187,9 +187,14 @@ class SortTracker(Tracker):
 
 
 class TrackerContainer:
+    KNOWN = "known"
+    UNKNOWN = "unknown"
+
     def __init__(self, tracker_id: int, alias_name: Union[str, None]):
-        self._cnt = Counter()
-        self._cnt.next()
+        self._cnt = {
+            self.KNOWN: Counter(),
+            self.UNKNOWN: Counter()
+        }
         self._trk_id = tracker_id
         self._alias_name = alias_name
 
@@ -206,5 +211,16 @@ class TrackerContainer:
         self._alias_name = n
 
     @property
-    def counter(self) -> int:
-        return self._cnt()
+    def total_counter(self) -> int:
+        return self._cnt[self.UNKNOWN]() + self._cnt[self.KNOWN]()
+
+    @property
+    def unknown_counter(self) -> int:
+        return self._cnt[self.UNKNOWN]()
+
+    @property
+    def known_counter(self) -> int:
+        return self._cnt[self.KNOWN]()
+
+    def status(self) -> str:
+        return self.UNKNOWN if self._alias_name is None else self.KNOWN

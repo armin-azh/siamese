@@ -547,8 +547,7 @@ class SocketService(EmbeddingService):
                                                        frame=v_frame,
                                                        points=f_landmarks,
                                                        frame_size=v_frame.shape[:2])
-                        trk_ids = f_bound[:, 4]
-                        print(trk_ids)
+                        trk_ids = f_bound[:, 4].astype(np.int)
 
                         origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
                         origin_gray_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
@@ -618,8 +617,8 @@ class SocketService(EmbeddingService):
 
 
 class UDPService(SocketService):
-    def __init__(self, name, log_path: Path,face_path: Path, tracker_conf: dict, socket_conf: dict, *args, **kwargs):
-        super(UDPService, self).__init__(name=name, log_path=log_path,face_path=face_path, tracker_conf=tracker_conf,
+    def __init__(self, name, log_path: Path, face_path: Path, tracker_conf: dict, socket_conf: dict, *args, **kwargs):
+        super(UDPService, self).__init__(name=name, log_path=log_path, face_path=face_path, tracker_conf=tracker_conf,
                                          socket_conf=socket_conf, *args, **kwargs)
         self._sender = self._socket()
 
