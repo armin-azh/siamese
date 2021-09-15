@@ -27,7 +27,7 @@ from v2.core.nomalizer import GrayScaleConvertor, SpaceConvertor, FaceNet160Crop
 from v2.core.distance import CosineDistanceV2, CosineDistanceV1
 from v2.tools import draw_cure_face, Counter, FPS
 from v2.core.db.exceptions import *
-from v2.core.tracklet import SortTrackerV1, FaPolicyV1
+from v2.core.tracklet import SortTrackerV1, FaPolicyV1, TrackerContainer
 
 from .exceptions import *
 
@@ -484,12 +484,22 @@ class SocketService(EmbeddingService):
         assert trk_ids.shape[0] == box.shape[0]
         assert box.shape[0] == dists.shape[0]
 
-        if status == FaPolicyV1.KNOWN:
-            pass
-        elif status == FaPolicyV1.UNKNOWN:
-            pass
-        else:
-            raise ValueError("This status value is not provided")
+        n_iter = len(pred)
+
+        for idx in range(n_iter):
+            trk = self._pol.find(trk_ids[idx])
+
+            if trk is None:
+                # _n_trk = TrackerContainer(tracker_id=trk_ids[idx],
+                #                           alias_name=None if status == FaPolicyV1.UNKNOWN else )
+                continue
+
+            if status == FaPolicyV1.KNOWN:
+                pass
+            elif status == FaPolicyV1.UNKNOWN:
+                pass
+            else:
+                raise ValueError("This status value is not provided")
 
     def _recognise_update(self, origin_frame: np.ndarray, pred: np.ndarray, trk_ids: np.ndarray, box: np.ndarray,
                           dists: np.ndarray):

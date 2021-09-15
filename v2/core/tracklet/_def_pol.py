@@ -37,6 +37,12 @@ class FaPolicyV1(Policy):
                 break
         return _f
 
+    def find(self, trk_id) -> Union[TrackerContainer, None]:
+        return self._find(trk_id)
+
+    def add(self, trk: TrackerContainer) -> None:
+        self._trackers.append(trk)
+
     def do(self, trk_ids: np.ndarray, *args, **kwargs) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
         confirmed_known_idx = []
