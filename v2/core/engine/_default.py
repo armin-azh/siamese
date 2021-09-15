@@ -27,7 +27,7 @@ from v2.core.nomalizer import GrayScaleConvertor, SpaceConvertor, FaceNet160Crop
 from v2.core.distance import CosineDistanceV2, CosineDistanceV1
 from v2.tools import draw_cure_face, Counter, FPS
 from v2.core.db.exceptions import *
-from v2.core.tracklet import SortTrackerV1
+from v2.core.tracklet import SortTrackerV1, FaPolicyV1
 
 from .exceptions import *
 
@@ -449,7 +449,8 @@ class RawVisualService(EmbeddingService):
 
 
 class SocketService(EmbeddingService):
-    def __init__(self, name, log_path: Path, face_path: Path, tracker_conf: dict, socket_conf: dict, *args, **kwargs):
+    def __init__(self, name, log_path: Path, face_path: Path, tracker_conf: dict, policy_conf: dict, socket_conf: dict,
+                 *args, **kwargs):
         super(SocketService, self).__init__(name=name, log_path=log_path, display=True, *args, **kwargs)
         self._normal_em, self._normal_lb, self._normal_en, self._mask_em, self._mask_lb, self._mask_en = self._db.get_embedded()
         self._face_net_160_norm = FaceNet160Cropper()
@@ -458,6 +459,8 @@ class SocketService(EmbeddingService):
         self._socket_conf = socket_conf
         self._sender = None
         self._face_save_path = face_path
+        self._pol_conf = policy_conf
+        self._pol = FaPolicyV1(**self._pol_conf)
 
     def _new_image_filename(self) -> Path:
         return self._face_save_path.joinpath(uuid1().hex + ".jpg")
@@ -617,8 +620,10 @@ class SocketService(EmbeddingService):
 
 
 class UDPService(SocketService):
-    def __init__(self, name, log_path: Path, face_path: Path, tracker_conf: dict, socket_conf: dict, *args, **kwargs):
-        super(UDPService, self).__init__(name=name, log_path=log_path, face_path=face_path, tracker_conf=tracker_conf,
+    def __init__(self, name, log_path: Path, face_path: Path, tracker_conf: dict, policy_conf: dict, socket_conf: dict,
+                 *args, **kwargs):
+        super(UDPService, self).__init__(name=name, log_path=log_path, face_path=face_path, policy_conf=policy_conf,
+                                         tracker_conf=tracker_conf,
                                          socket_conf=socket_conf, *args, **kwargs)
         self._sender = self._socket()
 

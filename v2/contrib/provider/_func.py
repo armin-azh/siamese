@@ -184,6 +184,12 @@ def udp_v1_service() -> UDPService:
         "port": int(SERVER_CONF.get("UDP_PORT"))
     }
 
+    pol_conf = {
+        "max_life_time": None,
+        "max_confidence_rec": None,
+        "max_confidence_un_rec": None
+    }
+
     face_save_path = Path(SERVER_CONF.get("face_save_path")).joinpath(SERVER_CONF.get("face_folder"))
     if not face_save_path.exists():
         face_save_path.mkdir(parents=True)
@@ -197,6 +203,7 @@ def udp_v1_service() -> UDPService:
                       hpe=hpe,
                       face_path=face_save_path,
                       tracker_conf=trk_conf,
+                      policy_conf=pol_conf,
                       socket_conf=sock_conf,
                       log_path=LOG_Path,
                       name="udp_service")
