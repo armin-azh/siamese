@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Tuple
 import numpy as np
 from v2.tools import Counter
 from ._def_tracker import TrackerContainer
@@ -32,7 +32,7 @@ class FaPolicyV1(Policy):
                 break
         return _f
 
-    def do(self, trk_ids: np.ndarray, *args, **kwargs):
+    def do(self, trk_ids: np.ndarray, *args, **kwargs) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
         confirmed_known_idx = []
         confirmed_unknown_idx = []
@@ -54,3 +54,15 @@ class FaPolicyV1(Policy):
                 not_confirmed_idx.append(idx)
 
         return np.array(confirmed_known_idx), np.array(confirmed_unknown_idx), np.array(not_confirmed_idx)
+
+    def split(self, trk_ids: np.ndarray, conf_known: np.ndarray, conf_unknown: np.ndarray, not_conf: np.ndarray) -> \
+            Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        conf_kn, conf_un_kn, n_conf = np.empty((0, 5)), np.empty((0, 5)), np.empty((0, 5))
+        if len(conf_known) > 0:
+            conf_kn = trk_ids[conf_known]
+        if len(conf_unknown) > 0:
+            conf_un_kn = trk_ids[conf_unknown]
+        if len(not_conf) > 0:
+            n_conf = trk_ids[not_conf]
+
+        return conf_kn, conf_un_kn, n_conf

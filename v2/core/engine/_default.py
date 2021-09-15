@@ -552,18 +552,18 @@ class SocketService(EmbeddingService):
                                                        frame_size=v_frame.shape[:2])
                         trk_ids = f_bound[:, 4].astype(np.int)
 
-                        conf_known, conf_unknown, not_conf = self._pol.do(trk_ids)
+                        conf_known_idx, conf_unknown_idx, not_conf_idx = self._pol.do(trk_ids)
 
-                        print("Known Conf: ", conf_known)
-                        print("UnKnown Conf: ", conf_unknown)
-                        print("Not Conf: ", not_conf)
+                        print("Known Conf: ", conf_known_idx)
+                        print("UnKnown Conf: ", conf_unknown_idx)
+                        print("Not Conf: ", not_conf_idx)
 
                         # fix bug when not_conf is empty
-                        if not_conf.shape[0] > 0:
-                            f_bound = f_bound[not_conf]
-                        else:
-                            f_bound = np.empty((0, 5))
+                        conf_known, conf_unknown, not_conf = self._pol.split(f_bound, conf_known_idx, conf_unknown_idx,
+                                                                             not_conf_idx)
 
+                        f_bound = not_conf
+                        print(f_bound)
                         origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
                         origin_gray_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
                         origin_gray_full_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="full")
