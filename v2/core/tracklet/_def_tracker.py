@@ -1,6 +1,7 @@
 from typing import Union, Tuple
 import numpy as np
 from sklearn.utils.linear_assignment_ import linear_assignment
+from datetime import datetime
 
 from v2.tools import calc_iou
 from v2.tools import Counter
@@ -197,6 +198,7 @@ class TrackerContainer:
         }
         self._trk_id = tracker_id
         self._alias_name = alias_name
+        self._modified = self._now()
 
     @property
     def trk_id(self):
@@ -222,5 +224,18 @@ class TrackerContainer:
     def known_counter(self) -> int:
         return self._cnt[self.KNOWN]()
 
+    @property
     def status(self) -> str:
         return self.UNKNOWN if self._alias_name is None else self.KNOWN
+
+    def _now(self) -> datetime:
+        return datetime.now()
+
+    def _delta(self, _e: datetime, _s: datetime) -> float:
+        """
+        get total seconds
+        :param _e:
+        :param _s:
+        :return:
+        """
+        return (_e - _s).total_seconds()
