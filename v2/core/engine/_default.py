@@ -478,6 +478,20 @@ class SocketService(EmbeddingService):
                 "image": image_path,
                 "confidence": confidence}
 
+    def _update(self, origin_frame: np.ndarray, pred: np.ndarray, trk_ids: np.ndarray, box: np.ndarray,
+                dists: np.ndarray,status:str):
+        assert origin_frame.shape[0] == pred.shape[0]
+        assert pred.shape[0] == trk_ids.shape[0]
+        assert trk_ids.shape[0] == box.shape[0]
+        assert box.shape[0] == dists.shape[0]
+
+        if status == FaPolicyV1.KNOWN:
+            pass
+        elif status == FaPolicyV1.UNKNOWN:
+            pass
+        else:
+            raise ValueError("This status value is not provided")
+
     def exec_(self, *args, **kwargs) -> None:
         physical_devices = tf.config.list_physical_devices('GPU')
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -563,7 +577,6 @@ class SocketService(EmbeddingService):
                                                                              not_conf_idx)
 
                         f_bound = not_conf
-                        print(f_bound)
                         origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
                         origin_gray_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
                         origin_gray_full_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="full")
@@ -580,6 +593,8 @@ class SocketService(EmbeddingService):
 
                         if has_head.shape[0] > 0:
                             has_head_origin_f_bound = origin_f_bound[has_head, ...].copy()
+                            has_head_trk_ids = f_bound[has_head, 4].copy()
+
                             mask_scores = self._mask_d.predict(origin_gray_full_ch_frame,
                                                                has_head_origin_f_bound.astype(np.int))
                             has_mask, has_no_mask = self._mask_d.validate_mask(mask_scores)
@@ -599,14 +614,22 @@ class SocketService(EmbeddingService):
                             normal_embedded_160 = embedded_160[has_no_mask, ...]
                             mask_embedded_160 = embedded_160[has_mask, ...]
 
+                            normal_trk_ids = has_head_trk_ids[has_no_mask, ...]
+                            mask_trk_ids = has_head_trk_ids[has_mask, ...]
+
+                            print("Normal", normal_trk_ids)
+                            print("Mask ", mask_trk_ids)
+
                             if normal_embedded_160.shape[0] > 0:
                                 normal_dists = self._dist.calculate_distant(normal_embedded_160, self._normal_em)
                                 normal_dists, normal_top_dists = self._dist.satisfy(normal_dists)
                                 normal_val_dists_idx, normal_in_val_dists_idx = self._dist.validate(normal_dists)
                                 normal_val_dists = normal_dists[normal_val_dists_idx]
                                 normal_val_origin_f_bound = normal_origin_f_bound[normal_val_dists_idx, :]
+                                normal_val_trk_ids = normal_trk_ids[normal_val_dists_idx, :]
                                 normal_in_val_dists = normal_dists[normal_in_val_dists_idx]
                                 normal_in_val_origin_f_bound = normal_origin_f_bound[normal_in_val_dists_idx, :]
+                                normal_in_val_trk_ids = normal_in_val_dists_idx[normal_in_val_dists_idx, :]
                                 normal_val_top_idx = normal_top_dists[normal_val_dists_idx]
                                 normal_in_val_top_idx = normal_top_dists[normal_in_val_dists_idx]
                                 normal_pred_en = self._normal_lb[normal_val_top_idx]
@@ -614,13 +637,16 @@ class SocketService(EmbeddingService):
                                 normal_in_val_pred = ["unrecognized"] * normal_in_val_top_idx.shape[0]
 
                             if mask_embedded_160.shape[0] > 0:
+                                mask_trk_ids = has_head_trk_ids[has_head, ...]
                                 mask_dists = self._dist.calculate_distant(mask_embedded_160, self._mask_em)
                                 mask_dists, mask_top_dists = self._dist.satisfy(mask_dists)
                                 mask_val_dists_idx, mask_in_val_dists_idx = self._dist.validate(mask_dists)
                                 mask_val_dists = mask_dists[mask_val_dists_idx]
                                 mask_val_origin_f_bound = mask_origin_f_bound[mask_val_dists_idx, :]
+                                mask_val_trk_ids = mask_trk_ids[mask_val_dists_idx, :]
                                 mask_in_val_dists = mask_dists[mask_in_val_dists_idx]
                                 mask_in_val_origin_f_bound = mask_origin_f_bound[mask_in_val_dists_idx, :]
+                                mask_in_val_trk_ids = mask_trk_ids[mask_in_val_dists_idx, :]
                                 mask_val_top_idx = mask_top_dists[mask_val_dists_idx]
                                 mask_in_val_top_idx = mask_top_dists[mask_in_val_dists_idx]
                                 mask_pred_en = self._mask_lb[mask_val_top_idx]

@@ -16,11 +16,16 @@ class FaPolicyV1(Policy):
     CONFIRMED = 'confirmed'
     NOT_CONFIRMED = 'not_confirmed'
 
+    KNOWN = None
+    UNKNOWN = None
+
     def __init__(self, max_life_time: float, max_confidence_rec: int, max_confidence_un_rec: int, *args, **kwargs):
         super(FaPolicyV1, self).__init__(*args, **kwargs)
         self._max_life = max_life_time
         self._max_conf_rec = max_confidence_rec
         self._max_conf_un_rec = max_confidence_un_rec
+        self.KNOWN = TrackerContainer.KNOWN
+        self.UNKNOWN = TrackerContainer.UNKNOWN
 
         self._trackers = []
 
