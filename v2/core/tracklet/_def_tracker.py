@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.utils.linear_assignment_ import linear_assignment
 
 from v2.tools import calc_iou
+from v2.tools import Counter
 from ._kalman import KalmanBoxTracker
 
 
@@ -183,3 +184,27 @@ class SortTracker(Tracker):
         trackers = self._update(final_faces, frame_size, attribute_list)
 
         return trackers
+
+
+class TrackerContainer:
+    def __init__(self, tracker_id: int, alias_name: Union[str, None]):
+        self._cnt = Counter()
+        self._cnt.next()
+        self._trk_id = tracker_id
+        self._alias_name = alias_name
+
+    @property
+    def trk_id(self):
+        return self._trk_id
+
+    @property
+    def alias_id(self) -> Union[str, None]:
+        return self._alias_name
+
+    @alias_id.setter
+    def alias_id(self, n: str):
+        self._alias_name = n
+
+    @property
+    def counter(self) -> int:
+        return self._cnt()

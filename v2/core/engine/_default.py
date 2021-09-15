@@ -1,6 +1,7 @@
 from typing import Tuple
 from typing import Union, List
 from pathlib import Path
+from uuid import uuid1
 
 import cv2
 import socket
@@ -448,7 +449,7 @@ class RawVisualService(EmbeddingService):
 
 
 class SocketService(EmbeddingService):
-    def __init__(self, name, log_path: Path, tracker_conf: dict, socket_conf: dict, *args, **kwargs):
+    def __init__(self, name, log_path: Path, face_path: Path, tracker_conf: dict, socket_conf: dict, *args, **kwargs):
         super(SocketService, self).__init__(name=name, log_path=log_path, display=True, *args, **kwargs)
         self._normal_em, self._normal_lb, self._normal_en, self._mask_em, self._mask_lb, self._mask_en = self._db.get_embedded()
         self._face_net_160_norm = FaceNet160Cropper()
@@ -456,12 +457,23 @@ class SocketService(EmbeddingService):
         self._tracker = SortTrackerV1(**self._trk_conf)
         self._socket_conf = socket_conf
         self._sender = None
+        self._face_save_path = face_path
+
+    def _new_image_filename(self) -> Path:
+        return self._face_save_path.joinpath(uuid1().hex + ".jpg")
 
     def _socket(self, *args, **kwargs):
         raise NotImplementedError
 
     def _send(self, data: dict) -> None:
         raise NotImplementedError
+
+    def _data_serialize(self, timestamp, person_id, camera_id, image_path, confidence):
+        return {"timestamp": timestamp,
+                "personId": person_id,
+                "cameraId": camera_id,
+                "image": image_path,
+                "confidence": confidence}
 
     def exec_(self, *args, **kwargs) -> None:
         physical_devices = tf.config.list_physical_devices('GPU')
