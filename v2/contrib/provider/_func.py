@@ -184,6 +184,10 @@ def udp_v1_service() -> UDPService:
         "port": int(SERVER_CONF.get("UDP_PORT"))
     }
 
+    face_save_path = Path(SERVER_CONF.get("face_save_path")).joinpath(SERVER_CONF.get("face_folder"))
+    if not face_save_path.exists():
+        face_save_path.mkdir(parents=True)
+
     return UDPService(source_pool=vision_source(),
                       face_detector=face_dm,
                       embedded=embedded_model,
@@ -191,7 +195,8 @@ def udp_v1_service() -> UDPService:
                       distance=distance,
                       mask_detector=mask_detector,
                       hpe=hpe,
+                      face_path=face_save_path,
                       tracker_conf=trk_conf,
                       socket_conf=sock_conf,
                       log_path=LOG_Path,
-                      name="basic_raw_visualization_service")
+                      name="udp_service")

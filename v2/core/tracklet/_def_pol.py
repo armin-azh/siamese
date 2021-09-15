@@ -17,5 +17,6 @@ class FaPolicyV1(Policy):
 
         self._un_trackers = []
         self._trackers = []
+
     def do(self, trk_ids: np.ndarray, *args, **kwargs):
         pass

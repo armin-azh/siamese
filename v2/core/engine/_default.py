@@ -465,7 +465,7 @@ class SocketService(EmbeddingService):
     def _socket(self, *args, **kwargs):
         raise NotImplementedError
 
-    def _send(self, data: dict) -> None:
+    def _send(self, data: list) -> None:
         raise NotImplementedError
 
     def _data_serialize(self, timestamp, person_id, camera_id, image_path, confidence):
@@ -521,6 +521,8 @@ class SocketService(EmbeddingService):
                     interval_cnt = Counter()
 
                     while True:
+                        serial_data = []
+
                         o_frame, v_frame, v_id, v_timestamp = self._vision.next_stream()
 
                         if v_frame is None and v_id is None and v_timestamp is None:
@@ -545,6 +547,8 @@ class SocketService(EmbeddingService):
                                                        frame=v_frame,
                                                        points=f_landmarks,
                                                        frame_size=v_frame.shape[:2])
+                        trk_ids = f_bound[:, 4]
+                        print(trk_ids)
 
                         origin_f_bound = self._get_origin_box(scale_ratio, f_bound)
                         origin_gray_one_ch_frame = self._gray_conv.normalize(o_frame.copy(), channel="one")
@@ -609,13 +613,13 @@ class SocketService(EmbeddingService):
                                 mask_val_pred = self._mask_en.inverse_transform(mask_pred_en)
                                 mask_in_val_pred = ["unrecognized"] * mask_in_val_top_idx.shape[0]
 
-                        data = {}
-                        self._send(data=data)
+                        # send data
+                        # self._send(data=serial_data)
 
 
 class UDPService(SocketService):
-    def __init__(self, name, log_path: Path, tracker_conf: dict, socket_conf: dict, *args, **kwargs):
-        super(UDPService, self).__init__(name=name, log_path=log_path, tracker_conf=tracker_conf,
+    def __init__(self, name, log_path: Path,face_path: Path, tracker_conf: dict, socket_conf: dict, *args, **kwargs):
+        super(UDPService, self).__init__(name=name, log_path=log_path,face_path=face_path, tracker_conf=tracker_conf,
                                          socket_conf=socket_conf, *args, **kwargs)
         self._sender = self._socket()
 
