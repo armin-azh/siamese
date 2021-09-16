@@ -502,16 +502,18 @@ class SocketService(EmbeddingService):
 
         n_iter = len(pred)
 
+        margined_box = self._add_margin(box=box, im_shape=origin_frame.shape[:2])
+
         for idx in range(n_iter):
             trk = self._pol.find(trk_ids[idx])
 
-            _box = box[idx]
+            _box = margined_box[idx]
             _pred = pred[idx]
             _id = trk_ids[idx]
 
             if trk is None:
-                _n_trk = TrackerContainer(tracker_id=trk_ids[idx])
-                _n_trk()
+                # _n_trk = TrackerContainer(tracker_id=trk_ids[idx])
+                # _n_trk()
                 continue
 
             if status == FaPolicyV1.KNOWN:
