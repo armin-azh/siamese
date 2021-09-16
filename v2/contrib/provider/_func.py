@@ -190,6 +190,8 @@ def udp_v1_service() -> UDPService:
         "max_confidence_un_rec": None
     }
 
+    margin = (int(DETECTOR_CONF.get("x_margin")),int(DETECTOR_CONF.get("y_margin")))
+
     face_save_path = Path(SERVER_CONF.get("face_save_path")).joinpath(SERVER_CONF.get("face_folder"))
     if not face_save_path.exists():
         face_save_path.mkdir(parents=True)
@@ -205,5 +207,6 @@ def udp_v1_service() -> UDPService:
                       tracker_conf=trk_conf,
                       policy_conf=pol_conf,
                       socket_conf=sock_conf,
+                      margin=margin,
                       log_path=LOG_Path,
                       name="udp_service")

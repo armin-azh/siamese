@@ -450,7 +450,7 @@ class RawVisualService(EmbeddingService):
 
 class SocketService(EmbeddingService):
     def __init__(self, name, log_path: Path, face_path: Path, tracker_conf: dict, policy_conf: dict, socket_conf: dict,
-                 *args, **kwargs):
+                 margin: Tuple[int, int], *args, **kwargs):
         super(SocketService, self).__init__(name=name, log_path=log_path, display=True, *args, **kwargs)
         self._normal_em, self._normal_lb, self._normal_en, self._mask_em, self._mask_lb, self._mask_en = self._db.get_embedded()
         self._face_net_160_norm = FaceNet160Cropper()
@@ -460,7 +460,7 @@ class SocketService(EmbeddingService):
         self._sender = None
         self._face_save_path = face_path
         self._pol_conf = policy_conf
-        self._margin = (20, 20)
+        self._margin = margin
         self._pol = FaPolicyV1(**self._pol_conf)
 
     def _add_margin(self, box: np.ndarray, im_shape: Tuple[int, int]):
@@ -714,9 +714,9 @@ class SocketService(EmbeddingService):
 
 class UDPService(SocketService):
     def __init__(self, name, log_path: Path, face_path: Path, tracker_conf: dict, policy_conf: dict, socket_conf: dict,
-                 *args, **kwargs):
+                 margin: Tuple[int, int], *args, **kwargs):
         super(UDPService, self).__init__(name=name, log_path=log_path, face_path=face_path, policy_conf=policy_conf,
-                                         tracker_conf=tracker_conf,
+                                         tracker_conf=tracker_conf, margin=margin,
                                          socket_conf=socket_conf, *args, **kwargs)
         self._sender = self._socket()
 
