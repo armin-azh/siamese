@@ -191,43 +191,57 @@ class TrackerContainer:
     KNOWN = "known"
     UNKNOWN = "unknown"
 
-    def __init__(self, tracker_id: int, alias_name: Union[str, None]):
-        self._cnt = {
-            self.KNOWN: Counter(),
-            self.UNKNOWN: Counter()
-        }
+    def __init__(self, tracker_id: int):
         self._trk_id = tracker_id
-        self._alias_name = alias_name
         self._modified = self._now()
         self._last_seen_image = None
+        self._observation = {
+            self.UNKNOWN: Counter()
+        }
 
     @property
     def trk_id(self):
         return self._trk_id
 
     @property
-    def alias_id(self) -> Union[str, None]:
-        return self._alias_name
-
-    @alias_id.setter
-    def alias_id(self, n: str):
-        self._alias_name = n
-
-    @property
     def total_counter(self) -> int:
-        return self._cnt[self.UNKNOWN]() + self._cnt[self.KNOWN]()
+        """
+        get total number of tracker id observed
+        :return:
+        """
+        obs_cnt = [obs() for obs in self._observation.values()]
+        return sum(obs_cnt)
 
     @property
     def unknown_counter(self) -> int:
-        return self._cnt[self.UNKNOWN]()
+        return self._observation[self.UNKNOWN]()
+
+    def summary(self):
+        """
+        get summary of all identity name in observations
+        :return:
+        """
+        total_cnt = self.total_counter
+        if total_cnt == 0:
+            ans = {key: 0 for key in self._observation.keys()}
+            return ans
+        ans = {key: item() / total_cnt for key, item in self._observation}
+        return ans
 
     @property
-    def known_counter(self) -> int:
-        return self._cnt[self.KNOWN]()
+    def most_valuable_id(self) -> Tuple[str, int]:
+        """
+        find most cnt value in observations
+        :return:
+        """
+        _ids = []
+        _values = []
+        for key, value in self._observation.items():
+            _ids.append(_ids)
+            _values.append(value())
 
-    @property
-    def status(self) -> str:
-        return self.UNKNOWN if self._alias_name is None else self.KNOWN
+        _top_idx = np.argmax(_values)
+        return _ids[_top_idx[0]], _values[_top_idx[0]]
 
     @property
     def image(self) -> np.ndarray:
@@ -249,17 +263,11 @@ class TrackerContainer:
         """
         return (_e - _s).total_seconds()
 
-    def __call__(self, mat: np.ndarray, status: str, *args, **kwargs):
-        if status == self.KNOWN:
-            self._cnt[self.KNOWN]()
-        elif status == self.UNKNOWN:
-            self._cnt[self.UNKNOWN]()
-        else:
-            raise ValueError("This status value is not supported")
+    def __call__(self, mat: np.ndarray, identity: str, *args, **kwargs):
+        try:
+            self._observation[identity]()
+        except KeyError:
+            self._observation[identity] = Counter()
+            self._observation[identity]()
         self._modified = self._now()
 
-    def know(self, mat: np.ndarray):
-        self(mat=mat, status=self.KNOWN)
-
-    def unknown(self, mat: np.ndarray):
-        self(mat=mat, status=self.UNKNOWN)
