@@ -460,7 +460,23 @@ class SocketService(EmbeddingService):
         self._sender = None
         self._face_save_path = face_path
         self._pol_conf = policy_conf
+        self._margin = (20, 20)
         self._pol = FaPolicyV1(**self._pol_conf)
+
+    def _add_margin(self, box: np.ndarray, im_shape: Tuple[int, int]):
+        x1, y1, x2, y2 = box[:, 0], box[:, 1], box[:, 2], box[:, 3]
+
+        x1 = x1 - self._margin[0]
+        y1 = y1 - self._margin[1]
+        x2 = x2 + self._margin[0]
+        y2 = y2 + self._margin[1]
+
+        x1_ = np.stack([x1, np.array(len(x1) * [0])], axis=1).max(axis=1)
+        y1_ = np.stack([y1, np.array(len(y1) * [0])], axis=1).max(axis=1)
+        x2_ = np.stack([x2, np.array(len(x2) * [im_shape[1]])], axis=1).min(axis=1)
+        y2_ = np.stack([y2, np.array(len(y2) * [im_shape[0]])], axis=1).min(axis=1)
+
+        return np.stack([x1_, y1_, x2_, y2_], axis=1)
 
     def _new_image_filename(self) -> Path:
         return self._face_save_path.joinpath(uuid1().hex + ".jpg")
@@ -489,9 +505,13 @@ class SocketService(EmbeddingService):
         for idx in range(n_iter):
             trk = self._pol.find(trk_ids[idx])
 
+            _box = box[idx]
+            _pred = pred[idx]
+            _id = trk_ids[idx]
+
             if trk is None:
-                # _n_trk = TrackerContainer(tracker_id=trk_ids[idx],
-                #                           alias_name=None if status == FaPolicyV1.UNKNOWN else )
+                _n_trk = TrackerContainer(tracker_id=trk_ids[idx])
+                _n_trk()
                 continue
 
             if status == FaPolicyV1.KNOWN:
