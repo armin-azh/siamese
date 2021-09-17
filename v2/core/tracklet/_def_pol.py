@@ -89,7 +89,7 @@ class FaPolicyV1(Policy):
         for idx, trk in enumerate(self._trackers):
             _id, cnt = trk.most_valuable_id
             _add = False
-            print(trk.send)
+
             if _id is not None and cnt is not None and (cnt >= self._max_conf_rec) and not trk.send:
                 trk.sent()
                 _add = True
@@ -102,7 +102,10 @@ class FaPolicyV1(Policy):
 
             if trk.delta > self._max_life and not _add:
                 print("remove")
-                if trk.send:
+
+                _id, _ = trk.most_valuable_id
+                _cond = self._max_conf_rec if _id is not None else self._max_conf_un_rec
+                if not trk.send and (trk.total_counter >= _cond):
                     _ans["expired"].append(copy.deepcopy(trk))
                 self._trackers.remove(trk)
 

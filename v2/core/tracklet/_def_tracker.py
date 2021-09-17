@@ -238,7 +238,6 @@ class TrackerContainer:
         _ids = []
         _values = []
         for key, value in self._observation.items():
-            print(key)
             if key == self.UNKNOWN:
                 continue
             _ids.append(key)
