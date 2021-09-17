@@ -646,9 +646,6 @@ class SocketService(EmbeddingService):
                             normal_trk_ids = has_head_trk_ids[has_no_mask, ...]
                             mask_trk_ids = has_head_trk_ids[has_mask, ...]
 
-                            print("Normal", normal_trk_ids)
-                            print("Mask ", mask_trk_ids)
-
                             if normal_embedded_160.shape[0] > 0:
                                 normal_dists = self._dist.calculate_distant(normal_embedded_160, self._normal_em)
                                 normal_dists, normal_top_dists = self._dist.satisfy(normal_dists)
@@ -675,7 +672,6 @@ class SocketService(EmbeddingService):
                                              dists=normal_in_val_dists)
 
                             if mask_embedded_160.shape[0] > 0:
-                                mask_trk_ids = has_head_trk_ids[has_head, ...]
                                 mask_dists = self._dist.calculate_distant(mask_embedded_160, self._mask_em)
                                 mask_dists, mask_top_dists = self._dist.satisfy(mask_dists)
                                 mask_val_dists_idx, mask_in_val_dists_idx = self._dist.validate(mask_dists)

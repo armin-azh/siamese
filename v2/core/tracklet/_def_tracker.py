@@ -193,6 +193,7 @@ class TrackerContainer:
 
     def __init__(self, tracker_id: int):
         self._trk_id = tracker_id
+        self._send = False
         self._modified = self._now()
         self._last_seen_image = None
         self._observation = {
@@ -268,6 +269,11 @@ class TrackerContainer:
         """
         return (_e - _s).total_seconds()
 
+    @property
+    def delta(self) -> float:
+        _now = datetime.now()
+        return self._delta(_now, self._modified)
+
     def __call__(self, mat: np.ndarray, identity: str, *args, **kwargs):
         try:
             self._observation[identity].next()
@@ -275,3 +281,11 @@ class TrackerContainer:
             self._observation[identity] = Counter()
             self._observation[identity].next()
         self._modified = self._now()
+
+    @property
+    def send(self) -> bool:
+        return self._send
+
+    @send.setter
+    def send(self, n=True)->None:
+        self._send = n

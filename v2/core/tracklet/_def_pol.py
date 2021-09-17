@@ -1,4 +1,5 @@
-from typing import Union, Tuple
+from typing import Union, Tuple, Dict, List
+import copy
 import numpy as np
 from v2.tools import Counter
 from ._def_tracker import TrackerContainer
@@ -57,7 +58,6 @@ class FaPolicyV1(Policy):
                 continue
 
             _mvp = _f.most_valuable_id
-            print("MVP ",self._max_conf_rec)
             if (_mvp[0] is not None and _mvp[1] is not None) and (_mvp[1] >= self._max_conf_rec):
                 confirmed_known_idx.append(idx)
 
@@ -80,3 +80,24 @@ class FaPolicyV1(Policy):
             n_conf = trk_ids[not_conf]
 
         return conf_kn, conf_un_kn, n_conf
+
+    def review(self) -> Dict[str, List[TrackerContainer]]:
+        _ans = {"known_confirmed": [], "unknown_confirmed": [], "expired": []}
+
+        for idx, trk in enumerate(self._trackers):
+            _id, cnt = trk.most_valuable_id
+            _add = False
+            if _id is not None and cnt is not None and (cnt >= self._max_conf_rec) and not trk.send:
+                trk.send()
+                _add = True
+                _ans["known_confirmed"].append(copy.deepcopy(trk))
+
+            elif trk.unknown_counter >= self._max_conf_un_rec and not trk.send:
+                trk.send()
+                _add = True
+                _ans["unknown_confirmed"].append(copy.deepcopy(trk))
+
+            if trk.delat > self._max_life and not _add:
+                self._trackers.remove(trk)
+
+        return _ans
