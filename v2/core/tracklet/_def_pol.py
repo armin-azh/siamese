@@ -55,7 +55,10 @@ class FaPolicyV1(Policy):
             if _f is None:
                 not_confirmed_idx.append(idx)
                 continue
-            if _f.known_counter >= self._max_conf_rec:
+
+            _mvp = _f.most_valuable_id
+            print("MVP ",self._max_conf_rec)
+            if (_mvp[0] is not None and _mvp[1] is not None) and (_mvp[1] >= self._max_conf_rec):
                 confirmed_known_idx.append(idx)
 
             elif _f.unknown_counter >= self._max_conf_un_rec:

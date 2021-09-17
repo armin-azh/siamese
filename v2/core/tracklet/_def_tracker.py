@@ -189,7 +189,7 @@ class SortTracker(Tracker):
 
 class TrackerContainer:
     KNOWN = "known"
-    UNKNOWN = "unknown"
+    UNKNOWN = "unrecognized"
 
     def __init__(self, tracker_id: int):
         self._trk_id = tracker_id
@@ -229,7 +229,7 @@ class TrackerContainer:
         return ans
 
     @property
-    def most_valuable_id(self) -> Tuple[str, int]:
+    def most_valuable_id(self) -> Union[Tuple[str, int], Tuple[None, None]]:
         """
         find most cnt value in observations
         :return:
@@ -237,11 +237,19 @@ class TrackerContainer:
         _ids = []
         _values = []
         for key, value in self._observation.items():
-            _ids.append(_ids)
+            print(key)
+            if key == self.UNKNOWN:
+                continue
+            _ids.append(key)
             _values.append(value())
 
+        if not _ids and not _values:
+            return None, None
         _top_idx = np.argmax(_values)
-        return _ids[_top_idx[0]], _values[_top_idx[0]]
+        print(_values)
+        print(_values[_top_idx])
+        print(_ids[_top_idx])
+        return _ids[_top_idx], _values[_top_idx]
 
     @property
     def image(self) -> np.ndarray:
@@ -265,9 +273,8 @@ class TrackerContainer:
 
     def __call__(self, mat: np.ndarray, identity: str, *args, **kwargs):
         try:
-            self._observation[identity]()
+            self._observation[identity].next()
         except KeyError:
             self._observation[identity] = Counter()
-            self._observation[identity]()
+            self._observation[identity].next()
         self._modified = self._now()
-

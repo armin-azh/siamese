@@ -461,6 +461,7 @@ class SocketService(EmbeddingService):
         self._face_save_path = face_path
         self._pol_conf = policy_conf
         self._margin = margin
+        print(self._pol_conf)
         self._pol = FaPolicyV1(**self._pol_conf)
 
     def _add_margin(self, box: np.ndarray, im_shape: Tuple[int, int]):
@@ -495,7 +496,7 @@ class SocketService(EmbeddingService):
                 "confidence": confidence}
 
     def _update(self, origin_frame: np.ndarray, pred: np.ndarray, trk_ids: np.ndarray, box: np.ndarray,
-                dists: np.ndarray, status: str):
+                dists: np.ndarray):
         assert pred.shape[0] == trk_ids.shape[0]
         assert trk_ids.shape[0] == box.shape[0]
         assert box.shape[0] == dists.shape[0]
@@ -505,31 +506,23 @@ class SocketService(EmbeddingService):
         margined_box = self._add_margin(box=box, im_shape=origin_frame.shape[:2])
 
         for idx in range(n_iter):
-            trk = self._pol.find(trk_ids[idx])
-
-            _box = margined_box[idx]
+            _box = margined_box[idx].astype(np.int)
             _pred = pred[idx]
             _id = trk_ids[idx]
 
+            trk = self._pol.find(_id)
+
             if trk is None:
-                # _n_trk = TrackerContainer(tracker_id=trk_ids[idx])
-                # _n_trk()
+                _n_trk = TrackerContainer(tracker_id=_id)
+                _n_trk(mat=origin_frame[_box[0]:_box[2], _box[1]:_box[3]]
+                       , identity=_pred)
+                self._pol.add(_n_trk)
+                print("Add to tracker list")
                 continue
 
-            if status == FaPolicyV1.KNOWN:
-                pass
-            elif status == FaPolicyV1.UNKNOWN:
-                pass
-            else:
-                raise ValueError("This status value is not provided")
-
-    def _recognise_update(self, origin_frame: np.ndarray, pred: np.ndarray, trk_ids: np.ndarray, box: np.ndarray,
-                          dists: np.ndarray):
-        self._update(origin_frame, pred, trk_ids, box, dists, status=FaPolicyV1.KNOWN)
-
-    def _un_recognise_update(self, origin_frame: np.ndarray, pred: np.ndarray, trk_ids: np.ndarray, box: np.ndarray,
-                             dists: np.ndarray):
-        self._update(origin_frame, pred, trk_ids, box, dists, status=FaPolicyV1.UNKNOWN)
+            trk(mat=origin_frame[_box[0]:_box[2], _box[1]:_box[3]],
+                identity=_pred)
+            print("Update Tracker")
 
     def exec_(self, *args, **kwargs) -> None:
         physical_devices = tf.config.list_physical_devices('GPU')
@@ -675,14 +668,14 @@ class SocketService(EmbeddingService):
                                 normal_val_pred = self._normal_en.inverse_transform(normal_pred_en)
                                 normal_in_val_pred = ["unrecognized"] * normal_in_val_top_idx.shape[0]
 
-                                self._recognise_update(origin_frame=o_frame, pred=np.array(normal_val_pred),
-                                                       trk_ids=normal_val_trk_ids, box=normal_val_origin_f_bound,
-                                                       dists=normal_val_dists)
+                                self._update(origin_frame=o_frame, pred=np.array(normal_val_pred),
+                                             trk_ids=normal_val_trk_ids, box=normal_val_origin_f_bound,
+                                             dists=normal_val_dists)
 
-                                self._un_recognise_update(origin_frame=o_frame, pred=np.array(normal_in_val_pred),
-                                                          trk_ids=normal_in_val_trk_ids,
-                                                          box=normal_in_val_origin_f_bound,
-                                                          dists=normal_in_val_dists)
+                                self._update(origin_frame=o_frame, pred=np.array(normal_in_val_pred),
+                                             trk_ids=normal_in_val_trk_ids,
+                                             box=normal_in_val_origin_f_bound,
+                                             dists=normal_in_val_dists)
 
                             if mask_embedded_160.shape[0] > 0:
                                 mask_trk_ids = has_head_trk_ids[has_head, ...]
@@ -701,14 +694,14 @@ class SocketService(EmbeddingService):
                                 mask_val_pred = self._mask_en.inverse_transform(mask_pred_en)
                                 mask_in_val_pred = ["unrecognized"] * mask_in_val_top_idx.shape[0]
 
-                                self._recognise_update(origin_frame=o_frame, pred=np.array(mask_val_pred),
-                                                       trk_ids=mask_val_trk_ids, box=mask_val_origin_f_bound,
-                                                       dists=mask_val_dists)
+                                self._update(origin_frame=o_frame, pred=np.array(mask_val_pred),
+                                             trk_ids=mask_val_trk_ids, box=mask_val_origin_f_bound,
+                                             dists=mask_val_dists)
 
-                                self._un_recognise_update(origin_frame=o_frame, pred=np.array(mask_in_val_pred),
-                                                          trk_ids=mask_in_val_trk_ids,
-                                                          box=mask_in_val_origin_f_bound,
-                                                          dists=mask_in_val_dists)
+                                self._update(origin_frame=o_frame, pred=np.array(mask_in_val_pred),
+                                             trk_ids=mask_in_val_trk_ids,
+                                             box=mask_in_val_origin_f_bound,
+                                             dists=mask_in_val_dists)
 
                         # send data
                         # self._send(data=serial_data)

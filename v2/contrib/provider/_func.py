@@ -185,9 +185,9 @@ def udp_v1_service() -> UDPService:
     }
 
     pol_conf = {
-        "max_life_time": None,
-        "max_confidence_rec": None,
-        "max_confidence_un_rec": None
+        "max_life_time": float(TRACKER_CONF.get("recognized_max_modify_time")),
+        "max_confidence_rec": int(TRACKER_CONF.get("recognized_max_frame_conf")),
+        "max_confidence_un_rec": int(TRACKER_CONF.get("unrecognized_max_frame_conf"))
     }
 
     margin = (int(DETECTOR_CONF.get("x_margin")),int(DETECTOR_CONF.get("y_margin")))
