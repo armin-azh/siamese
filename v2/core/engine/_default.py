@@ -499,6 +499,9 @@ class SocketService(EmbeddingService):
                 "image": image_path,
                 "confidence": confidence}
 
+    def _save_image(self, im_path: Path, mat: np.ndarray):
+        cv2.imwrite(str(im_path), mat)
+
     def _bulk_serialize(self, res: Dict[str, List[TrackerContainer]], camera_id: None):
         _data = []
         _k_confirmed = res["known_confirmed"]
@@ -506,6 +509,7 @@ class SocketService(EmbeddingService):
             for _trk in _k_confirmed:
                 _im_path = self._new_image_filename()
                 _mvp_id, _mvp_cnt = _trk.most_valuable_id
+                self._save_image(_im_path, _trk.image)
                 _serialized = self._data_serialize(
                     timestamp=self._timestamp(),
                     person_id=_mvp_id,
@@ -519,13 +523,12 @@ class SocketService(EmbeddingService):
         if _uk_confirmed:
             for _trk in _uk_confirmed:
                 _im_path = self._new_image_filename()
-                _mvp_id, _mvp_cnt = _trk.most_valuable_id
                 _serialized = self._data_serialize(
                     timestamp=self._timestamp(),
-                    person_id=_mvp_id,
+                    person_id=None,
                     image_path=str(_im_path),
                     camera_id=camera_id,
-                    confidence=_mvp_cnt / _trk.total_counter
+                    confidence=_trk.unknown_counter / _trk.total_counter
                 )
                 _data.append(_serialized)
 
@@ -563,12 +566,13 @@ class SocketService(EmbeddingService):
 
             if trk is None:
                 _n_trk = TrackerContainer(tracker_id=_id)
-                _n_trk(mat=origin_frame[_box[0]:_box[2], _box[1]:_box[3]]
+                print(_box)
+                _n_trk(mat=origin_frame[_box[1]:_box[3], _box[0]:_box[2]]
                        , identity=_pred)
                 self._pol.add(_n_trk)
                 continue
 
-            trk(mat=origin_frame[_box[0]:_box[2], _box[1]:_box[3]],
+            trk(mat=origin_frame[_box[1]:_box[3], _box[0]:_box[2]],
                 identity=_pred)
 
     def exec_(self, *args, **kwargs) -> None:
