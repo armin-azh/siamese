@@ -747,7 +747,8 @@ class SocketService(EmbeddingService):
                                              dists=mask_in_val_dists)
 
                         _res = self._pol.review()
-                        _data = self._bulk_serialize(res=_res,camera_id=None)
+                        print(_res)
+                        _data = self._bulk_serialize(res=_res, camera_id=None)
                         print(_data)
 
                         # send data

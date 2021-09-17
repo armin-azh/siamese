@@ -190,7 +190,7 @@ def udp_v1_service() -> UDPService:
         "max_confidence_un_rec": int(TRACKER_CONF.get("unrecognized_max_frame_conf"))
     }
 
-    margin = (int(DETECTOR_CONF.get("x_margin")),int(DETECTOR_CONF.get("y_margin")))
+    margin = (int(DETECTOR_CONF.get("x_margin")), int(DETECTOR_CONF.get("y_margin")))
 
     face_save_path = Path(SERVER_CONF.get("face_save_path")).joinpath(SERVER_CONF.get("face_folder"))
     if not face_save_path.exists():

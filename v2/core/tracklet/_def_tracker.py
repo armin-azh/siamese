@@ -274,12 +274,16 @@ class TrackerContainer:
         _now = datetime.now()
         return self._delta(_now, self._modified)
 
-    def __call__(self, mat: np.ndarray, identity: str, *args, **kwargs):
+    def __call__(self, mat: Union[None, np.ndarray], identity: str, *args, **kwargs):
         try:
             self._observation[identity].next()
+
         except KeyError:
             self._observation[identity] = Counter()
             self._observation[identity].next()
+
+        if mat is not None:
+            self._last_seen_image = mat
         self._modified = self._now()
 
     @property

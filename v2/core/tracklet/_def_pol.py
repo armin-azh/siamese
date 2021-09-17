@@ -59,9 +59,11 @@ class FaPolicyV1(Policy):
 
             _mvp = _f.most_valuable_id
             if (_mvp[0] is not None and _mvp[1] is not None) and (_mvp[1] >= self._max_conf_rec):
+                _f(mat=None, identity=_mvp[0])
                 confirmed_known_idx.append(idx)
 
             elif _f.unknown_counter >= self._max_conf_un_rec:
+                _f(mat=None, identity=TrackerContainer.UNKNOWN)
                 confirmed_unknown_idx.append(idx)
 
             else:
@@ -87,6 +89,7 @@ class FaPolicyV1(Policy):
         for idx, trk in enumerate(self._trackers):
             _id, cnt = trk.most_valuable_id
             _add = False
+            print(trk.send)
             if _id is not None and cnt is not None and (cnt >= self._max_conf_rec) and not trk.send:
                 trk.sent()
                 _add = True
@@ -97,7 +100,10 @@ class FaPolicyV1(Policy):
                 _add = True
                 _ans["unknown_confirmed"].append(copy.deepcopy(trk))
 
-            if trk.delta > self._max_life and not _add and trk.send:
+            if trk.delta > self._max_life and not _add:
+                print("remove")
+                if trk.send:
+                    _ans["expired"].append(copy.deepcopy(trk))
                 self._trackers.remove(trk)
 
         return _ans
