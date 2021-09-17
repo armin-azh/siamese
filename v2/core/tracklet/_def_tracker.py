@@ -211,7 +211,7 @@ class TrackerContainer:
         :return:
         """
         obs_cnt = [obs() for obs in self._observation.values()]
-        return sum(obs_cnt)
+        return sum(obs_cnt) if sum(obs_cnt) != 0 else 1
 
     @property
     def unknown_counter(self) -> int:
@@ -286,6 +286,5 @@ class TrackerContainer:
     def send(self) -> bool:
         return self._send
 
-    @send.setter
-    def send(self, n=True)->None:
-        self._send = n
+    def sent(self):
+        self._send = True

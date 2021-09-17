@@ -88,16 +88,16 @@ class FaPolicyV1(Policy):
             _id, cnt = trk.most_valuable_id
             _add = False
             if _id is not None and cnt is not None and (cnt >= self._max_conf_rec) and not trk.send:
-                trk.send()
+                trk.sent()
                 _add = True
                 _ans["known_confirmed"].append(copy.deepcopy(trk))
 
             elif trk.unknown_counter >= self._max_conf_un_rec and not trk.send:
-                trk.send()
+                trk.sent()
                 _add = True
                 _ans["unknown_confirmed"].append(copy.deepcopy(trk))
 
-            if trk.delat > self._max_life and not _add:
+            if trk.delta > self._max_life and not _add and trk.send:
                 self._trackers.remove(trk)
 
         return _ans

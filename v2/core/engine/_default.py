@@ -1,5 +1,6 @@
+import datetime
 from typing import Tuple
-from typing import Union, List
+from typing import Union, List, Dict
 from pathlib import Path
 from uuid import uuid1
 
@@ -481,6 +482,10 @@ class SocketService(EmbeddingService):
     def _new_image_filename(self) -> Path:
         return self._face_save_path.joinpath(uuid1().hex + ".jpg")
 
+    def _timestamp(self):
+        _timestamp = datetime.datetime.now().timestamp()
+        return int(_timestamp) * 1000
+
     def _socket(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -493,6 +498,51 @@ class SocketService(EmbeddingService):
                 "cameraId": camera_id,
                 "image": image_path,
                 "confidence": confidence}
+
+    def _bulk_serialize(self, res: Dict[str, List[TrackerContainer]], camera_id: None):
+        _data = []
+        _k_confirmed = res["known_confirmed"]
+        if _k_confirmed:
+            for _trk in _k_confirmed:
+                _im_path = self._new_image_filename()
+                _mvp_id, _mvp_cnt = _trk.most_valuable_id
+                _serialized = self._data_serialize(
+                    timestamp=self._timestamp(),
+                    person_id=_mvp_id,
+                    image_path=str(_im_path),
+                    camera_id=camera_id,
+                    confidence=_mvp_cnt / _trk.total_counter
+                )
+                _data.append(_serialized)
+        _uk_confirmed = res["unknown_confirmed"]
+
+        if _uk_confirmed:
+            for _trk in _uk_confirmed:
+                _im_path = self._new_image_filename()
+                _mvp_id, _mvp_cnt = _trk.most_valuable_id
+                _serialized = self._data_serialize(
+                    timestamp=self._timestamp(),
+                    person_id=_mvp_id,
+                    image_path=str(_im_path),
+                    camera_id=camera_id,
+                    confidence=_mvp_cnt / _trk.total_counter
+                )
+                _data.append(_serialized)
+
+        _expired = res["expired"]
+
+        if _expired:
+            for _trk in _expired:
+                _im_path = self._new_image_filename()
+                _serialized = self._data_serialize(
+                    timestamp=self._timestamp(),
+                    person_id=None,
+                    image_path=str(_im_path),
+                    camera_id=camera_id,
+                    confidence=_trk.unknown_counter / _trk.total_counter
+                )
+                _data.append(_serialized)
+        return _data
 
     def _update(self, origin_frame: np.ndarray, pred: np.ndarray, trk_ids: np.ndarray, box: np.ndarray,
                 dists: np.ndarray):
@@ -597,9 +647,9 @@ class SocketService(EmbeddingService):
 
                         conf_known_idx, conf_unknown_idx, not_conf_idx = self._pol.do(trk_ids)
 
-                        print("Known Conf: ", conf_known_idx)
-                        print("UnKnown Conf: ", conf_unknown_idx)
-                        print("Not Conf: ", not_conf_idx)
+                        # print("Known Conf: ", conf_known_idx)
+                        # print("UnKnown Conf: ", conf_unknown_idx)
+                        # print("Not Conf: ", not_conf_idx)
 
                         # fix bug when not_conf is empty
                         conf_known, conf_unknown, not_conf = self._pol.split(f_bound, conf_known_idx, conf_unknown_idx,
@@ -695,6 +745,10 @@ class SocketService(EmbeddingService):
                                              trk_ids=mask_in_val_trk_ids,
                                              box=mask_in_val_origin_f_bound,
                                              dists=mask_in_val_dists)
+
+                        _res = self._pol.review()
+                        _data = self._bulk_serialize(res=_res,camera_id=None)
+                        print(_data)
 
                         # send data
                         # self._send(data=serial_data)
