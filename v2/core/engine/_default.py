@@ -461,7 +461,6 @@ class SocketService(EmbeddingService):
         self._face_save_path = face_path
         self._pol_conf = policy_conf
         self._margin = margin
-        print(self._pol_conf)
         self._pol = FaPolicyV1(**self._pol_conf)
 
     def _add_margin(self, box: np.ndarray, im_shape: Tuple[int, int]):
@@ -517,12 +516,10 @@ class SocketService(EmbeddingService):
                 _n_trk(mat=origin_frame[_box[0]:_box[2], _box[1]:_box[3]]
                        , identity=_pred)
                 self._pol.add(_n_trk)
-                print("Add to tracker list")
                 continue
 
             trk(mat=origin_frame[_box[0]:_box[2], _box[1]:_box[3]],
                 identity=_pred)
-            print("Update Tracker")
 
     def exec_(self, *args, **kwargs) -> None:
         physical_devices = tf.config.list_physical_devices('GPU')

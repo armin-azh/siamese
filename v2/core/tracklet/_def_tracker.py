@@ -246,9 +246,6 @@ class TrackerContainer:
         if not _ids and not _values:
             return None, None
         _top_idx = np.argmax(_values)
-        print(_values)
-        print(_values[_top_idx])
-        print(_ids[_top_idx])
         return _ids[_top_idx], _values[_top_idx]
 
     @property
