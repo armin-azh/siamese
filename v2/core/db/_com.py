@@ -32,12 +32,28 @@ class Identity:
         em_path.mkdir(parents=True, exist_ok=True)
         self._mask_npy_file = em_path.joinpath("mask.npy")
         self._normal_npy_file = em_path.joinpath("normal.npy")
+        self._inv_mask_npy_file = em_path.joinpath("inv_mask.npy")
+        self._inv_normal_npy_file = em_path.joinpath("inv_normal.npy")
 
         super(Identity, self).__init__(*args, **kwargs)
 
     @property
     def uu_id(self) -> str:
         return self._uu_id
+
+    def load_inv_embedding(self, prefix: str = "normal") -> np.ndarray:
+        if prefix == Identity.PREFIX_NORMAL:
+            try:
+                return np.load(str(self._inv_normal_npy_file))
+            except FileNotFoundError:
+                raise NpyFileNotFoundError(f"npy file not founded at path {str(self._normal_npy_file)}")
+        elif prefix == Identity.PREFIX_MASK:
+            try:
+                return np.load(str(self._inv_mask_npy_file))
+            except FileNotFoundError:
+                raise NpyFileNotFoundError(f"npy file not founded at path {str(self._mask_npy_file)}")
+        else:
+            raise InvalidPrefixError("passing invalid prefix")
 
     def load_embedding(self, prefix: str = "normal") -> np.ndarray:
         if prefix == Identity.PREFIX_NORMAL:
@@ -58,6 +74,14 @@ class Identity:
             np.save(str(self._normal_npy_file), mat)
         elif prefix == Identity.PREFIX_MASK:
             np.save(str(self._mask_npy_file), mat)
+        else:
+            raise InvalidPrefixError("passing invalid prefix")
+
+    def write_inv_embeddings(self, mat: np.ndarray, prefix: str = 'normal'):
+        if prefix == Identity.PREFIX_NORMAL:
+            np.save(str(self._inv_normal_npy_file), mat)
+        elif prefix == Identity.PREFIX_MASK:
+            np.save(str(self._inv_mask_npy_file), mat)
         else:
             raise InvalidPrefixError("passing invalid prefix")
 
@@ -213,3 +237,55 @@ class Database(BasicDatabase):
         mask_labels = mask_en_label.transform(mask_labels)
 
         return normals_embed, normal_labels, normal_en_label, masks_embed, mask_labels, mask_en_label
+
+    def get_inv_embedded(self, *args, **kwargs) -> Tuple[
+        np.ndarray, np.ndarray, Label_DT, np.ndarray, np.ndarray, Label_DT]:
+        """
+
+        :param args:
+        :param kwargs:
+        :return: normal_embeddings,normal_labels,normal_label_encoder,mask_embeddings,mask_labels,mask_label_encoder
+        """
+        mask_labels = []
+        normal_labels = []
+
+        masks_inv_embed = []
+        normals_inv_embed = []
+
+        normal_en_label = preprocessing.LabelEncoder()
+        mask_en_label = preprocessing.LabelEncoder()
+
+        for uu_id in self._db_path.glob("*"):
+            id_container = self.get_identity(uu_id.stem)
+
+            try:
+                normal_inv_embed = id_container.load_embedding(prefix="normal")
+                normals_inv_embed.append(normal_inv_embed)
+                normal_labels += [uu_id.stem] * normal_inv_embed.shape[0]
+            except NpyFileNotFoundError:
+                pass
+
+            try:
+                mask_inv_embed = id_container.load_embedding(prefix="mask")
+                masks_inv_embed.append(mask_inv_embed)
+                mask_labels += [uu_id.stem] * mask_inv_embed.shape[0]
+            except NpyFileNotFoundError:
+                pass
+
+        try:
+            masks_inv_embed = np.concatenate(masks_inv_embed, axis=0)
+        except ValueError:
+            masks_inv_embed = np.empty((0, 512))
+
+        try:
+            normals_inv_embed = np.concatenate(normals_inv_embed, axis=0)
+        except ValueError:
+            normals_inv_embed = np.empty((0, 512))
+
+        normal_en_label.fit(list(set(normal_labels)))
+        mask_en_label.fit(list(set(mask_labels)))
+
+        normal_labels = normal_en_label.transform(normal_labels)
+        mask_labels = mask_en_label.transform(mask_labels)
+
+        return normals_inv_embed, normal_labels, normal_en_label, masks_inv_embed, mask_labels, mask_en_label
