@@ -751,12 +751,10 @@ class SocketService(EmbeddingService):
                                              dists=mask_in_val_dists)
 
                         _res = self._pol.review()
-                        print(_res)
                         _data = self._bulk_serialize(res=_res, camera_id=None)
-                        print(_data)
 
                         # send data
-                        # self._send(data=serial_data)
+                        self._send(data=serial_data)
 
 
 class UDPService(SocketService):
@@ -773,4 +771,4 @@ class UDPService(SocketService):
     def _send(self, data: dict) -> None:
         json_obj = json.dumps({"data": data})
         self._sender.sendto(json_obj.encode(), tuple(self._socket_conf.values()))
-        print("[SEND]")
+        print(f"[SEND] {json_obj}")
