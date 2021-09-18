@@ -1,14 +1,5 @@
 from pathlib import Path
 
-from v2.core.source import SourceProvider, FileSourceModel
-from v2.core.distance import CosineDistanceV2, CosineDistanceV1
-from v2.core.db import SimpleDatabase
-from v2.core.network import (MultiCascadeFaceDetector,
-                             FaceNetModel,
-                             MaskModel,
-                             HPEModel)
-from v2.core.engine import RawVisualService, ClusteringService, UDPService
-from v2.tools.logger import LOG_Path
 from settings import (CAMERA_MODEL_CONF,
                       BASE_DIR,
                       DETECTOR_CONF,
@@ -19,9 +10,17 @@ from settings import (CAMERA_MODEL_CONF,
                       HPE_CONF,
                       TRACKER_CONF,
                       SERVER_CONF)
-
 from settings import (PATH_NORMAL,
                       PATH_MASK)
+from v2.core.db import SimpleDatabase
+from v2.core.distance import CosineDistanceV2
+from v2.core.engine import RawVisualService, ClusteringService, UDPService
+from v2.core.network import (MultiCascadeFaceDetector,
+                             FaceNetModel,
+                             MaskModel,
+                             HPEModel)
+from v2.core.source import SourceProvider
+from v2.tools.logger import LOG_Path
 
 
 def clustering_v1_service(phase="normal") -> ClusteringService:
