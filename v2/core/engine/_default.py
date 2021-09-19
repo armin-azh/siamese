@@ -452,6 +452,13 @@ class RawVisualService(EmbeddingService):
                         cv2.imshow(window_name, display_frame)
 
 
+class RawVisualMahalanobisService(RawVisualService):
+    def __init__(self,name, log_path: Path, tracker_conf: dict, display=True, *args, **kwargs):
+        super(RawVisualMahalanobisService, self).__init__(name, log_path, tracker_conf, display=True, *args, **kwargs)
+
+    def exec_(self, *args, **kwargs) -> None:
+        pass
+
 class SocketService(EmbeddingService):
     def __init__(self, name, log_path: Path, face_path: Path, tracker_conf: dict, policy_conf: dict, socket_conf: dict,
                  margin: Tuple[int, int], *args, **kwargs):

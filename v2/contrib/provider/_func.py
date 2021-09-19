@@ -14,7 +14,7 @@ from settings import (PATH_NORMAL,
                       PATH_MASK)
 from v2.core.db import SimpleDatabase
 from v2.core.distance import CosineDistanceV2
-from v2.core.engine import RawVisualService, ClusteringService, UDPService
+from v2.core.engine import RawVisualService, ClusteringService, UDPService, RawVisualMahalanobisService
 from v2.core.network import (MultiCascadeFaceDetector,
                              FaceNetModel,
                              MaskModel,
@@ -209,3 +209,60 @@ def udp_v1_service() -> UDPService:
                       margin=margin,
                       log_path=LOG_Path,
                       name="udp_service")
+
+
+def raw_visual_v2_service() -> RawVisualMahalanobisService:
+    base = Path(BASE_DIR)
+    vision_source = SourceProvider(logg_path=LOG_Path, yam_path=base.joinpath(CAMERA_MODEL_CONF.get("conf")))
+
+    minsize = int(DETECTOR_CONF.get("min_face_size"))
+    threshold = [
+        float(DETECTOR_CONF.get("step1_threshold")),
+        float(DETECTOR_CONF.get("step2_threshold")),
+        float(DETECTOR_CONF.get("step3_threshold"))]
+    factor = float(DETECTOR_CONF.get("scale_factor"))
+    face_dm = MultiCascadeFaceDetector(stages_threshold=threshold, scale_factor=factor, min_face=minsize,
+                                       name="raw_face_detector")
+
+    embedded_model = FaceNetModel(model_path=base.joinpath(MODEL_CONF.get('facenet')))
+
+    db = SimpleDatabase(db_path=base.joinpath(GALLERY_CONF.get("database_path")))
+
+    distance = CosineDistanceV2(similarity_threshold=float(DEFAULT_CONF.get("similarity_threshold")))
+
+    mask_detector = MaskModel(model_path=base.joinpath(MASK_CONF.get("model")),
+                              score_threshold=float(MASK_CONF.get("score_threshold")))
+
+    hpe_conf = (
+        float(HPE_CONF.get("pan_left")),
+        float(HPE_CONF.get("pan_right")),
+        float(HPE_CONF.get("tilt_up")),
+        float(HPE_CONF.get("tilt_down"))
+    )
+
+    hpe = HPEModel(model_path=base.joinpath(HPE_CONF.get("model")),
+                   img_norm=(float(HPE_CONF.get("im_norm_mean")), float(HPE_CONF.get("im_norm_var"))),
+                   tilt_norm=(float(HPE_CONF.get("tilt_norm_mean")), float(HPE_CONF.get("tilt_norm_var"))),
+                   pan_norm=(float(HPE_CONF.get("pan_norm_mean")), float(HPE_CONF.get("pan_norm_var"))),
+                   rescale=float(HPE_CONF.get("rescale")),
+                   conf=hpe_conf
+                   )
+
+    trk_conf = {
+        "face_threshold": float(DETECTOR_CONF.get("conf_thresh")),
+        "detect_interval": int(DETECTOR_CONF.get("mtcnn_per_frame")),
+        "iou_threshold": float(TRACKER_CONF.get("iou_threshold")),
+        "max_age": int(TRACKER_CONF.get("max_age")),
+        "min_hit": int(TRACKER_CONF.get("min_hits"))
+    }
+
+    return RawVisualMahalanobisService(source_pool=vision_source(),
+                                       face_detector=face_dm,
+                                       embedded=embedded_model,
+                                       database=db,
+                                       distance=distance,
+                                       mask_detector=mask_detector,
+                                       hpe=hpe,
+                                       tracker_conf=trk_conf,
+                                       log_path=LOG_Path,
+                                       name="basic_raw_visualization_mahalanobis_service")
