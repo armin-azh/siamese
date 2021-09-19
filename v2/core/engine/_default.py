@@ -26,6 +26,7 @@ from v2.core.network import (MultiCascadeFaceDetector,
 from v2.core.db import SimpleDatabase
 from v2.core.nomalizer import GrayScaleConvertor, SpaceConvertor, FaceNet160Cropper
 from v2.core.distance import CosineDistanceV2, CosineDistanceV1
+from v2.core.distance.utils import calc_cov_g_inverse
 from v2.tools import draw_cure_face, Counter, FPS
 from v2.core.db.exceptions import *
 from v2.core.tracklet import SortTrackerV1, FaPolicyV1, TrackerContainer
@@ -202,6 +203,8 @@ class ClusteringService(EmbeddingService):
                             embs = self._embedded.get_embeddings(session=sess, input_im=gray_cropped)
                             _, centroids = k_mean_clustering(embeddings=embs, n_cluster=self._n_cluster)
                             iden.write_embeddings(centroids, prefix=phase)
+                            g_inv = calc_cov_g_inverse(mat=embs)
+                            iden.write_inv_embeddings(mat=g_inv,prefix=phase)
 
                         iden.write_images(color_cropped, prefix=phase)
                         if gray_cropped.shape[0] < self._n_cluster:
