@@ -239,7 +239,7 @@ class Database(BasicDatabase):
         return normals_embed, normal_labels, normal_en_label, masks_embed, mask_labels, mask_en_label
 
     def get_inv_embedded(self, *args, **kwargs) -> Tuple[
-        np.ndarray, np.ndarray, Label_DT, np.ndarray, np.ndarray, Label_DT]:
+        np.ndarray, np.ndarray, np.ndarray, np.ndarray, Label_DT, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Label_DT]:
         """
 
         :param args:
@@ -248,9 +248,13 @@ class Database(BasicDatabase):
         """
         mask_labels = []
         normal_labels = []
+        masks_inv_labels = []
+        normal_inv_labels = []
 
         masks_inv_embed = []
+        masks_embed = []
         normals_inv_embed = []
+        normals_embed = []
 
         normal_en_label = preprocessing.LabelEncoder()
         mask_en_label = preprocessing.LabelEncoder()
@@ -259,28 +263,38 @@ class Database(BasicDatabase):
             id_container = self.get_identity(uu_id.stem)
 
             try:
-                normal_inv_embed = id_container.load_embedding(prefix="normal")
-                normals_inv_embed.append(normal_inv_embed.reshape(1,-1))
+                normal_inv_embed = id_container.load_inv_embedding(prefix="normal")
+                normal_embed = id_container.load_embedding(prefix="normal")
+                normals_embed.append(normal_embed)
+                normals_inv_embed.append(normal_inv_embed.reshape(1, -1))
                 normal_labels += [uu_id.stem] * normal_inv_embed.shape[0]
+                normal_inv_labels += [uu_id.stem]
             except NpyFileNotFoundError:
                 pass
 
             try:
-                mask_inv_embed = id_container.load_embedding(prefix="mask")
-                masks_inv_embed.append(mask_inv_embed.reshape(1,-1))
+                mask_inv_embed = id_container.load_inv_embedding(prefix="mask")
+                mask_embed = id_container.load_embedding(prefix="mask")
+                masks_embed.append(mask_embed)
+                masks_inv_embed.append(mask_inv_embed.reshape(1, -1))
                 mask_labels += [uu_id.stem] * mask_inv_embed.shape[0]
+                masks_inv_labels += [uu_id.stem]
             except NpyFileNotFoundError:
                 pass
 
         try:
             masks_inv_embed = np.concatenate(masks_inv_embed, axis=0)
+            masks_embed = np.concatenate(masks_embed, axis=0)
         except ValueError:
-            masks_inv_embed = np.empty((0, 512**2))
+            masks_inv_embed = np.empty((0, 512 ** 2))
+            masks_embed = np.empty((0, 512))
 
         try:
             normals_inv_embed = np.concatenate(normals_inv_embed, axis=0)
+            normals_embed = np.concatenate(normals_embed, axis=0)
         except ValueError:
-            normals_inv_embed = np.empty((0, 512**2))
+            normals_inv_embed = np.empty((0, 512 ** 2))
+            normals_embed = np.empty((0, 512))
 
         normal_en_label.fit(list(set(normal_labels)))
         mask_en_label.fit(list(set(mask_labels)))
@@ -288,4 +302,7 @@ class Database(BasicDatabase):
         normal_labels = normal_en_label.transform(normal_labels)
         mask_labels = mask_en_label.transform(mask_labels)
 
-        return normals_inv_embed, normal_labels, normal_en_label, masks_inv_embed, mask_labels, mask_en_label
+        normal_inv_labels = normal_en_label.transform(normal_inv_labels)
+        masks_inv_labels = mask_en_label.transform(masks_inv_labels)
+
+        return normals_inv_embed, normals_embed, normal_inv_labels, normal_labels, normal_en_label, masks_inv_embed, masks_embed, masks_inv_labels, mask_labels, mask_en_label

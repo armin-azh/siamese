@@ -204,7 +204,7 @@ class ClusteringService(EmbeddingService):
                             _, centroids = k_mean_clustering(embeddings=embs, n_cluster=self._n_cluster)
                             iden.write_embeddings(centroids, prefix=phase)
                             g_inv = calc_cov_g_inverse(mat=embs)
-                            iden.write_inv_embeddings(mat=g_inv,prefix=phase)
+                            iden.write_inv_embeddings(mat=g_inv, prefix=phase)
 
                         iden.write_images(color_cropped, prefix=phase)
                         if gray_cropped.shape[0] < self._n_cluster:
