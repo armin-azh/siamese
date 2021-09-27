@@ -265,9 +265,9 @@ class Database(BasicDatabase):
             try:
                 normal_inv_embed = id_container.load_inv_embedding(prefix="normal")
                 normal_embed = id_container.load_embedding(prefix="normal")
-                normals_embed.append(normal_embed)
+                normals_embed.append(normal_embed.mean(axis=0, keepdims=True))
                 normals_inv_embed.append(normal_inv_embed.reshape(1, -1))
-                normal_labels += [uu_id.stem] * normal_inv_embed.shape[0]
+                normal_labels += [uu_id.stem]
                 normal_inv_labels += [uu_id.stem]
             except NpyFileNotFoundError:
                 pass
@@ -275,9 +275,9 @@ class Database(BasicDatabase):
             try:
                 mask_inv_embed = id_container.load_inv_embedding(prefix="mask")
                 mask_embed = id_container.load_embedding(prefix="mask")
-                masks_embed.append(mask_embed)
+                masks_embed.append(mask_embed.mean(axis=0, keepdims=True))
                 masks_inv_embed.append(mask_inv_embed.reshape(1, -1))
-                mask_labels += [uu_id.stem] * mask_inv_embed.shape[0]
+                mask_labels += [uu_id.stem]
                 masks_inv_labels += [uu_id.stem]
             except NpyFileNotFoundError:
                 pass

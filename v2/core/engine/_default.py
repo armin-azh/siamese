@@ -468,8 +468,10 @@ class RawVisualMahalanobisService(RawVisualService):
 
         self._format_db()
 
-        print(self._normal_inv_em.shape)
-        print(self._mask_inv_em.shape)
+        print("Inv Normal: ", self._normal_inv_em.shape)
+        print("Normal: ", self._normal_em.shape)
+        print("Inv Mask: ", self._mask_inv_em.shape)
+        print("Mask: ", self._mask_em.shape)
 
         with tf.device('/device:gpu:0'):
             with tf.Graph().as_default():
