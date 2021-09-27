@@ -25,7 +25,7 @@ from v2.core.network import (MultiCascadeFaceDetector,
                              MaskModel)
 from v2.core.db import SimpleDatabase
 from v2.core.nomalizer import GrayScaleConvertor, SpaceConvertor, FaceNet160Cropper
-from v2.core.distance import CosineDistanceV2, CosineDistanceV1
+from v2.core.distance import CosineDistanceV2, CosineDistanceV1, MahalanobisDistanceV1
 from v2.core.distance.utils import calc_cov_g_inverse
 from v2.tools import draw_cure_face, Counter, FPS
 from v2.core.db.exceptions import *
@@ -573,7 +573,7 @@ class RawVisualMahalanobisService(RawVisualService):
                             mask_embedded_160 = embedded_160[has_mask, ...]
 
                             if normal_embedded_160.shape[0] > 0:
-                                normal_dists = self._dist.calculate_distant(normal_embedded_160, self._normal_em)
+                                normal_dists = self._dist.calculate_distant(normal_embedded_160, self._normal_em,self._normal_inv_em)
                                 normal_dists, normal_top_dists = self._dist.satisfy(normal_dists)
                                 normal_val_dists_idx, normal_in_val_dists_idx = self._dist.validate(normal_dists)
                                 normal_val_dists = normal_dists[normal_val_dists_idx]
@@ -591,7 +591,7 @@ class RawVisualMahalanobisService(RawVisualService):
                                                            normal_in_val_pred, normal_in_val_dists, False)
 
                             if mask_embedded_160.shape[0] > 0:
-                                mask_dists = self._dist.calculate_distant(mask_embedded_160, self._mask_em)
+                                mask_dists = self._dist.calculate_distant(mask_embedded_160, self._mask_em,self._mask_inv_em)
                                 mask_dists, mask_top_dists = self._dist.satisfy(mask_dists)
                                 mask_val_dists_idx, mask_in_val_dists_idx = self._dist.validate(mask_dists)
                                 mask_val_dists = mask_dists[mask_val_dists_idx]
